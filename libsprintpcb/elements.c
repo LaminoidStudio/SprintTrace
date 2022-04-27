@@ -58,20 +58,35 @@ sprint_element sprint_pad_tht_create(sprint_layer layer, sprint_tuple position, 
     element.pad_tht.rotation = 0;
     element.pad_tht.via = false;
     element.pad_tht.thermal = false;
-    element.pad_tht.thermal_tracks = 0;
+    element.pad_tht.thermal_tracks = 0x55555555;
     element.pad_tht.thermal_tracks_width = 100;
     element.pad_tht.thermal_tracks_individual = false;
 
     return element;
 }
 
-sprint_element sprint_pad_smt_create()
+sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, sprint_tuple size)
 {
+    // todo input checking
+
     sprint_element element;
     memset(&element, 0, sizeof(element));
     element.type = SPRINT_ELEMENT_PAD_SMT;
 
-    //element.track
+    // Required fields
+    element.pad_smt.layer = layer;
+    element.pad_smt.position = position;
+    element.pad_smt.size = size;
+
+    // Optional fields
+    element.pad_smt.link.has_id = false;
+    element.pad_smt.link.num_connections = 0;
+    element.pad_smt.clear = 4000;
+    element.pad_smt.soldermask = true;
+    element.pad_smt.rotation = 0;
+    element.pad_smt.thermal = false;
+    element.pad_smt.thermal_tracks = 0x55;
+    element.pad_smt.thermal_tracks_width = 100;
 
     return element;
 }
