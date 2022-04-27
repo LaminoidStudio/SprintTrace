@@ -170,7 +170,8 @@ sprint_element sprint_circle_create(sprint_layer layer, sprint_dist width, sprin
     return element;
 }
 
-sprint_element sprint_component_create()
+sprint_element sprint_component_create(sprint_text* text_id, sprint_text* text_value,
+                                       int num_elements, sprint_element* elements)
 {
     // todo input checking
 
@@ -179,8 +180,16 @@ sprint_element sprint_component_create()
     element.type = SPRINT_ELEMENT_COMPONENT;
 
     // Required fields
+    element.component.text_id = text_id;
+    element.component.text_value = text_value;
+    element.component.num_elements = num_elements;
+    element.component.elements = elements;
 
     // Optional fields
+    element.component.comment = NULL;
+    element.component.use_pickplace = false;
+    element.component.package = NULL;
+    element.component.rotation = 0;
 
     return element;
 }
@@ -261,11 +270,20 @@ sprint_error sprint_element_destroy(sprint_element* element)
             break;
 
         case SPRINT_ELEMENT_COMPONENT:
+            // Free the elements
+            element->component.num_elements = 0;
+            if (element->component.elements != NULL) {
+                free(element->component.elements);
+                element->component.elements = NULL;
+            }
             break;
+
         case SPRINT_ELEMENT_GROUP:
             break;
+
         default:
-            break;
+            // Unknown elements cannot be freed
+            return SPRINT_ERROR_ARGUMENT_RANGE;
     }
 
     // Free the entire element
