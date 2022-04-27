@@ -11,6 +11,24 @@
 #include "libsprintpcb/elements.h"
 
 int main() {
+    sprint_element circle = sprint_circle_create(
+            SPRINT_LAYER_MECHANICAL,
+            10,
+            sprint_tuple_of(10, 20),
+            10);
+
+    printf("layer: %d\n", circle.circle.layer);
+    printf("width: %d\n", circle.circle.width);
+    printf("center: %d\n", circle.circle.center);
+    printf("radius: %d\n", circle.circle.radius);
+    printf("(clear): %d\n", circle.circle.clear);
+    printf("(cutout): %d\n", circle.circle.cutout);
+    printf("(soldermask): %d\n", circle.circle.soldermask);
+    printf("(start): %d\n", circle.circle.start);
+    printf("(stop): %d\n", circle.circle.stop);
+    printf("(fill): %d\n\n", circle.circle.fill);
+    sprint_element_destroy(&circle);
+
     sprint_tuple tuple1, tuple2;
     tuple1.x = 1;
     tuple1.y = 2;
