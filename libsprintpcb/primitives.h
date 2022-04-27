@@ -7,6 +7,8 @@
 #ifndef SPRINTPCB_PRIMITIVES_H
 #define SPRINTPCB_PRIMITIVES_H
 
+#include <math.h>
+
 typedef enum {
     // The top copper layer (C1)
     SPRINT_LAYER_COPPER_TOP = 1,
@@ -31,21 +33,33 @@ typedef enum {
 } sprint_layer;
 
 typedef signed int sprint_dist;
-const sprint_dist SPRINT_DIST_PER_MM    = 10000;
-const sprint_dist SPRINT_DIST_MAX       = 500 * SPRINT_DIST_PER_MM;
-const sprint_dist SPRINT_DIST_MIN       = -SPRINT_DIST_MAX;
+extern const sprint_dist SPRINT_DIST_PER_UM;
+extern const sprint_dist SPRINT_DIST_PER_MM;
+extern const sprint_dist SPRINT_DIST_PER_CM;
+extern const sprint_dist SPRINT_DIST_PER_TH;
+extern const sprint_dist SPRINT_DIST_PER_IN;
+extern const sprint_dist SPRINT_DIST_MAX;
+extern const sprint_dist SPRINT_DIST_MIN;
+#define sprint_dist_um(d) ((sprint_dist)((d) * SPRINT_DIST_PER_UM))
+#define sprint_dist_mm(d) ((sprint_dist)((d) * SPRINT_DIST_PER_MM))
+#define sprint_dist_cm(d) ((sprint_dist)((d) * SPRINT_DIST_PER_CM))
+#define sprint_dist_th(d) ((sprint_dist)((d) * SPRINT_DIST_PER_TH))
+#define sprint_dist_in(d) ((sprint_dist)((d) * SPRINT_DIST_PER_IN))
 
 typedef signed int sprint_angle;
-const sprint_angle SPRINT_ANGLE_WHOLE   = 1;
-const sprint_angle SPRINT_ANGLE_COARSE  = 100;
-const sprint_angle SPRINT_ANGLE_FINE    = 1000;
-const sprint_angle SPRINT_ANGLE_NATIVE  = SPRINT_ANGLE_FINE;
-const sprint_angle SPRINT_ANGLE_MAX     = 360 * SPRINT_ANGLE_NATIVE;
-const sprint_angle SPRINT_ANGLE_MIN     = -SPRINT_DIST_MAX;
+extern const sprint_angle SPRINT_ANGLE_WHOLE;
+extern const sprint_angle SPRINT_ANGLE_COARSE;
+extern const sprint_angle SPRINT_ANGLE_FINE;
+extern const sprint_angle SPRINT_ANGLE_NATIVE;
+extern const sprint_angle SPRINT_ANGLE_MAX;
+extern const sprint_angle SPRINT_ANGLE_MIN;
+#define sprint_angle_deg(a) ((sprint_angle)((a) * SPRINT_ANGLE_NATIVE))
+#define sprint_angle_rad(r) sprint_angle_deg((r) * M_PI / 180d)
 
 typedef struct {
     int x;
     int y;
 } sprint_tuple;
+sprint_tuple sprint_tuple_of(int x, int y);
 
 #endif //SPRINTPCB_PRIMITIVES_H
