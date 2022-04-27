@@ -4,8 +4,10 @@
 // Licensed under the terms and conditions of the GPLv3.
 //
 
+#include "errors.h"
 #include "primitives.h"
 
+#include <stdio.h>
 #include <string.h>
 
 const sprint_dist SPRINT_DIST_PER_UM    = 10;
@@ -31,4 +33,16 @@ sprint_tuple sprint_tuple_of(int x, int y)
     tuple.x = x;
     tuple.y = y;
     return tuple;
+}
+
+sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream)
+{
+    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    return fprintf(stream, "%d/%d", tuple->x, tuple->y) < 3 ? SPRINT_ERROR_IO : SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_tuple_string(sprint_tuple* tuple, FILE* stream, int capacity)
+{
+    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    return fprintf(stream, "%d/%d", tuple->x, tuple->y) < 3 ? SPRINT_ERROR_IO : SPRINT_ERROR_NONE;
 }

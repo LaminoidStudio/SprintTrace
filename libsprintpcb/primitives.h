@@ -7,7 +7,10 @@
 #ifndef SPRINTPCB_PRIMITIVES_H
 #define SPRINTPCB_PRIMITIVES_H
 
+#include "errors.h"
+
 #include <math.h>
+#include <stdio.h>
 
 typedef enum {
     // The top copper layer (C1)
@@ -61,5 +64,6 @@ typedef struct {
     int y;
 } sprint_tuple;
 sprint_tuple sprint_tuple_of(int x, int y);
+sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* file);
 
 #endif //SPRINTPCB_PRIMITIVES_H
