@@ -24,7 +24,7 @@ int main() {
     sprint_stringbuilder_format(builder, "width: %d\n", circle.circle.width);
 
     sprint_stringbuilder_format(builder, "center: ");
-    //sprint_tuple_print(&circle.circle.center, stdout);
+    sprint_tuple_string(&circle.circle.center, builder);
     sprint_stringbuilder_format(builder, "\n");
     sprint_stringbuilder_format(builder, "radius: %d\n", circle.circle.radius);
     sprint_stringbuilder_format(builder, "(clear): %d\n", circle.circle.clear);
@@ -35,9 +35,7 @@ int main() {
     sprint_stringbuilder_format(builder, "(fill): %d\n\n", circle.circle.fill);
     sprint_element_destroy(&circle);
 
-    char* message = sprint_stringbuilder_complete(builder);
-    puts(message);
-    free(message);
+    sprint_stringbuilder_flush(builder, stdout);
 
     sprint_tuple tuple1, tuple2;
     tuple1.x = 1;
