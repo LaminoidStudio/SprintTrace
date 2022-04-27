@@ -230,11 +230,26 @@ sprint_error sprint_element_destroy(sprint_element* element)
             break;
 
         case SPRINT_ELEMENT_ZONE:
+            // Free the points
+            element->zone.num_points = 0;
+            if (element->zone.points != NULL) {
+                free(element->zone.points);
+                element->zone.points = NULL;
+            }
             break;
+
         case SPRINT_ELEMENT_TEXT:
+            // Free the text
+            if (element->text.text != NULL) {
+                free(element->text.text);
+                element->text.text = NULL;
+            }
             break;
+
         case SPRINT_ELEMENT_CIRCLE:
+            // Do nothing
             break;
+
         case SPRINT_ELEMENT_COMPONENT:
             break;
         case SPRINT_ELEMENT_GROUP:
