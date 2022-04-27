@@ -1,6 +1,0 @@
-#ifndef LIBSPRINTPCB_LIBRARY_H
-#define LIBSPRINTPCB_LIBRARY_H
-
-void hello(void);
-
-#endif //LIBSPRINTPCB_LIBRARY_H
