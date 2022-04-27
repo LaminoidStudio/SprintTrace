@@ -154,12 +154,26 @@ sprint_error sprint_element_destroy(sprint_element* element)
                 free(element->track.points);
                 element->track.points = NULL;
             }
+            break;
 
-            break;
         case SPRINT_ELEMENT_PAD_THT:
+            // Free the connections
+            element->pad_tht.link.num_connections = 0;
+            if (element->pad_tht.link.connections != NULL) {
+                free(element->pad_tht.link.connections);
+                element->pad_tht.link.connections = NULL;
+            }
             break;
+
         case SPRINT_ELEMENT_PAD_SMT:
+            // Free the connections
+            element->pad_smt.link.num_connections = 0;
+            if (element->pad_smt.link.connections != NULL) {
+                free(element->pad_smt.link.connections);
+                element->pad_smt.link.connections = NULL;
+            }
             break;
+
         case SPRINT_ELEMENT_ZONE:
             break;
         case SPRINT_ELEMENT_TEXT:
