@@ -4,8 +4,8 @@
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#include "errors.h"
 #include "list.h"
+#include "errors.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -46,7 +46,7 @@ sprint_error sprint_list_add(sprint_list* list, void* element)
     // If the list is not initialized or the capacity is insufficient, grow the list
     if (list->elements == NULL || list->count + 1 >= list->capacity) {
         // When growing the list, double its count every time it has to be expanded
-        int new_capacity = list->capacity << 1;
+        int new_capacity = list->capacity * 2;
         if (new_capacity < list->capacity) return SPRINT_ERROR_OVERFLOW;
         sprint_error error = sprint_list_grow(list, new_capacity);
         if (error != SPRINT_ERROR_NONE) return error;
