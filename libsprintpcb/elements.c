@@ -50,24 +50,17 @@ sprint_element sprint_pad_tht_create(sprint_layer layer, sprint_tuple position, 
     element.pad_tht.drill = drill;
     element.pad_tht.form = form;
 
-            // Required
-
-
-
-    // Optional
-    bool ;
-    int pad_id;
-    int num_connections;
-    int* connections;
-
-    sprint_dist clear;
-    bool soldermask;
-    sprint_angle rotation;
-    bool via;
-    bool thermal;
-    int thermal_tracks;
-    unsigned int thermal_tracks_width;
-    bool thermal_tracks_individual;
+    // Optional fields
+    element.pad_tht.link.has_id = false;
+    element.pad_tht.link.num_connections = 0;
+    element.pad_tht.clear = 4000;
+    element.pad_tht.soldermask = true;
+    element.pad_tht.rotation = 0;
+    element.pad_tht.via = false;
+    element.pad_tht.thermal = false;
+    element.pad_tht.thermal_tracks = 0;
+    element.pad_tht.thermal_tracks_width = 100;
+    element.pad_tht.thermal_tracks_individual = false;
 
     return element;
 }
