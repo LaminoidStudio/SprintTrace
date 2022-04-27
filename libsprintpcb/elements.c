@@ -91,13 +91,26 @@ sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, 
     return element;
 }
 
-sprint_element sprint_zone_create()
+sprint_element sprint_zone_create(sprint_layer layer, sprint_dist width, int num_points, sprint_tuple* points)
 {
+    // todo input checking
+
     sprint_element element;
     memset(&element, 0, sizeof(element));
     element.type = SPRINT_ELEMENT_ZONE;
 
-    //element.track
+    // Required fields
+    element.zone.layer = layer;
+    element.zone.width = width;
+    element.zone.num_points = num_points;
+    element.zone.points = points;
+
+    // Optional fields
+    element.zone.clear = 4000;
+    element.zone.cutout = false;
+    element.zone.soldermask = false;
+    element.zone.hatch = false;
+    element.zone.hatch_auto = true;
 
     return element;
 }
