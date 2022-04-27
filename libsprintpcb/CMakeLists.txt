@@ -3,4 +3,4 @@ project(libsprintpcb C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_library(libsprintpcb library.c)
+add_library(libsprintpcb errors.h slicer.c slicer.h state.h elements.h primitives.c primitives.h elements.c list.c list.h)
