@@ -5,10 +5,12 @@
 //
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "libsprintpcb/list.h"
 #include "libsprintpcb/primitives.h"
 #include "libsprintpcb/elements.h"
+#include "libsprintpcb/stringbuilder.h"
 
 int main() {
     sprint_element circle = sprint_circle_create(
@@ -17,17 +19,25 @@ int main() {
             sprint_tuple_of(10, 20),
             10);
 
-    printf("layer: %d\n", circle.circle.layer);
-    printf("width: %d\n", circle.circle.width);
-    printf("center: %d\n", circle.circle.center);
-    printf("radius: %d\n", circle.circle.radius);
-    printf("(clear): %d\n", circle.circle.clear);
-    printf("(cutout): %d\n", circle.circle.cutout);
-    printf("(soldermask): %d\n", circle.circle.soldermask);
-    printf("(start): %d\n", circle.circle.start);
-    printf("(stop): %d\n", circle.circle.stop);
-    printf("(fill): %d\n\n", circle.circle.fill);
+    sprint_stringbuilder* builder = sprint_stringbuilder_of("Circle and builder test:\n");
+    sprint_stringbuilder_format(builder, "layer: %d\n", circle.circle.layer);
+    sprint_stringbuilder_format(builder, "width: %d\n", circle.circle.width);
+
+    sprint_stringbuilder_format(builder, "center: ");
+    //sprint_tuple_print(&circle.circle.center, stdout);
+    sprint_stringbuilder_format(builder, "\n");
+    sprint_stringbuilder_format(builder, "radius: %d\n", circle.circle.radius);
+    sprint_stringbuilder_format(builder, "(clear): %d\n", circle.circle.clear);
+    sprint_stringbuilder_format(builder, "(cutout): %d\n", circle.circle.cutout);
+    sprint_stringbuilder_format(builder, "(soldermask): %d\n", circle.circle.soldermask);
+    sprint_stringbuilder_format(builder, "(start): %d\n", circle.circle.start);
+    sprint_stringbuilder_format(builder, "(stop): %d\n", circle.circle.stop);
+    sprint_stringbuilder_format(builder, "(fill): %d\n\n", circle.circle.fill);
     sprint_element_destroy(&circle);
+
+    char* message = sprint_stringbuilder_complete(builder);
+    puts(message);
+    free(message);
 
     sprint_tuple tuple1, tuple2;
     tuple1.x = 1;
