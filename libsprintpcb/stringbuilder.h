@@ -10,6 +10,7 @@
 #include "errors.h"
 
 #include <stdarg.h>
+#include <stdio.h>
 
 // Represents a string builder similar to StringBuilder in Java
 typedef struct {
@@ -25,27 +26,36 @@ typedef struct {
 
 sprint_stringbuilder* sprint_stringbuilder_create(int capacity);
 
-sprint_stringbuilder* sprint_stringbuilder_of(char* content);
+sprint_stringbuilder* sprint_stringbuilder_of(const char* content);
 
 sprint_error sprint_stringbuilder_destroy(sprint_stringbuilder* builder);
 
 char* sprint_stringbuilder_complete(sprint_stringbuilder* builder);
 
+sprint_error sprint_stringbuilder_flush(sprint_stringbuilder* builder, FILE* stream);
+
 sprint_error sprint_stringbuilder_format(sprint_stringbuilder* builder, const char* format, ...);
 
-sprint_error sprint_stringbuilder_putc(sprint_stringbuilder* builder, char chr);
+sprint_error sprint_stringbuilder_put(sprint_stringbuilder* builder, sprint_stringbuilder* source);
 
-sprint_error sprint_stringbuilder_puts(sprint_stringbuilder* builder, char* str);
+sprint_error sprint_stringbuilder_put_range(sprint_stringbuilder* builder, sprint_stringbuilder* source,
+                                            int start, int length);
 
-sprint_error sprint_stringbuilder_putd(sprint_stringbuilder* builder, int num);
+sprint_error sprint_stringbuilder_put_chr(sprint_stringbuilder* builder, char chr);
 
-sprint_error sprint_stringbuilder_putb(sprint_stringbuilder* builder, sprint_stringbuilder* source);
+sprint_error sprint_stringbuilder_put_str(sprint_stringbuilder* builder, const char* str);
+
+sprint_error sprint_stringbuilder_put_int(sprint_stringbuilder* builder, int num);
+
+sprint_error sprint_stringbuilder_put_hex(sprint_stringbuilder* builder, int num);
 
 char* sprint_stringbuilder_substr(sprint_stringbuilder* builder, int start, int length);
 
-sprint_error sprint_stringbuilder_at(sprint_stringbuilder* builder, int position);
+sprint_error sprint_stringbuilder_at(sprint_stringbuilder* builder, char* result, int position);
 
-sprint_error sprint_stringbuilder_remove(sprint_stringbuilder* builder, int tail);
+sprint_error sprint_stringbuilder_remove_start(sprint_stringbuilder* builder, int length);
+
+sprint_error sprint_stringbuilder_remove_end(sprint_stringbuilder* builder, int length);
 
 sprint_error sprint_stringbuilder_clear(sprint_stringbuilder* builder);
 
