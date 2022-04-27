@@ -81,6 +81,14 @@ void* sprint_list_remove(sprint_list* list)
     return list->elements + list->size * list->count;
 }
 
+sprint_error sprint_list_clear(sprint_list* list)
+{
+    if (list == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    list->size = 0;
+    return SPRINT_ERROR_NONE;
+}
+
 sprint_error sprint_list_grow(sprint_list* list, int capacity)
 {
     if (list == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
