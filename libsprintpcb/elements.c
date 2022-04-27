@@ -145,7 +145,7 @@ sprint_element sprint_text_create(sprint_text_type type, sprint_layer layer, spr
     return element;
 }
 
-sprint_element sprint_circle_create()
+sprint_element sprint_circle_create(sprint_layer layer, sprint_dist width, sprint_tuple center, sprint_dist radius)
 {
     // todo input checking
 
@@ -154,8 +154,18 @@ sprint_element sprint_circle_create()
     element.type = SPRINT_ELEMENT_CIRCLE;
 
     // Required fields
+    element.circle.layer = layer;
+    element.circle.width = width;
+    element.circle.center = center;
+    element.circle.radius = radius;
 
     // Optional fields
+    element.circle.clear = 4000;
+    element.circle.cutout = false;
+    element.circle.soldermask = false;
+    element.circle.start = 0;
+    element.circle.stop = 0;
+    element.circle.fill = false;
 
     return element;
 }
