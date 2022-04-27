@@ -4,8 +4,9 @@
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#include "errors.h"
 #include "primitives.h"
+#include "errors.h"
+#include "stringbuilder.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -37,12 +38,11 @@ sprint_tuple sprint_tuple_of(int x, int y)
 
 sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    return fprintf(stream, "%d/%d", tuple->x, tuple->y) < 3 ? SPRINT_ERROR_IO : SPRINT_ERROR_NONE;
+    return sprint_stringbuilder_flush(sprint_stringbuilder_create(16), stream);
 }
 
-sprint_error sprint_tuple_string(sprint_tuple* tuple, FILE* stream, int capacity)
+sprint_error sprint_tuple_string(sprint_tuple* tuple, sprint_stringbuilder* builder)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    return fprintf(stream, "%d/%d", tuple->x, tuple->y) < 3 ? SPRINT_ERROR_IO : SPRINT_ERROR_NONE;
+    if (tuple == NULL || builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    return sprint_stringbuilder_format(builder, "%d/%d", tuple->x, tuple->y);
 }

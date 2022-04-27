@@ -8,6 +8,7 @@
 #define SPRINTPCB_PRIMITIVES_H
 
 #include "errors.h"
+#include "stringbuilder.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -64,6 +65,7 @@ typedef struct {
     int y;
 } sprint_tuple;
 sprint_tuple sprint_tuple_of(int x, int y);
-sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* file);
+sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream);
+sprint_error sprint_tuple_string(sprint_tuple* tuple, sprint_stringbuilder* builder);
 
 #endif //SPRINTPCB_PRIMITIVES_H
