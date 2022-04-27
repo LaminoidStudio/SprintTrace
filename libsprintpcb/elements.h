@@ -144,8 +144,8 @@ typedef struct {
     sprint_text_type type;
     sprint_layer layer;
     sprint_tuple position;
-    char* text;
     sprint_dist height;
+    char* text;
 
     sprint_dist clear;
     bool cutout;

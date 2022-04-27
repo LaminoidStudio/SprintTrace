@@ -115,24 +115,79 @@ sprint_element sprint_zone_create(sprint_layer layer, sprint_dist width, int num
     return element;
 }
 
-sprint_element sprint_text_create()
+sprint_element sprint_text_create(sprint_text_type type, sprint_layer layer, sprint_tuple position,
+                                  sprint_dist height, char* text)
 {
+    // todo input checking
 
+    sprint_element element;
+    memset(&element, 0, sizeof(element));
+    element.type = SPRINT_ELEMENT_TEXT;
+
+    // Required fields
+    element.text.type = type;
+    element.text.layer = layer;
+    element.text.position = position;
+    element.text.height = height;
+    element.text.text = text;
+
+    // Optional fields
+    element.text.clear = 4000;
+    element.text.cutout = false;
+    element.text.soldermask = false;
+    element.text.style = SPRINT_TEXT_STYLE_REGULAR;
+    element.text.thickness = SPRINT_TEXT_THICKNESS_REGULAR;
+    element.text.rotation = 0;
+    element.text.mirror_horizontal = false;
+    element.text.mirror_vertical = false;
+    element.text.visible = true;
+
+    return element;
 }
 
 sprint_element sprint_circle_create()
 {
+    // todo input checking
 
+    sprint_element element;
+    memset(&element, 0, sizeof(element));
+    element.type = SPRINT_ELEMENT_CIRCLE;
+
+    // Required fields
+
+    // Optional fields
+
+    return element;
 }
 
 sprint_element sprint_component_create()
 {
+    // todo input checking
 
+    sprint_element element;
+    memset(&element, 0, sizeof(element));
+    element.type = SPRINT_ELEMENT_COMPONENT;
+
+    // Required fields
+
+    // Optional fields
+
+    return element;
 }
 
 sprint_element sprint_group_create()
 {
+    // todo input checking
 
+    sprint_element element;
+    memset(&element, 0, sizeof(element));
+    element.type = SPRINT_ELEMENT_GROUP;
+
+    // Required fields
+
+    // Optional fields
+
+    return element;
 }
 
 sprint_error sprint_element_destroy(sprint_element* element)
@@ -190,6 +245,5 @@ sprint_error sprint_element_destroy(sprint_element* element)
 
     // Free the entire element
     free(element);
-
-    return element == NULL ? SPRINT_ERROR_ARGUMENT_NULL : SPRINT_ERROR_NONE;
+    return SPRINT_ERROR_NONE;
 }
