@@ -194,7 +194,7 @@ sprint_element sprint_component_create(sprint_text* text_id, sprint_text* text_v
     return element;
 }
 
-sprint_element sprint_group_create()
+sprint_element sprint_group_create(int num_elements, sprint_element* elements)
 {
     // todo input checking
 
@@ -203,8 +203,8 @@ sprint_element sprint_group_create()
     element.type = SPRINT_ELEMENT_GROUP;
 
     // Required fields
-
-    // Optional fields
+    element.group.num_elements = num_elements;
+    element.group.elements = elements;
 
     return element;
 }
@@ -279,6 +279,12 @@ sprint_error sprint_element_destroy(sprint_element* element)
             break;
 
         case SPRINT_ELEMENT_GROUP:
+            // Free the elements
+            element->group.num_elements = 0;
+            if (element->group.elements != NULL) {
+                free(element->group.elements);
+                element->group.elements = NULL;
+            }
             break;
 
         default:
