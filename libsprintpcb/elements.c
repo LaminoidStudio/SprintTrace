@@ -270,11 +270,35 @@ sprint_error sprint_element_destroy(sprint_element* element)
             break;
 
         case SPRINT_ELEMENT_COMPONENT:
+            // Free the ID text
+            if (element->component.text_id != NULL) {
+                free(element->component.text_id);
+                element->component.text_id = NULL;
+            }
+
+            // Free the value text
+            if (element->component.text_value != NULL) {
+                free(element->component.text_value);
+                element->component.text_value = NULL;
+            }
+
             // Free the elements
             element->component.num_elements = 0;
             if (element->component.elements != NULL) {
                 free(element->component.elements);
                 element->component.elements = NULL;
+            }
+
+            // Free the comment
+            if (element->component.comment != NULL) {
+                free(element->component.comment);
+                element->component.comment = NULL;
+            }
+
+            // Free the package
+            if (element->component.package != NULL) {
+                free(element->component.package);
+                element->component.package = NULL;
             }
             break;
 
