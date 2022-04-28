@@ -16,17 +16,26 @@ int main() {
     sprint_element circle = sprint_circle_create(
             SPRINT_LAYER_MECHANICAL,
             10,
-            sprint_tuple_of(10, 20),
+            sprint_tuple_of(sprint_dist_um(1), sprint_dist_um(20)),
             10);
+
+    sprint_prim_format format = SPRINT_PRIM_FORMAT_DIST_UM;
 
     sprint_stringbuilder* builder = sprint_stringbuilder_of("Circle and builder test:\n");
     sprint_stringbuilder_format(builder, "layer: %d\n", circle.circle.layer);
-    sprint_stringbuilder_format(builder, "width: %d\n", circle.circle.width);
 
-    sprint_stringbuilder_format(builder, "center: ");
-    sprint_tuple_string(&circle.circle.center, builder);
-    sprint_stringbuilder_format(builder, "\n");
-    sprint_stringbuilder_format(builder, "radius: %d\n", circle.circle.radius);
+    sprint_stringbuilder_put_str(builder, "width: ");
+    sprint_dist_string(circle.circle.width, builder, format);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
+    sprint_stringbuilder_put_str(builder, "center: ");
+    sprint_tuple_string(&circle.circle.center, builder, format);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
+    sprint_stringbuilder_put_str(builder, "radius: ");
+    sprint_dist_string(circle.circle.radius, builder, format);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
     sprint_stringbuilder_format(builder, "(clear): %d\n", circle.circle.clear);
     sprint_stringbuilder_format(builder, "(cutout): %d\n", circle.circle.cutout);
     sprint_stringbuilder_format(builder, "(soldermask): %d\n", circle.circle.soldermask);
