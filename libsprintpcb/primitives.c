@@ -115,9 +115,62 @@ const sprint_angle SPRINT_ANGLE_WHOLE   = 1;
 const sprint_angle SPRINT_ANGLE_COARSE  = 100;
 const sprint_angle SPRINT_ANGLE_FINE    = 1000;
 const sprint_angle SPRINT_ANGLE_NATIVE  = SPRINT_ANGLE_FINE;
+const int SPRINT_ANGLE_PRECISION        = 3;
 const sprint_angle SPRINT_ANGLE_MAX     = 360 * SPRINT_ANGLE_NATIVE;
 const sprint_angle SPRINT_ANGLE_MIN     = -SPRINT_DIST_MAX;
 
+sprint_error sprint_angle_print(sprint_angle angle, FILE* stream, sprint_prim_format format)
+{
+    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
+    sprint_error error = sprint_angle_string(angle, builder, format);
+    if (error == SPRINT_ERROR_NONE)
+        return sprint_stringbuilder_flush(builder, stream);
+
+    sprint_stringbuilder_destroy(builder);
+    return error;
+}
+
+sprint_error sprint_angle_string(sprint_angle angle, sprint_stringbuilder* builder, sprint_prim_format format)
+{
+    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Keep track of encountered errors and then restore the initial builder count
+    sprint_error error;
+    int initial_count = builder->count;
+
+    // Write the string based on the format
+    switch (format) {
+        case SPRINT_PRIM_FORMAT_RAW:
+            return sprint_stringbuilder_put_int(builder, angle);
+
+        case SPRINT_PRIM_FORMAT_COOKED:
+            // Append the integer part and decimal point
+            error = sprint_stringbuilder_format(builder, "%d.", angle / SPRINT_ANGLE_NATIVE);
+            if (error != SPRINT_ERROR_NONE) {
+                builder->count = initial_count;
+                return error;
+            }
+
+            // Append the mantissa part
+            error = sprint_stringbuilder_put_padded(builder, abs(angle % SPRINT_ANGLE_NATIVE),
+                                                    false, true, SPRINT_ANGLE_PRECISION);
+            if (error != SPRINT_ERROR_NONE) {
+                builder->count = initial_count;
+                return error;
+            }
+
+            // Append the unit suffix
+            error = sprint_stringbuilder_put_str(builder, "deg");
+            if (error != SPRINT_ERROR_NONE) {
+                builder->count = initial_count;
+                return error;
+            }
+            return SPRINT_ERROR_NONE;
+
+        default:
+            return SPRINT_ERROR_ARGUMENT_RANGE;
+    }
+}
 
 sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y)
 {

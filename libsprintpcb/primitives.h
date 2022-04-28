@@ -71,6 +71,8 @@ extern const sprint_angle SPRINT_ANGLE_MAX;
 extern const sprint_angle SPRINT_ANGLE_MIN;
 #define sprint_angle_deg(a) ((sprint_angle)((a) * SPRINT_ANGLE_NATIVE))
 #define sprint_angle_rad(r) sprint_angle_deg((r) * M_PI / 180d)
+sprint_error sprint_angle_print(sprint_angle angle, FILE* stream, sprint_prim_format format);
+sprint_error sprint_angle_string(sprint_angle angle, sprint_stringbuilder* builder, sprint_prim_format format);
 
 typedef struct {
     sprint_dist x;
