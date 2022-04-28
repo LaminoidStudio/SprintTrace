@@ -9,6 +9,7 @@
 
 #include "errors.h"
 
+#include <stdbool.h>
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -48,6 +49,8 @@ sprint_error sprint_stringbuilder_put_str(sprint_stringbuilder* builder, const c
 sprint_error sprint_stringbuilder_put_int(sprint_stringbuilder* builder, int num);
 
 sprint_error sprint_stringbuilder_put_hex(sprint_stringbuilder* builder, int num);
+
+sprint_error sprint_stringbuilder_put_padded(sprint_stringbuilder* builder, int num, bool hex, bool zero, int width);
 
 char* sprint_stringbuilder_substr(sprint_stringbuilder* builder, int start, int length);
 

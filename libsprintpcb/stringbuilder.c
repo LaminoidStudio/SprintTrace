@@ -206,6 +206,21 @@ sprint_error sprint_stringbuilder_put_hex(sprint_stringbuilder* builder, int num
     return sprint_stringbuilder_format(builder, "%x", num);
 }
 
+sprint_error sprint_stringbuilder_put_padded(sprint_stringbuilder* builder, int num, bool hex, bool zero, int width)
+{
+    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (width < 1 || width > 999) return SPRINT_ERROR_ARGUMENT_RANGE;
+
+    // Allocate a buffer with enough space to hold the longest format plus null (%0999d\0) and build the format
+    char format[7];
+    int format_size = snprintf(format, sizeof(format), zero ? "%%0%d%c" : "%%%d%c", width, hex ? 'x' : 'd');
+    if (format_size < 0 || format_size >= sizeof(format))
+        return SPRINT_ERROR_ASSERTION;
+
+    // Finally, use the constructed format to format the number
+    return sprint_stringbuilder_format(builder, format, num);
+}
+
 sprint_error sprint_stringbuilder_at(sprint_stringbuilder* builder, char* result, int position)
 {
     if (builder == NULL || result == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
