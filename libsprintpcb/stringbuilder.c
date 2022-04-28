@@ -100,23 +100,21 @@ sprint_error sprint_stringbuilder_format(sprint_stringbuilder* builder, const ch
     va_list args;
     va_start(args, format);
     int additional_length = vsnprintf(NULL, 0, format, args);
-    if (additional_length < 0) {
-        va_end(args);
+    va_end(args);
+    if (additional_length < 0)
         return SPRINT_ERROR_ARGUMENT_FORMAT;
-    }
 
     // Grow the buffer to fit the new content
     int minimum_capacity = builder->count + additional_length;
     if (builder->content == NULL || minimum_capacity >= builder->capacity)
     {
         sprint_error error = sprint_stringbuilder_grow(builder, builder->capacity * 2 + minimum_capacity);
-        if (error != SPRINT_ERROR_NONE) {
-            va_end(args);
+        if (error != SPRINT_ERROR_NONE)
             return error;
-        }
     }
 
     // Actually write the formatted content
+    va_start(args, format);
     int written_length = vsnprintf(builder->content + builder->count, builder->capacity + 1, format, args);
     va_end(args);
     if (written_length != additional_length)
