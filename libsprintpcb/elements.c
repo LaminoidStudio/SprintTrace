@@ -316,7 +316,5 @@ sprint_error sprint_element_destroy(sprint_element* element)
             return SPRINT_ERROR_ARGUMENT_RANGE;
     }
 
-    // Free the entire element
-    free(element);
     return SPRINT_ERROR_NONE;
 }
