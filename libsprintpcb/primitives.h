@@ -36,6 +36,16 @@ typedef enum {
     SPRINT_LAYER_MECHANICAL
 } sprint_layer;
 
+typedef enum {
+    SPRINT_PRIM_FORMAT_RAW,
+    SPRINT_PRIM_FORMAT_COOKED,
+    SPRINT_PRIM_FORMAT_DIST_UM,
+    SPRINT_PRIM_FORMAT_DIST_MM,
+    SPRINT_PRIM_FORMAT_DIST_CM,
+    SPRINT_PRIM_FORMAT_DIST_TH,
+    SPRINT_PRIM_FORMAT_DIST_IN
+} sprint_prim_format;
+
 typedef signed int sprint_dist;
 extern const sprint_dist SPRINT_DIST_PER_UM;
 extern const sprint_dist SPRINT_DIST_PER_MM;
@@ -49,6 +59,8 @@ extern const sprint_dist SPRINT_DIST_MIN;
 #define sprint_dist_cm(d) ((sprint_dist)((d) * SPRINT_DIST_PER_CM))
 #define sprint_dist_th(d) ((sprint_dist)((d) * SPRINT_DIST_PER_TH))
 #define sprint_dist_in(d) ((sprint_dist)((d) * SPRINT_DIST_PER_IN))
+sprint_error sprint_dist_print(sprint_dist dist, FILE* stream, sprint_prim_format format);
+sprint_error sprint_dist_string(sprint_dist dist, sprint_stringbuilder* builder, sprint_prim_format format);
 
 typedef signed int sprint_angle;
 extern const sprint_angle SPRINT_ANGLE_WHOLE;
@@ -61,11 +73,11 @@ extern const sprint_angle SPRINT_ANGLE_MIN;
 #define sprint_angle_rad(r) sprint_angle_deg((r) * M_PI / 180d)
 
 typedef struct {
-    int x;
-    int y;
+    sprint_dist x;
+    sprint_dist y;
 } sprint_tuple;
-sprint_tuple sprint_tuple_of(int x, int y);
-sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream);
-sprint_error sprint_tuple_string(sprint_tuple* tuple, sprint_stringbuilder* builder);
+sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y);
+sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream, sprint_prim_format format);
+sprint_error sprint_tuple_string(sprint_tuple* tuple, sprint_stringbuilder* builder, sprint_prim_format format);
 
 #endif //SPRINTPCB_PRIMITIVES_H
