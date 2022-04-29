@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 sprint_error sprint_bool_print(bool val, FILE* stream)
 {
