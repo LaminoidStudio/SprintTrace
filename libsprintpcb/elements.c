@@ -316,5 +316,58 @@ sprint_error sprint_element_destroy(sprint_element* element)
             return SPRINT_ERROR_ARGUMENT_RANGE;
     }
 
+    // Finally, free the parsed element
+    free(element);
     return SPRINT_ERROR_NONE;
+}
+
+
+const char* SPRINT_ELEMENT_TYPE_NAMES[] = {
+        [SPRINT_ELEMENT_TRACK] = "track",
+        [SPRINT_ELEMENT_PAD_THT] = "THT pad",
+        [SPRINT_ELEMENT_PAD_SMT] = "SMT pad",
+        [SPRINT_ELEMENT_ZONE] = "zone",
+        [SPRINT_ELEMENT_TEXT] = "text",
+        [SPRINT_ELEMENT_CIRCLE] = "circle",
+        [SPRINT_ELEMENT_COMPONENT] = "component",
+        [SPRINT_ELEMENT_GROUP] = "group"
+};
+
+sprint_error sprint_element_type_print(sprint_element_type type, FILE* stream, sprint_prim_format format)
+{
+    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
+    if (builder == NULL)
+        return SPRINT_ERROR_OVERFLOW;
+
+    sprint_error error = sprint_element_type_string(type, builder, format);
+    if (error == SPRINT_ERROR_NONE)
+        return sprint_stringbuilder_flush(builder, stream);
+
+    sprint_stringbuilder_destroy(builder);
+    return error;
+}
+
+sprint_error sprint_element_type_string(sprint_element_type type, sprint_stringbuilder* builder,
+                                        sprint_prim_format format)
+{
+    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (type >= sizeof(SPRINT_ELEMENT_TYPE_NAMES) / sizeof(const char*)) return SPRINT_ERROR_ARGUMENT_RANGE;
+
+    // Write the string based on the format
+    const char* type_name;
+    switch (format) {
+        case SPRINT_PRIM_FORMAT_RAW:
+            return sprint_stringbuilder_put_int(builder, type);
+
+        case SPRINT_PRIM_FORMAT_COOKED:
+            type_name = SPRINT_ELEMENT_TYPE_NAMES[type];
+            if (type_name == NULL)
+                return SPRINT_ERROR_ARGUMENT_RANGE;
+            return sprint_stringbuilder_put_str(builder, type_name);
+
+        default:
+            return SPRINT_ERROR_ARGUMENT_RANGE;
+    }
 }

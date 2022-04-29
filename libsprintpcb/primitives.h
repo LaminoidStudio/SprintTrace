@@ -16,6 +16,9 @@
 sprint_error sprint_bool_print(bool val, FILE* stream);
 sprint_error sprint_bool_string(bool val, sprint_stringbuilder* builder);
 
+sprint_error sprint_int_print(int val, FILE* stream);
+sprint_error sprint_int_string(int val, sprint_stringbuilder* builder);
+
 typedef enum {
     SPRINT_PRIM_FORMAT_RAW,
     SPRINT_PRIM_FORMAT_COOKED,

@@ -223,24 +223,22 @@ struct sprint_element {
 };
 
 sprint_element sprint_track_create(sprint_layer layer, sprint_dist width, int num_points, sprint_tuple* points);
-
 sprint_element sprint_pad_tht_create(sprint_layer layer, sprint_tuple position, sprint_dist size,
                                      sprint_dist drill, sprint_pad_tht_form form);
-
 sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, sprint_tuple size);
-
 sprint_element sprint_zone_create(sprint_layer layer, sprint_dist width, int num_points, sprint_tuple* points);
-
 sprint_element sprint_text_create(sprint_text_type type, sprint_layer layer, sprint_tuple position,
                                   sprint_dist height, char* text);
-
 sprint_element sprint_circle_create(sprint_layer layer, sprint_dist width, sprint_tuple center, sprint_dist radius);
-
 sprint_element sprint_component_create(sprint_text* text_id, sprint_text* text_value,
                                        int num_elements, sprint_element* elements);
-
 sprint_element sprint_group_create(int num_elements, sprint_element* elements);
-
 sprint_error sprint_element_destroy(sprint_element* element);
+
+extern const char* SPRINT_ELEMENT_TYPE_NAMES[];
+
+sprint_error sprint_element_type_print(sprint_element_type type, FILE* stream, sprint_prim_format format);
+sprint_error sprint_element_type_string(sprint_element_type type, sprint_stringbuilder* builder,
+                                        sprint_prim_format format);
 
 #endif //SPRINTPCB_ELEMENTS_H
