@@ -33,7 +33,7 @@ sprint_error sprint_bool_string(bool val, sprint_stringbuilder* builder)
 }
 
 
-sprint_error sprint_str_print(char* str, FILE* stream, sprint_prim_format format)
+sprint_error sprint_str_print(const char* str, FILE* stream, sprint_prim_format format)
 {
     if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
@@ -46,7 +46,7 @@ sprint_error sprint_str_print(char* str, FILE* stream, sprint_prim_format format
     return error;
 }
 
-sprint_error sprint_str_string(char* str, sprint_stringbuilder* builder, sprint_prim_format format)
+sprint_error sprint_str_string(const char* str, sprint_stringbuilder* builder, sprint_prim_format format)
 {
     if (str == NULL || builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 

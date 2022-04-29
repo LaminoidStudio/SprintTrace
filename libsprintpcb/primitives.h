@@ -26,8 +26,8 @@ typedef enum {
     SPRINT_PRIM_FORMAT_DIST_IN
 } sprint_prim_format;
 
-sprint_error sprint_str_print(char* str, FILE* stream, sprint_prim_format format);
-sprint_error sprint_str_string(char* str, sprint_stringbuilder* builder, sprint_prim_format format);
+sprint_error sprint_str_print(const char* str, FILE* stream, sprint_prim_format format);
+sprint_error sprint_str_string(const char* str, sprint_stringbuilder* builder, sprint_prim_format format);
 
 typedef enum {
     // The top copper layer (C1)
