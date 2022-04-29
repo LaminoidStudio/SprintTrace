@@ -25,9 +25,10 @@ typedef struct sprint_slicer sprint_slicer;
 struct sprint_slicer {
     int line;
     int pos;
+    bool last_cr;
     sprint_error (*read)(sprint_slicer* slicer, char* result);
     union {
-        char* str;
+        const char* str;
         FILE* file;
     };
 };
