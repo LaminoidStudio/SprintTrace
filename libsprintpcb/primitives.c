@@ -9,9 +9,106 @@
 #include "stringbuilder.h"
 #include "slicer.h"
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+sprint_error sprint_bool_print(bool val, FILE* stream)
+{
+    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
+    sprint_error error = sprint_bool_string(val, builder);
+    if (error == SPRINT_ERROR_NONE)
+        return sprint_stringbuilder_flush(builder, stream);
+
+    sprint_stringbuilder_destroy(builder);
+    return error;
+}
+
+sprint_error sprint_bool_string(bool val, sprint_stringbuilder* builder)
+{
+    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    return sprint_stringbuilder_put_str(builder, val ? SPRINT_TRUE_VALUE : SPRINT_FALSE_VALUE);
+}
+
+
+sprint_error sprint_str_print(char* str, FILE* stream, sprint_prim_format format)
+{
+    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    sprint_stringbuilder* builder = sprint_stringbuilder_create(15);
+    sprint_error error = sprint_str_string(str, builder, format);
+    if (error == SPRINT_ERROR_NONE)
+        return sprint_stringbuilder_flush(builder, stream);
+
+    sprint_stringbuilder_destroy(builder);
+    return error;
+}
+
+sprint_error sprint_str_string(char* str, sprint_stringbuilder* builder, sprint_prim_format format)
+{
+    if (str == NULL || builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Write the string based on the format
+    switch (format) {
+        case SPRINT_PRIM_FORMAT_RAW:
+            return sprint_stringbuilder_format(builder, "%c%s%c",
+                                               SPRINT_STRING_DELIMITER, str, SPRINT_STRING_DELIMITER);
+
+        case SPRINT_PRIM_FORMAT_COOKED:
+            return sprint_stringbuilder_format(builder, "\"%s\"", str);
+
+        default:
+            return SPRINT_ERROR_ARGUMENT_RANGE;
+    }
+}
+
+
+const char* SPRINT_LAYER_NAMES[] = {
+        [SPRINT_LAYER_COPPER_TOP] = "top copper",
+        [SPRINT_LAYER_SILKSCREEN_TOP] = "top silkscreen",
+        [SPRINT_LAYER_COPPER_BOTTOM] = "bottom copper",
+        [SPRINT_LAYER_SILKSCREEN_BOTTOM] = "bottom silkscreen",
+        [SPRINT_LAYER_COPPER_INNER1] = "inner copper 1",
+        [SPRINT_LAYER_COPPER_INNER2] = "inner copper 2",
+        [SPRINT_LAYER_MECHANICAL] = "mechanical"
+};
+
+sprint_error sprint_layer_print(sprint_layer layer, FILE* stream, sprint_prim_format format)
+{
+    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
+    sprint_error error = sprint_layer_string(layer, builder, format);
+    if (error == SPRINT_ERROR_NONE)
+        return sprint_stringbuilder_flush(builder, stream);
+
+    sprint_stringbuilder_destroy(builder);
+    return error;
+}
+
+sprint_error sprint_layer_string(sprint_layer layer, sprint_stringbuilder* builder, sprint_prim_format format)
+{
+    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (layer >= sizeof(SPRINT_LAYER_NAMES) / sizeof(const char*)) return SPRINT_ERROR_ARGUMENT_RANGE;
+
+    // Write the string based on the format
+    const char* layer_name;
+    switch (format) {
+        case SPRINT_PRIM_FORMAT_RAW:
+            return sprint_stringbuilder_put_int(builder, layer);
+
+        case SPRINT_PRIM_FORMAT_COOKED:
+            layer_name = SPRINT_LAYER_NAMES[layer];
+            if (layer_name == NULL)
+                return SPRINT_ERROR_ARGUMENT_RANGE;
+            return sprint_stringbuilder_put_str(builder, layer_name);
+
+        default:
+            return SPRINT_ERROR_ARGUMENT_RANGE;
+    }
+}
 
 const sprint_dist SPRINT_DIST_PER_UM    = 10;
 const sprint_dist SPRINT_DIST_PER_MM    = SPRINT_DIST_PER_UM * 1000;
@@ -28,6 +125,8 @@ const sprint_dist SPRINT_DIST_MIN       = -SPRINT_DIST_MAX;
 
 sprint_error sprint_dist_print(sprint_dist dist, FILE* stream, sprint_prim_format format)
 {
+    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
     sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     sprint_error error = sprint_dist_string(dist, builder, format);
     if (error == SPRINT_ERROR_NONE)
@@ -121,6 +220,8 @@ const sprint_angle SPRINT_ANGLE_MIN     = -SPRINT_DIST_MAX;
 
 sprint_error sprint_angle_print(sprint_angle angle, FILE* stream, sprint_prim_format format)
 {
+    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
     sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     sprint_error error = sprint_angle_string(angle, builder, format);
     if (error == SPRINT_ERROR_NONE)
@@ -183,6 +284,8 @@ sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y)
 
 sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream, sprint_prim_format format)
 {
+    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
     sprint_stringbuilder* builder = sprint_stringbuilder_create(23);
     sprint_error error = sprint_tuple_string(tuple, builder, format);
     if (error == SPRINT_ERROR_NONE)

@@ -13,6 +13,22 @@
 #include <math.h>
 #include <stdio.h>
 
+sprint_error sprint_bool_print(bool val, FILE* stream);
+sprint_error sprint_bool_string(bool val, sprint_stringbuilder* builder);
+
+typedef enum {
+    SPRINT_PRIM_FORMAT_RAW,
+    SPRINT_PRIM_FORMAT_COOKED,
+    SPRINT_PRIM_FORMAT_DIST_UM,
+    SPRINT_PRIM_FORMAT_DIST_MM,
+    SPRINT_PRIM_FORMAT_DIST_CM,
+    SPRINT_PRIM_FORMAT_DIST_TH,
+    SPRINT_PRIM_FORMAT_DIST_IN
+} sprint_prim_format;
+
+sprint_error sprint_str_print(char* str, FILE* stream, sprint_prim_format format);
+sprint_error sprint_str_string(char* str, sprint_stringbuilder* builder, sprint_prim_format format);
+
 typedef enum {
     // The top copper layer (C1)
     SPRINT_LAYER_COPPER_TOP = 1,
@@ -35,16 +51,9 @@ typedef enum {
     // The mechanical outline layer (O)
     SPRINT_LAYER_MECHANICAL
 } sprint_layer;
-
-typedef enum {
-    SPRINT_PRIM_FORMAT_RAW,
-    SPRINT_PRIM_FORMAT_COOKED,
-    SPRINT_PRIM_FORMAT_DIST_UM,
-    SPRINT_PRIM_FORMAT_DIST_MM,
-    SPRINT_PRIM_FORMAT_DIST_CM,
-    SPRINT_PRIM_FORMAT_DIST_TH,
-    SPRINT_PRIM_FORMAT_DIST_IN
-} sprint_prim_format;
+extern const char* SPRINT_LAYER_NAMES[];
+sprint_error sprint_layer_print(sprint_layer layer, FILE* stream, sprint_prim_format format);
+sprint_error sprint_layer_string(sprint_layer layer, sprint_stringbuilder* builder, sprint_prim_format format);
 
 typedef signed int sprint_dist;
 extern const sprint_dist SPRINT_DIST_PER_UM;
