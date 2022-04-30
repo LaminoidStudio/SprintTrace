@@ -1,0 +1,15 @@
+//
+// Created by Benedikt on 30.04.2022.
+//
+
+#ifndef SPRINTPCB_NUKLEAR_H
+#define SPRINTPCB_NUKLEAR_H
+
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_STANDARD_VARARGS
+
+#include "Nuklear/nuklear.h"
+
+#endif //SPRINTPCB_NUKLEAR_H
