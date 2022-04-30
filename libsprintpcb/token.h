@@ -30,24 +30,41 @@ extern const char* SPRINT_FALSE_VALUE;
 
 typedef struct sprint_tokenizer sprint_tokenizer;
 
+typedef struct sprint_source_origin {
+    int line;
+    int pos;
+    const char* source;
+} sprint_source_origin;
+
 typedef enum sprint_token_type {
-    SPRINT_TOKEN_TYPE_
+    SPRINT_TOKEN_TYPE_WORD,
+    SPRINT_TOKEN_TYPE_NUMBER,
+    SPRINT_TOKEN_TYPE_STRING,
+    SPRINT_TOKEN_TYPE_VALUE_SEPARATOR,
+    SPRINT_TOKEN_TYPE_TUPLE_SEPARATOR,
+    SPRINT_TOKEN_TYPE_STATEMENT_SEPARATOR,
+    SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR
 } sprint_token_type;
 
 typedef struct sprint_token {
     sprint_token_type type;
-    char* value;
+    sprint_source_origin origin;
+    const char* value;
 } sprint_token;
 
 struct sprint_tokenizer {
-    int line;
-    int pos;
+    sprint_source_origin origin;
     bool last_cr;
-    sprint_error (*read)(sprint_tokenizer * tokenizer, char* result);
+    sprint_error (*read)(sprint_tokenizer* tokenizer, char* result);
+    bool (*close)(sprint_tokenizer* tokenizer);
     union {
         const char* str;
         FILE* file;
     };
 };
+
+sprint_tokenizer* sprint_tokenizer_from_str(const char* str, bool free);
+sprint_tokenizer* sprint_tokenizer_from_file(const char* path);
+sprint_error sprint_tokenizer_destroy(sprint_tokenizer* tokenizer);
 
 #endif //SPRINTPCB_TOKEN_H
