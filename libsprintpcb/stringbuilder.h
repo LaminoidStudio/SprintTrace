@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 // Represents a string builder similar to StringBuilder in Java
-typedef struct {
+typedef struct sprint_stringbuilder {
     // The number of characters in this builder
     int count;
 

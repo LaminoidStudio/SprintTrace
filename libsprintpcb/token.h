@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-typedef enum {
+typedef enum sprint_tokenizer_state {
     SPRINT_SLICER_STATE_SCANNING,
     SPRINT_SLICER_STATE_IDENTIFIER,
     SPRINT_SLICER_STATE_VALUE_START,
@@ -30,11 +30,11 @@ extern const char* SPRINT_FALSE_VALUE;
 
 typedef struct sprint_tokenizer sprint_tokenizer;
 
-typedef enum {
+typedef enum sprint_token_type {
     SPRINT_TOKEN_TYPE_
 } sprint_token_type;
 
-typedef struct {
+typedef struct sprint_token {
     sprint_token_type type;
     char* value;
 } sprint_token;

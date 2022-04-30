@@ -19,7 +19,7 @@ sprint_error sprint_bool_string(bool val, sprint_stringbuilder* builder);
 sprint_error sprint_int_print(int val, FILE* stream);
 sprint_error sprint_int_string(int val, sprint_stringbuilder* builder);
 
-typedef enum {
+typedef enum sprint_prim_format {
     SPRINT_PRIM_FORMAT_RAW,
     SPRINT_PRIM_FORMAT_COOKED,
     SPRINT_PRIM_FORMAT_DIST_UM,
@@ -32,7 +32,7 @@ typedef enum {
 sprint_error sprint_str_print(const char* str, FILE* stream, sprint_prim_format format);
 sprint_error sprint_str_string(const char* str, sprint_stringbuilder* builder, sprint_prim_format format);
 
-typedef enum {
+typedef enum sprint_layer {
     // The top copper layer (C1)
     SPRINT_LAYER_COPPER_TOP = 1,
 
@@ -86,7 +86,7 @@ extern const sprint_angle SPRINT_ANGLE_MIN;
 sprint_error sprint_angle_print(sprint_angle angle, FILE* stream, sprint_prim_format format);
 sprint_error sprint_angle_string(sprint_angle angle, sprint_stringbuilder* builder, sprint_prim_format format);
 
-typedef struct {
+typedef struct sprint_tuple {
     sprint_dist x;
     sprint_dist y;
 } sprint_tuple;

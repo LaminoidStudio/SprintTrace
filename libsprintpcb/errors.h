@@ -7,7 +7,7 @@
 #ifndef LIBSPRINTPCB_ERRORS_H
 #define LIBSPRINTPCB_ERRORS_H
 
-typedef enum {
+typedef enum sprint_error {
     SPRINT_ERROR_NONE,
     SPRINT_ERROR_ASSERTION,
     SPRINT_ERROR_UNDERFLOW,

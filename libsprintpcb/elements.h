@@ -14,14 +14,14 @@
 
 typedef struct sprint_element sprint_element;
 
-typedef struct {
+typedef struct sprint_link {
     bool has_id;
     int id;
     int num_connections;
     int* connections;
 } sprint_link;
 
-typedef struct {
+typedef struct sprint_track {
     sprint_layer layer;
     sprint_dist width;
     int num_points;
@@ -34,7 +34,7 @@ typedef struct {
     bool flatend;
 } sprint_track;
 
-typedef enum {
+typedef enum sprint_pad_tht_form {
     // Round
     SPRINT_PAD_THT_FORM_ROUND = 1,
 
@@ -63,7 +63,7 @@ typedef enum {
     SPRINT_PAD_THT_FORM_HIGH_RECTANGULAR
 } sprint_pad_tht_form;
 
-typedef struct {
+typedef struct sprint_pad_tht {
     // Required
 
     sprint_layer layer;
@@ -85,7 +85,7 @@ typedef struct {
     bool thermal_tracks_individual;
 } sprint_pad_tht;
 
-typedef struct {
+typedef struct sprint_pad_smt {
     sprint_layer layer;
     sprint_tuple position;
     sprint_tuple size;
@@ -99,7 +99,7 @@ typedef struct {
     int thermal_tracks_width;
 } sprint_pad_smt;
 
-typedef struct {
+typedef struct sprint_zone {
     sprint_layer layer;
     sprint_dist width;
     int num_points;
@@ -113,13 +113,13 @@ typedef struct {
     sprint_dist hatch_width;
 } sprint_zone;
 
-typedef enum {
+typedef enum sprint_text_type {
     SPRINT_TEXT_REGULAR,
     SPRINT_TEXT_ID,
     SPRINT_TEXT_VALUE
 } sprint_text_type;
 
-typedef enum {
+typedef enum sprint_text_style {
     // Narrow width text
     SPRINT_TEXT_STYLE_NARROW,
 
@@ -130,7 +130,7 @@ typedef enum {
     SPRINT_TEXT_STYLE_WIDE
 } sprint_text_style;
 
-typedef enum {
+typedef enum sprint_text_thickness {
     // Thin stroke text
     SPRINT_TEXT_THICKNESS_THIN,
 
@@ -141,7 +141,7 @@ typedef enum {
     SPRINT_TEXT_THICKNESS_THICK
 } sprint_text_thickness;
 
-typedef struct {
+typedef struct sprint_text {
     sprint_text_type type;
     sprint_layer layer;
     sprint_tuple position;
@@ -160,7 +160,7 @@ typedef struct {
     bool visible;
 } sprint_text;
 
-typedef struct {
+typedef struct sprint_circle {
     sprint_layer layer;
     sprint_dist width;
     sprint_tuple center;
@@ -174,7 +174,7 @@ typedef struct {
     bool fill;
 } sprint_circle;
 
-typedef struct {
+typedef struct sprint_component {
     sprint_text* text_id;
     sprint_text* text_value;
 
@@ -187,12 +187,12 @@ typedef struct {
     sprint_angle rotation;
 } sprint_component;
 
-typedef struct {
+typedef struct sprint_group {
     int num_elements;
     sprint_element* elements;
 } sprint_group;
 
-typedef enum {
+typedef enum sprint_element_type {
     SPRINT_ELEMENT_TRACK,
     SPRINT_ELEMENT_PAD_THT,
     SPRINT_ELEMENT_PAD_SMT,

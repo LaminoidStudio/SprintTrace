@@ -10,7 +10,7 @@
 #include "errors.h"
 
 // Represents a growing list similar to ArrayList in Java
-typedef struct {
+typedef struct sprint_list {
     // The number of elements in this list
     int count;
 
