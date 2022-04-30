@@ -7,11 +7,10 @@
 #include "primitives.h"
 #include "errors.h"
 #include "stringbuilder.h"
-#include "slicer.h"
+#include "token.h"
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 sprint_error sprint_bool_print(bool val, FILE* stream)
 {
