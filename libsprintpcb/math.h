@@ -8,7 +8,6 @@
 #define SPRINTPCB_MATH_H
 
 int imin(int a, int b);
-
 int imax(int a, int b);
 
 #endif //SPRINTPCB_MATH_H
