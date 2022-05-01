@@ -116,11 +116,16 @@ int main() {
 #include <time.h>
 #include <limits.h>
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
+#define WINDOW_WIDTH 480
+#define WINDOW_HEIGHT 320
 
 #include "nuklear.h"
 #include "nuklear_gdi.h"
+
+#define INCLUDE_STYLE
+#ifdef INCLUDE_STYLE
+#include "Nuklear/demo/common/style.c"
+#endif
 
 static LRESULT CALLBACK
 WindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -138,6 +143,11 @@ WindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
     return DefWindowProcW(wnd, msg, wparam, lparam);
 }
 
+char buf[256] = {0};
+nk_size mprog = 60;
+int mslider = 10;
+int mcheck = nk_true;
+
 int gui_main(void)
 {
     GdiFont* font;
@@ -146,7 +156,7 @@ int gui_main(void)
     WNDCLASSW wc;
     ATOM atom;
     RECT rect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
-    DWORD style = WS_OVERLAPPEDWINDOW;
+    DWORD style = WS_SYSMENU | WS_BORDER | WS_CAPTION;//WS_OVERLAPPEDWINDOW;
     DWORD exstyle = WS_EX_APPWINDOW;
     HWND wnd;
     HDC dc;
@@ -171,16 +181,47 @@ int gui_main(void)
     dc = GetDC(wnd);
 
     /* GUI */
-    font = nk_gdifont_create("Arial", 14);
+    font = nk_gdifont_create("Segoe UI", 14);
     ctx = nk_gdi_init(font, dc, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     /* style.c */
 #ifdef INCLUDE_STYLE
-    /*set_style(ctx, THEME_WHITE);*/
-    /*set_style(ctx, THEME_RED);*/
-    /*set_style(ctx, THEME_BLUE);*/
-    /*set_style(ctx, THEME_DARK);*/
+    //set_style(ctx, THEME_WHITE);
+    //set_style(ctx, THEME_RED);
+    //set_style(ctx, THEME_BLUE);
+    //set_style(ctx, THEME_DARK);
 #endif
+
+    struct nk_color table[NK_COLOR_COUNT];
+    table[NK_COLOR_TEXT]            = nk_rgb(0x00, 0x00, 0x00);
+    table[NK_COLOR_WINDOW]          = nk_rgb(0xF2, 0xF2, 0xF2);
+    table[NK_COLOR_HEADER]          = nk_rgb(0xCF, 0xD3, 0xD7);
+    table[NK_COLOR_BORDER]          = nk_rgb(0xC4, 0xC4, 0xC4);
+    table[NK_COLOR_BUTTON]          = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_BUTTON_HOVER]    = nk_rgb(0xF2, 0xF2, 0xF2);
+    table[NK_COLOR_BUTTON_ACTIVE]   = nk_rgb(0xE5, 0xE5, 0xE5);
+    table[NK_COLOR_TOGGLE]          = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_TOGGLE_HOVER]    = nk_rgb(0xC4, 0xC4, 0xC4);
+    table[NK_COLOR_TOGGLE_CURSOR]   = nk_rgb(0x00, 0x00, 0x00);
+    table[NK_COLOR_SELECT]          = nk_rgb(0x4F, 0x9E, 0xE3);
+    table[NK_COLOR_SELECT_ACTIVE]   = nk_rgb(0x35, 0x75, 0xB0);
+    table[NK_COLOR_SLIDER]          = nk_rgba(190, 190, 190, 255);
+    table[NK_COLOR_SLIDER_CURSOR]   = nk_rgba(80, 80, 80, 255);
+    table[NK_COLOR_SLIDER_CURSOR_HOVER]     = nk_rgba(70, 70, 70, 255);
+    table[NK_COLOR_SLIDER_CURSOR_ACTIVE]    = nk_rgba(60, 60, 60, 255);
+    table[NK_COLOR_PROPERTY]        = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_EDIT]            = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_EDIT_CURSOR]     = nk_rgb(0x00, 0x00, 0x00);
+    table[NK_COLOR_COMBO]           = nk_rgb(0x4F, 0x9E, 0xE3);
+    table[NK_COLOR_CHART] = nk_rgba(160, 160, 160, 255);
+    table[NK_COLOR_CHART_COLOR] = nk_rgba(45, 45, 45, 255);
+    table[NK_COLOR_CHART_COLOR_HIGHLIGHT] = nk_rgba( 255, 0, 0, 255);
+    table[NK_COLOR_SCROLLBAR] = nk_rgba(180, 180, 180, 255);
+    table[NK_COLOR_SCROLLBAR_CURSOR] = nk_rgba(140, 140, 140, 255);
+    table[NK_COLOR_SCROLLBAR_CURSOR_HOVER] = nk_rgba(150, 150, 150, 255);
+    table[NK_COLOR_SCROLLBAR_CURSOR_ACTIVE] = nk_rgba(160, 160, 160, 255);
+    table[NK_COLOR_TAB_HEADER] = nk_rgba(180, 180, 180, 255);
+    nk_style_from_table(ctx, table);
 
     while (running)
     {
@@ -207,42 +248,50 @@ int gui_main(void)
         nk_input_end(ctx);
 
         /* GUI */
-        if (nk_begin(ctx, "Demo", nk_rect(50, 50, 200, 200),
-                     NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-                     NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+        if (nk_begin(ctx, "Demo", nk_rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT),
+                     //0))
+                     //NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+                     //NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+                     NK_WINDOW_TITLE))
+                     //NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
         {
             enum {EASY, HARD};
             static int op = EASY;
-            static int property = 20;
+            static int property1 = 20;
+            static int property2 = 20;
 
-            nk_layout_row_static(ctx, 30, 80, 1);
-            if (nk_button_label(ctx, "button"))
-                fprintf(stdout, "button pressed\n");
+            nk_layout_row_static(ctx, 30, 80, 2);
+            if (nk_button_label(ctx, "button1"))
+                fprintf(stdout, "button1 pressed\n");
+            if (nk_button_label(ctx, "button2"))
+                fprintf(stdout, "button2 pressed\n");
             nk_layout_row_dynamic(ctx, 30, 2);
             if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
             if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
-            nk_layout_row_dynamic(ctx, 22, 1);
-            nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
+            nk_layout_row_dynamic(ctx, 22, 2);
+            nk_property_int(ctx, "Compression:", 0, &property1, 100, 10, 1);
+            nk_property_int(ctx, "Other:", 0, &property2, 100, 10, 1);
+            nk_layout_row_dynamic(ctx, 22, 2);
+            nk_edit_string_zero_terminated(ctx, NK_EDIT_FIELD, buf, sizeof(buf) - 1, nk_filter_default);
+            if (nk_button_label(ctx, "Done"))
+                printf("%s\n", buf);
+
+            nk_layout_row_dynamic(ctx, 22, 3);
+            nk_progress(ctx, &mprog, 100, NK_MODIFIABLE);
+            nk_slider_int(ctx, 0, &mslider, 16, 1);
+            nk_checkbox_label(ctx, "check", &mcheck);
+
+            const float values[]={26.0f,13.0f,30.0f,15.0f,25.0f,10.0f,20.0f,40.0f,12.0f,8.0f,22.0f,28.0f};
+            nk_layout_row_dynamic(ctx, 150, 1);
+            nk_chart_begin(ctx, NK_CHART_COLUMN, NK_LEN(values), 0, 50);
+            for (size_t i = 0; i < NK_LEN(values); ++i)
+                nk_chart_push(ctx, values[i]);
+            nk_chart_end(ctx);
         }
         nk_end(ctx);
 
-        /* -------------- EXAMPLES ---------------- */
-#ifdef INCLUDE_CALCULATOR
-        calculator(ctx);
-#endif
-#ifdef INCLUDE_CANVAS
-        canvas(ctx);
-#endif
-#ifdef INCLUDE_OVERVIEW
-        overview(ctx);
-#endif
-#ifdef INCLUDE_NODE_EDITOR
-        node_editor(ctx);
-#endif
-        /* ----------------------------------------- */
-
         /* Draw */
-        nk_gdi_render(nk_rgb(30,30,30));
+        nk_gdi_render(nk_rgb(240,240,240));
     }
 
     nk_gdifont_del(font);
