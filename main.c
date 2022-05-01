@@ -122,11 +122,6 @@ int main() {
 #include "nuklear.h"
 #include "nuklear_gdi.h"
 
-#define INCLUDE_STYLE
-#ifdef INCLUDE_STYLE
-#include "Nuklear/demo/common/style.c"
-#endif
-
 static LRESULT CALLBACK
 WindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -184,43 +179,35 @@ int gui_main(void)
     font = nk_gdifont_create("Segoe UI", 14);
     ctx = nk_gdi_init(font, dc, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    /* style.c */
-#ifdef INCLUDE_STYLE
-    //set_style(ctx, THEME_WHITE);
-    //set_style(ctx, THEME_RED);
-    //set_style(ctx, THEME_BLUE);
-    //set_style(ctx, THEME_DARK);
-#endif
-
     struct nk_color table[NK_COLOR_COUNT];
-    table[NK_COLOR_TEXT]            = nk_rgb(0x00, 0x00, 0x00);
-    table[NK_COLOR_WINDOW]          = nk_rgb(0xF2, 0xF2, 0xF2);
-    table[NK_COLOR_HEADER]          = nk_rgb(0xCF, 0xD3, 0xD7);
-    table[NK_COLOR_BORDER]          = nk_rgb(0xC4, 0xC4, 0xC4);
-    table[NK_COLOR_BUTTON]          = nk_rgb(0xFF, 0xFF, 0xFF);
-    table[NK_COLOR_BUTTON_HOVER]    = nk_rgb(0xF2, 0xF2, 0xF2);
-    table[NK_COLOR_BUTTON_ACTIVE]   = nk_rgb(0xE5, 0xE5, 0xE5);
-    table[NK_COLOR_TOGGLE]          = nk_rgb(0xFF, 0xFF, 0xFF);
-    table[NK_COLOR_TOGGLE_HOVER]    = nk_rgb(0xC4, 0xC4, 0xC4);
-    table[NK_COLOR_TOGGLE_CURSOR]   = nk_rgb(0x00, 0x00, 0x00);
-    table[NK_COLOR_SELECT]          = nk_rgb(0x4F, 0x9E, 0xE3);
-    table[NK_COLOR_SELECT_ACTIVE]   = nk_rgb(0x35, 0x75, 0xB0);
-    table[NK_COLOR_SLIDER]          = nk_rgba(190, 190, 190, 255);
-    table[NK_COLOR_SLIDER_CURSOR]   = nk_rgba(80, 80, 80, 255);
-    table[NK_COLOR_SLIDER_CURSOR_HOVER]     = nk_rgba(70, 70, 70, 255);
-    table[NK_COLOR_SLIDER_CURSOR_ACTIVE]    = nk_rgba(60, 60, 60, 255);
-    table[NK_COLOR_PROPERTY]        = nk_rgb(0xFF, 0xFF, 0xFF);
-    table[NK_COLOR_EDIT]            = nk_rgb(0xFF, 0xFF, 0xFF);
-    table[NK_COLOR_EDIT_CURSOR]     = nk_rgb(0x00, 0x00, 0x00);
-    table[NK_COLOR_COMBO]           = nk_rgb(0x4F, 0x9E, 0xE3);
-    table[NK_COLOR_CHART] = nk_rgba(160, 160, 160, 255);
-    table[NK_COLOR_CHART_COLOR] = nk_rgba(45, 45, 45, 255);
-    table[NK_COLOR_CHART_COLOR_HIGHLIGHT] = nk_rgba( 255, 0, 0, 255);
-    table[NK_COLOR_SCROLLBAR] = nk_rgba(180, 180, 180, 255);
-    table[NK_COLOR_SCROLLBAR_CURSOR] = nk_rgba(140, 140, 140, 255);
-    table[NK_COLOR_SCROLLBAR_CURSOR_HOVER] = nk_rgba(150, 150, 150, 255);
-    table[NK_COLOR_SCROLLBAR_CURSOR_ACTIVE] = nk_rgba(160, 160, 160, 255);
-    table[NK_COLOR_TAB_HEADER] = nk_rgba(180, 180, 180, 255);
+    table[NK_COLOR_TEXT]                    = nk_rgb(0x00, 0x00, 0x00);
+    table[NK_COLOR_WINDOW]                  = nk_rgb(0xF2, 0xF2, 0xF2);
+    table[NK_COLOR_HEADER]                  = nk_rgb(0xCF, 0xD3, 0xD7);
+    table[NK_COLOR_BORDER]                  = nk_rgb(0xC4, 0xC4, 0xC4);
+    table[NK_COLOR_BUTTON]                  = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_BUTTON_HOVER]            = nk_rgb(0xF2, 0xF2, 0xF2);
+    table[NK_COLOR_BUTTON_ACTIVE]           = nk_rgb(0xE5, 0xE5, 0xE5);
+    table[NK_COLOR_TOGGLE]                  = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_TOGGLE_HOVER]            = nk_rgb(0xC4, 0xC4, 0xC4);
+    table[NK_COLOR_TOGGLE_CURSOR]           = nk_rgb(0x52, 0x52, 0x52);
+    table[NK_COLOR_SELECT]                  = nk_rgb(0x4F, 0x9E, 0xE3);
+    table[NK_COLOR_SELECT_ACTIVE]           = nk_rgb(0x35, 0x75, 0xB0);
+    table[NK_COLOR_SLIDER]                  = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_SLIDER_CURSOR]           = nk_rgb(0x4D, 0x4D, 0x4D);
+    table[NK_COLOR_SLIDER_CURSOR_HOVER]     = nk_rgb(0x40, 0x40, 0x40);
+    table[NK_COLOR_SLIDER_CURSOR_ACTIVE]    = nk_rgb(0x33, 0x33, 0x33);
+    table[NK_COLOR_PROPERTY]                = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_EDIT]                    = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_EDIT_CURSOR]             = nk_rgb(0x4D, 0x4D, 0x4D);
+    table[NK_COLOR_COMBO]                   = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_CHART]                   = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_CHART_COLOR]             = nk_rgb(0x4D, 0x4D, 0x4D);
+    table[NK_COLOR_CHART_COLOR_HIGHLIGHT]   = nk_rgb(0x40, 0x40, 0x40);
+    table[NK_COLOR_SCROLLBAR]               = nk_rgb(0xF2, 0xF2, 0xF2);
+    table[NK_COLOR_SCROLLBAR_CURSOR]        = nk_rgb(0xC4, 0xC4, 0xC4);
+    table[NK_COLOR_SCROLLBAR_CURSOR_HOVER]  = nk_rgb(0xB8, 0xB8, 0xB8);
+    table[NK_COLOR_SCROLLBAR_CURSOR_ACTIVE] = nk_rgb(0xAB, 0xAB, 0xAB);
+    table[NK_COLOR_TAB_HEADER]              = nk_rgb(0xCF, 0xD3, 0xD7);
     nk_style_from_table(ctx, table);
 
     while (running)
@@ -250,7 +237,6 @@ int gui_main(void)
         /* GUI */
         if (nk_begin(ctx, "Demo", nk_rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT),
                      //0))
-                     //NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
                      //NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
                      NK_WINDOW_TITLE))
                      //NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
