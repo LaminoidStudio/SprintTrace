@@ -8,6 +8,7 @@ add_subdirectory(libsprintpcb)
 add_executable(SprintPCB main.c nuklear.c nuklear.h nuklear_gdi.c)
 
 target_link_libraries(SprintPCB PUBLIC libsprintpcb user32.lib gdi32.lib Msimg32.lib)
+target_link_options(SprintPCB PUBLIC "-mwindows")
 
 target_include_directories(SprintPCB PUBLIC
         "${PROJECT_BINARY_DIR}"
