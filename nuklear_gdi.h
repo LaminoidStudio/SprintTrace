@@ -13,7 +13,6 @@
 #ifndef NK_GDI_H_
 #define NK_GDI_H_
 
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #include "nuklear.h"
