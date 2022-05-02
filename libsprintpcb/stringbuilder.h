@@ -35,6 +35,8 @@ char* sprint_stringbuilder_complete(sprint_stringbuilder* builder);
 
 sprint_error sprint_stringbuilder_flush(sprint_stringbuilder* builder, FILE* stream);
 
+sprint_error sprint_stringbuilder_output(sprint_stringbuilder* builder, char* destination, size_t capacity);
+
 sprint_error sprint_stringbuilder_format(sprint_stringbuilder* builder, const char* format, ...);
 
 sprint_error sprint_stringbuilder_put(sprint_stringbuilder* builder, sprint_stringbuilder* source);
