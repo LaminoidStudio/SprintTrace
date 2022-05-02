@@ -5,6 +5,7 @@
 //
 
 #include <stdio.h>
+#include <string.h>
 
 #include "libsprintpcb/list.h"
 #include "libsprintpcb/primitives.h"
@@ -104,6 +105,130 @@ int main() {
 }
 
 
+#include "nuklear.h"
+
+struct demo_gui {
+    int width;
+    int height;
+    char* title;
+    struct nk_colorf bg;
+    char buf[256];
+    nk_size mprog;
+    int mslider;
+    int mcheck;
+};
+
+void init_gui(struct demo_gui* gui)
+{
+    memset(gui, 0, sizeof(*gui));
+    gui->width = 480;
+    gui->height = 320;
+    gui->title = "Demo";
+    gui->bg = nk_color_cf(nk_rgb_f(0.10f, 0.18f, 0.24f));
+    gui->mprog = 60;
+    gui->mslider = 10;
+    gui->mcheck = nk_true;
+}
+
+void init_ctx(struct nk_context* ctx)
+{
+    struct nk_color table[NK_COLOR_COUNT];
+    table[NK_COLOR_TEXT]                    = nk_rgb(0x00, 0x00, 0x00);
+    table[NK_COLOR_WINDOW]                  = nk_rgb(0xF2, 0xF2, 0xF2);
+    table[NK_COLOR_HEADER]                  = nk_rgb(0xCF, 0xD3, 0xD7);
+    table[NK_COLOR_BORDER]                  = nk_rgb(0xC4, 0xC4, 0xC4);
+    table[NK_COLOR_BUTTON]                  = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_BUTTON_HOVER]            = nk_rgb(0xF2, 0xF2, 0xF2);
+    table[NK_COLOR_BUTTON_ACTIVE]           = nk_rgb(0xE5, 0xE5, 0xE5);
+    table[NK_COLOR_TOGGLE]                  = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_TOGGLE_HOVER]            = nk_rgb(0xC4, 0xC4, 0xC4);
+    table[NK_COLOR_TOGGLE_CURSOR]           = nk_rgb(0x52, 0x52, 0x52);
+    table[NK_COLOR_SELECT]                  = nk_rgb(0x4F, 0x9E, 0xE3);
+    table[NK_COLOR_SELECT_ACTIVE]           = nk_rgb(0x35, 0x75, 0xB0);
+    table[NK_COLOR_SLIDER]                  = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_SLIDER_CURSOR]           = nk_rgb(0x4D, 0x4D, 0x4D);
+    table[NK_COLOR_SLIDER_CURSOR_HOVER]     = nk_rgb(0x40, 0x40, 0x40);
+    table[NK_COLOR_SLIDER_CURSOR_ACTIVE]    = nk_rgb(0x33, 0x33, 0x33);
+    table[NK_COLOR_PROPERTY]                = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_EDIT]                    = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_EDIT_CURSOR]             = nk_rgb(0x4D, 0x4D, 0x4D);
+    table[NK_COLOR_COMBO]                   = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_CHART]                   = nk_rgb(0xFF, 0xFF, 0xFF);
+    table[NK_COLOR_CHART_COLOR]             = nk_rgb(0x4D, 0x4D, 0x4D);
+    table[NK_COLOR_CHART_COLOR_HIGHLIGHT]   = nk_rgb(0x40, 0x40, 0x40);
+    table[NK_COLOR_SCROLLBAR]               = nk_rgb(0xF2, 0xF2, 0xF2);
+    table[NK_COLOR_SCROLLBAR_CURSOR]        = nk_rgb(0xC4, 0xC4, 0xC4);
+    table[NK_COLOR_SCROLLBAR_CURSOR_HOVER]  = nk_rgb(0xB8, 0xB8, 0xB8);
+    table[NK_COLOR_SCROLLBAR_CURSOR_ACTIVE] = nk_rgb(0xAB, 0xAB, 0xAB);
+    table[NK_COLOR_TAB_HEADER]              = nk_rgb(0xCF, 0xD3, 0xD7);
+    nk_style_from_table(ctx, table);
+}
+
+void handle_gui(struct nk_context* ctx, struct demo_gui* gui)
+{
+    /* GUI */
+    if (nk_begin(ctx, gui->title, nk_rect(0, 0, gui->width * 2 / 3, gui->height * 2 / 3),
+            //0))
+            //NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+                 //NK_WINDOW_TITLE))
+                 NK_WINDOW_TITLE|NK_WINDOW_MOVABLE))
+        //NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+    {
+        enum {EASY, HARD};
+        static int op = EASY;
+        static int property1 = 20;
+        static int property2 = 20;
+
+        nk_layout_row_static(ctx, 30, 80, 2);
+        if (nk_button_label(ctx, "button1"))
+            fprintf(stdout, "button1 pressed\n");
+        if (nk_button_label(ctx, "button2"))
+            fprintf(stdout, "button2 pressed\n");
+        nk_layout_row_dynamic(ctx, 30, 2);
+        if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
+        if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
+        nk_layout_row_dynamic(ctx, 22, 2);
+        nk_property_int(ctx, "Compression:", 0, &property1, 100, 10, 1);
+        nk_property_int(ctx, "Other:", 0, &property2, 100, 10, 1);
+        nk_layout_row_dynamic(ctx, 22, 2);
+        nk_edit_string_zero_terminated(ctx, NK_EDIT_FIELD, gui->buf, sizeof(gui->buf) - 1, nk_filter_default);
+        if (nk_button_label(ctx, "Done"))
+            printf("%s\n", gui->buf);
+
+        nk_layout_row_dynamic(ctx, 22, 3);
+        nk_progress(ctx, &gui->mprog, 100, NK_MODIFIABLE);
+        nk_slider_int(ctx, 0, &gui->mslider, 16, 1);
+        nk_checkbox_label(ctx, "check", &gui->mcheck);
+
+        const float values[]={26.0f,13.0f,30.0f,15.0f,25.0f,10.0f,20.0f,40.0f,12.0f,8.0f,22.0f,28.0f};
+        nk_layout_row_dynamic(ctx, 150, 1);
+        nk_chart_begin(ctx, NK_CHART_COLUMN, NK_LEN(values), 0, 50);
+        for (size_t i = 0; i < NK_LEN(values); ++i)
+            nk_chart_push(ctx, values[i]);
+        nk_chart_end(ctx);
+
+        nk_layout_row_dynamic(ctx, 100, 1);
+        if (nk_group_begin(ctx, "Demo group", NK_WINDOW_TITLE | NK_WINDOW_BORDER)) {
+            nk_layout_row_dynamic(ctx, 20, 1);
+            nk_label(ctx, "background:", NK_TEXT_LEFT);
+            nk_layout_row_dynamic(ctx, 25, 1);
+            if (nk_combo_begin_color(ctx, nk_rgb_cf(gui->bg), nk_vec2(nk_widget_width(ctx),400))) {
+                nk_layout_row_dynamic(ctx, 120, 1);
+                gui->bg = nk_color_picker(ctx, gui->bg, NK_RGBA);
+                nk_layout_row_dynamic(ctx, 25, 1);
+                gui->bg.r = nk_propertyf(ctx, "#R:", 0, gui->bg.r, 1.0f, 0.01f,0.005f);
+                gui->bg.g = nk_propertyf(ctx, "#G:", 0, gui->bg.g, 1.0f, 0.01f,0.005f);
+                gui->bg.b = nk_propertyf(ctx, "#B:", 0, gui->bg.b, 1.0f, 0.01f,0.005f);
+                gui->bg.a = nk_propertyf(ctx, "#A:", 0, gui->bg.a, 1.0f, 0.01f,0.005f);
+                nk_combo_end(ctx);
+            }
+            nk_group_end(ctx);
+        }
+    }
+    nk_end(ctx);
+}
+
+
 #ifdef WIN32
 
 #include <windows.h>
@@ -195,6 +320,7 @@ int gui_main(void)
 {
     GdiFont* font;
     struct nk_context *ctx;
+    struct demo_gui *gui;
 
     WNDCLASSW wc;
     ATOM atom;
@@ -336,11 +462,7 @@ int gui_main(void)
 
 #else
 
-#include "nuklear.h"
 #include "nuklear_sdl.h"
-
-#define WINDOW_WIDTH 1200
-#define WINDOW_HEIGHT 800
 
 int gui_main(void)
 {
@@ -353,15 +475,16 @@ int gui_main(void)
 
     /* GUI */
     struct nk_context *ctx;
-    struct nk_colorf bg;
+    struct demo_gui gui;
+    init_gui(&gui);
 
     /* SDL setup */
     SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
     SDL_Init(SDL_INIT_VIDEO);
 
-    win = SDL_CreateWindow("Demo",
+    win = SDL_CreateWindow(gui.title,
                            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                           WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
+                           gui.width, gui.height, SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI);
 
     if (win == NULL) {
         SDL_Log("Error SDL_CreateWindow %s", SDL_GetError());
@@ -413,11 +536,6 @@ int gui_main(void)
         nk_sdl_font_stash_begin(&atlas);
         font = nk_font_atlas_add_default(atlas, 13 * font_scale, &config);
         /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/DroidSans.ttf", 14 * font_scale, &config);*/
-        /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Roboto-Regular.ttf", 16 * font_scale, &config);*/
-        /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/kenvector_future_thin.ttf", 13 * font_scale, &config);*/
-        /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyClean.ttf", 12 * font_scale, &config);*/
-        /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/ProggyTiny.ttf", 10 * font_scale, &config);*/
-        /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Cousine-Regular.ttf", 13 * font_scale, &config);*/
         nk_sdl_font_stash_end();
 
         /* this hack makes the font appear to be scaled down to the desired
@@ -427,14 +545,9 @@ int gui_main(void)
         nk_style_set_font(ctx, &font->handle);
     }
 
-#ifdef INCLUDE_STYLE
-    /*set_style(ctx, THEME_WHITE);*/
-    /*set_style(ctx, THEME_RED);*/
-    /*set_style(ctx, THEME_BLUE);*/
-    /*set_style(ctx, THEME_DARK);*/
-#endif
+    // Load additional stuff
+    init_ctx(ctx);
 
-    bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
     while (running)
     {
         /* Input */
@@ -447,55 +560,9 @@ int gui_main(void)
         nk_input_end(ctx);
 
         /* GUI */
-        if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
-                     NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-                     NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
-        {
-            enum {EASY, HARD};
-            static int op = EASY;
-            static int property = 20;
+        handle_gui(ctx, &gui);
 
-            nk_layout_row_static(ctx, 30, 80, 1);
-            if (nk_button_label(ctx, "button"))
-                fprintf(stdout, "button pressed\n");
-            nk_layout_row_dynamic(ctx, 30, 2);
-            if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
-            if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
-            nk_layout_row_dynamic(ctx, 25, 1);
-            nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
-
-            nk_layout_row_dynamic(ctx, 20, 1);
-            nk_label(ctx, "background:", NK_TEXT_LEFT);
-            nk_layout_row_dynamic(ctx, 25, 1);
-            if (nk_combo_begin_color(ctx, nk_rgb_cf(bg), nk_vec2(nk_widget_width(ctx),400))) {
-                nk_layout_row_dynamic(ctx, 120, 1);
-                bg = nk_color_picker(ctx, bg, NK_RGBA);
-                nk_layout_row_dynamic(ctx, 25, 1);
-                bg.r = nk_propertyf(ctx, "#R:", 0, bg.r, 1.0f, 0.01f,0.005f);
-                bg.g = nk_propertyf(ctx, "#G:", 0, bg.g, 1.0f, 0.01f,0.005f);
-                bg.b = nk_propertyf(ctx, "#B:", 0, bg.b, 1.0f, 0.01f,0.005f);
-                bg.a = nk_propertyf(ctx, "#A:", 0, bg.a, 1.0f, 0.01f,0.005f);
-                nk_combo_end(ctx);
-            }
-        }
-        nk_end(ctx);
-
-        /* -------------- EXAMPLES ---------------- */
-#ifdef INCLUDE_CALCULATOR
-        calculator(ctx);
-#endif
-#ifdef INCLUDE_CANVAS
-        canvas(ctx);
-#endif
-#ifdef INCLUDE_OVERVIEW
-        overview(ctx);
-#endif
-#ifdef INCLUDE_NODE_EDITOR
-        node_editor(ctx);
-#endif
-        /* ----------------------------------------- */
-
-        SDL_SetRenderDrawColor(renderer, bg.r * 255, bg.g * 255, bg.b * 255, bg.a * 255);
+        SDL_SetRenderDrawColor(renderer, (Uint8) (gui.bg.r * 255), (Uint8) (gui.bg.g * 255), (Uint8) (gui.bg.b * 255), 255);
         SDL_RenderClear(renderer);
 
         nk_sdl_render(NK_ANTI_ALIASING_ON);
