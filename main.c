@@ -139,6 +139,58 @@ nk_size mprog = 60;
 int mslider = 10;
 int mcheck = nk_true;
 
+/*
+void element_test(sprint_element* element)
+{
+    sprint_prim_format format;
+    sprint_stringbuilder* builder = sprint_stringbuilder_create(16);
+    sprint_layer_string(element->circle.layer, builder, format_layer);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
+    sprint_stringbuilder_put_str(builder, "width: ");
+    sprint_dist_string(circle.circle.width, builder, format_dist);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
+    sprint_stringbuilder_put_str(builder, "center: ");
+    sprint_tuple_string(&circle.circle.center, builder, format_dist);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
+    sprint_stringbuilder_put_str(builder, "radius: ");
+    sprint_dist_string(circle.circle.radius, builder, format_dist);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
+    sprint_stringbuilder_put_str(builder, "clear: ");
+    sprint_dist_string(circle.circle.clear, builder, format_dist);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
+    sprint_stringbuilder_put_str(builder, "(cutout): ");
+    sprint_bool_string(circle.circle.cutout, builder);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
+    sprint_stringbuilder_put_str(builder, "(soldermask): ");
+    sprint_bool_string(circle.circle.soldermask, builder);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
+    sprint_stringbuilder_put_str(builder, "(start): ");
+    sprint_angle_string(circle.circle.start, builder, format_angle);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
+    sprint_stringbuilder_put_str(builder, "(stop): ");
+    sprint_angle_string(circle.circle.stop, builder, format_angle);
+    sprint_stringbuilder_put_chr(builder, '\n');
+
+    sprint_stringbuilder_put_str(builder, "(fill): ");
+    sprint_bool_string(circle.circle.fill, builder);
+    sprint_stringbuilder_put_chr(builder, '\n');
+    sprint_element_destroy(&circle);
+
+    sprint_stringbuilder_put_str(builder, "String test: ");
+    sprint_str_string("my string raw", builder, SPRINT_PRIM_FORMAT_RAW);
+    sprint_stringbuilder_put_chr(builder, ' ');
+    sprint_str_string("my string cooked", builder, SPRINT_PRIM_FORMAT_COOKED);
+    sprint_stringbuilder_put_chr(builder, '\n');
+}*/
+
 int gui_main(void)
 {
     GdiFont* font;

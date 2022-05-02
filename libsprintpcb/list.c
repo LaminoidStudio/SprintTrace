@@ -97,7 +97,7 @@ sprint_error sprint_list_grow(sprint_list* list, int capacity)
     // If the list is uninitialized, initialize it
     if (list->elements == NULL) {
         list->elements = malloc(list->size * capacity);
-        if (list->elements == NULL) return SPRINT_ERROR_OVERFLOW;
+        if (list->elements == NULL) return SPRINT_ERROR_MEMORY;
 
         list->capacity = capacity;
         return SPRINT_ERROR_NONE;
@@ -108,7 +108,7 @@ sprint_error sprint_list_grow(sprint_list* list, int capacity)
 
     // Grow the list to the new count
     void* new_elements = realloc(list->elements, list->size * capacity);
-    if (new_elements == NULL) return SPRINT_ERROR_OVERFLOW;
+    if (new_elements == NULL) return SPRINT_ERROR_MEMORY;
 
     // Update the capacity and elements
     list->capacity = capacity;
@@ -132,7 +132,7 @@ sprint_error sprint_list_trim(sprint_list* list)
 
     // Shrink the list to the count
     void* new_elements = realloc(list->elements, list->size * list->count);
-    if (new_elements == NULL) return SPRINT_ERROR_OVERFLOW;
+    if (new_elements == NULL) return SPRINT_ERROR_MEMORY;
 
     // Update the capacity and elements
     list->capacity = list->count;

@@ -339,7 +339,7 @@ sprint_error sprint_element_type_print(sprint_element_type type, FILE* stream, s
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     if (builder == NULL)
-        return SPRINT_ERROR_OVERFLOW;
+        return SPRINT_ERROR_MEMORY;
 
     sprint_error error = sprint_element_type_string(type, builder, format);
     if (error == SPRINT_ERROR_NONE)

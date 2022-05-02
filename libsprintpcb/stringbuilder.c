@@ -273,7 +273,7 @@ sprint_error sprint_stringbuilder_grow(sprint_stringbuilder* builder, int capaci
         builder->count = 0;
         builder->capacity = capacity;
         builder->content = malloc(capacity * sizeof(char) + 1);
-        return builder->content == NULL ? SPRINT_ERROR_OVERFLOW : SPRINT_ERROR_NONE;
+        return builder->content == NULL ? SPRINT_ERROR_MEMORY : SPRINT_ERROR_NONE;
     }
 
     // If the builder is already big enough, do nothing
@@ -281,7 +281,7 @@ sprint_error sprint_stringbuilder_grow(sprint_stringbuilder* builder, int capaci
 
     // Grow the builder to the new capacity
     void* new_content = realloc(builder->content, capacity * sizeof(char) + 1);
-    if (new_content == NULL) return SPRINT_ERROR_OVERFLOW;
+    if (new_content == NULL) return SPRINT_ERROR_MEMORY;
 
     // Update the capacity and content
     builder->capacity = capacity;
@@ -298,7 +298,7 @@ sprint_error sprint_stringbuilder_trim(sprint_stringbuilder* builder)
         builder->count = 0;
         builder->capacity = 0;
         builder->content = malloc(sizeof(char));
-        return builder->content == NULL ? SPRINT_ERROR_OVERFLOW : SPRINT_ERROR_NONE;
+        return builder->content == NULL ? SPRINT_ERROR_MEMORY : SPRINT_ERROR_NONE;
     }
 
     // Only do something, if the count doesn't already match the capacity
@@ -306,7 +306,7 @@ sprint_error sprint_stringbuilder_trim(sprint_stringbuilder* builder)
 
     // Shrink the builder to the count
     char* new_content = realloc(builder->content, builder->count * sizeof(char) + 1);
-    if (new_content == NULL) return SPRINT_ERROR_OVERFLOW;
+    if (new_content == NULL) return SPRINT_ERROR_MEMORY;
 
     // Update the capacity and content
     builder->capacity = builder->count;
