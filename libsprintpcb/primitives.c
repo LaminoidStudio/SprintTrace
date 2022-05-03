@@ -9,6 +9,7 @@
 #include "stringbuilder.h"
 #include "token.h"
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -18,7 +19,7 @@ sprint_error sprint_bool_print(bool val, FILE* stream)
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     if (builder == NULL)
-        return SPRINT_ERROR_OVERFLOW;
+        return SPRINT_ERROR_MEMORY;
 
     sprint_error error = sprint_bool_string(val, builder);
     if (error == SPRINT_ERROR_NONE)
@@ -39,7 +40,7 @@ sprint_error sprint_int_print(int val, FILE* stream)
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     if (builder == NULL)
-        return SPRINT_ERROR_OVERFLOW;
+        return SPRINT_ERROR_MEMORY;
 
     sprint_error error = sprint_int_string(val, builder);
     if (error == SPRINT_ERROR_NONE)
@@ -60,7 +61,7 @@ sprint_error sprint_str_print(const char* str, FILE* stream, sprint_prim_format 
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(15);
     if (builder == NULL)
-        return SPRINT_ERROR_OVERFLOW;
+        return SPRINT_ERROR_MEMORY;
 
     sprint_error error = sprint_str_string(str, builder, format);
     if (error == SPRINT_ERROR_NONE)
@@ -105,7 +106,7 @@ sprint_error sprint_layer_print(sprint_layer layer, FILE* stream, sprint_prim_fo
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     if (builder == NULL)
-        return SPRINT_ERROR_OVERFLOW;
+        return SPRINT_ERROR_MEMORY;
 
     sprint_error error = sprint_layer_string(layer, builder, format);
     if (error == SPRINT_ERROR_NONE)
@@ -156,7 +157,7 @@ sprint_error sprint_dist_print(sprint_dist dist, FILE* stream, sprint_prim_forma
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     if (builder == NULL)
-        return SPRINT_ERROR_OVERFLOW;
+        return SPRINT_ERROR_MEMORY;
 
     sprint_error error = sprint_dist_string(dist, builder, format);
     if (error == SPRINT_ERROR_NONE)
@@ -254,7 +255,7 @@ sprint_error sprint_angle_print(sprint_angle angle, FILE* stream, sprint_prim_fo
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     if (builder == NULL)
-        return SPRINT_ERROR_OVERFLOW;
+        return SPRINT_ERROR_MEMORY;
 
     sprint_error error = sprint_angle_string(angle, builder, format);
     if (error == SPRINT_ERROR_NONE)
@@ -321,7 +322,7 @@ sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream, sprint_prim_f
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(23);
     if (builder == NULL)
-        return SPRINT_ERROR_OVERFLOW;
+        return SPRINT_ERROR_MEMORY;
 
     sprint_error error = sprint_tuple_string(tuple, builder, format);
     if (error == SPRINT_ERROR_NONE)
