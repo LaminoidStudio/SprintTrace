@@ -113,6 +113,7 @@ struct demo_gui {
     char* title;
     struct nk_colorf bg;
     char buf[256];
+    char buf2[256];
     nk_size mprog;
     int mslider;
     int mcheck;
@@ -128,6 +129,7 @@ void init_gui(struct demo_gui* gui)
     gui->mprog = 60;
     gui->mslider = 10;
     gui->mcheck = nk_true;
+    strcpy(gui->buf2, "Hello, world!");
 }
 
 void init_ctx(struct nk_context* ctx)
@@ -192,6 +194,7 @@ void handle_gui(struct nk_context* ctx, struct demo_gui* gui)
         nk_property_int(ctx, "Other:", 0, &property2, 100, 10, 1);
         nk_layout_row_dynamic(ctx, 22, 2);
         nk_edit_string_zero_terminated(ctx, NK_EDIT_FIELD, gui->buf, sizeof(gui->buf) - 1, nk_filter_default);
+        nk_edit_string_zero_terminated(ctx, NK_EDIT_DEACTIVATED, gui->buf2, sizeof(gui->buf2) - 1, nk_filter_default);
         if (nk_button_label(ctx, "Done"))
             printf("%s\n", gui->buf);
 
