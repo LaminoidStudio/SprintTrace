@@ -92,6 +92,16 @@ sprint_error sprint_stringbuilder_flush(sprint_stringbuilder* builder, FILE* str
     return success ? SPRINT_ERROR_NONE : SPRINT_ERROR_IO;
 }
 
+sprint_error sprint_stringbuilder_output(sprint_stringbuilder* builder, char* destination, size_t capacity)
+{
+    if (builder == NULL || destination == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (capacity < builder->count + 1) return SPRINT_ERROR_OVERFLOW;
+
+    memcpy(destination, builder->content, builder->count * sizeof(char));
+    destination[builder->count] = 0;
+    return SPRINT_ERROR_NONE;
+}
+
 sprint_error sprint_stringbuilder_format(sprint_stringbuilder* builder, const char* format, ...)
 {
     if (builder == NULL || format == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
