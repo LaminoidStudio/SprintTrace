@@ -121,8 +121,8 @@ struct demo_gui {
 void init_gui(struct demo_gui* gui)
 {
     memset(gui, 0, sizeof(*gui));
-    gui->width = 480;
-    gui->height = 320;
+    gui->width = 640;
+    gui->height = 480;
     gui->title = "Demo";
     gui->bg = nk_color_cf(nk_rgb_f(0.10f, 0.18f, 0.24f));
     gui->mprog = 60;
