@@ -13,19 +13,19 @@
 #include <stdbool.h>
 
 typedef enum sprint_pcb_flags {
-    // Ground plane enabled on the top copper layer
+    // Ground plane enabled on the top copper layer.
     SPRINT_PCB_FLAG_PLANE_TOP = 1 << 0,
 
-    // Ground plane enabled on the bottom copper layer
+    // Ground plane enabled on the bottom copper layer.
     SPRINT_PCB_FLAG_PLANE_BOTTOM = 1 << 1,
 
-    // Ground plane enabled on the first inner copper layer
+    // Ground plane enabled on the first inner copper layer.
     SPRINT_PCB_FLAG_PLANE_INNER1 = 1 << 2,
 
-    // Ground plane enabled on the second inner copper layer
+    // Ground plane enabled on the second inner copper layer.
     SPRINT_PCB_FLAG_PLANE_INNER2 = 1 << 3,
 
-    // The board has four instead of two layers
+    // The board has four instead of two layers.
     SPRINT_PCB_FLAG_MULTILAYER = 1 << 4
 } sprint_pcb_flags;
 
