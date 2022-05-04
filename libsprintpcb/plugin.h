@@ -16,6 +16,7 @@ typedef enum sprint_language {
     SPRINT_LANGUAGE_GERMAN,
     SPRINT_LANGUAGE_FRENCH
 } sprint_language;
+extern const char* SPRINT_LANGUAGE_NAMES[];
 
 typedef enum sprint_operation {
     // Perform no operation. No output should be written.
@@ -55,6 +56,8 @@ typedef enum sprint_operation {
     // The processing failed, so perform no operation. The last allowed error code.
     SPRINT_OPERATION_FAILED_END = 255
 } sprint_operation;
+extern const char* SPRINT_OPERATION_SUCCEEDED_NAMES[];
+extern const char* SPRINT_OPERATION_FAILED_NAMES[];
 
 typedef struct sprint_plugin {
     sprint_language language;
