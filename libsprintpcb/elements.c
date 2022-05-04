@@ -65,7 +65,7 @@ sprint_element sprint_pad_tht_create(sprint_layer layer, sprint_tuple position, 
     return element;
 }
 
-sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, sprint_tuple size)
+sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, sprint_dist width, sprint_dist height)
 {
     // todo input checking
 
@@ -76,7 +76,8 @@ sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, 
     // Required fields
     element.pad_smt.layer = layer;
     element.pad_smt.position = position;
-    element.pad_smt.size = size;
+    element.pad_smt.width = width;
+    element.pad_smt.height = height;
 
     // Optional fields
     element.pad_smt.link.has_id = false;
