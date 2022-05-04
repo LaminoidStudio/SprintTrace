@@ -62,6 +62,7 @@ extern const char* SPRINT_OPERATION_FAILED_NAMES[];
 typedef struct sprint_plugin {
     sprint_language language;
     sprint_operation operation;
+    sprint_pcb* pcb;
     void* process;
     FILE* input;
     FILE* output;
