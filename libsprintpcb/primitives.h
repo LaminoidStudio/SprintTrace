@@ -12,6 +12,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 sprint_error sprint_bool_print(bool val, FILE* stream);
 sprint_error sprint_bool_string(bool val, sprint_stringbuilder* builder);
@@ -55,6 +56,7 @@ typedef enum sprint_layer {
     SPRINT_LAYER_MECHANICAL
 } sprint_layer;
 extern const char* SPRINT_LAYER_NAMES[];
+bool sprint_layer_valid(sprint_layer layer);
 sprint_error sprint_layer_print(sprint_layer layer, FILE* stream, sprint_prim_format format);
 sprint_error sprint_layer_string(sprint_layer layer, sprint_stringbuilder* builder, sprint_prim_format format);
 
@@ -71,6 +73,7 @@ extern const sprint_dist SPRINT_DIST_MIN;
 #define sprint_dist_cm(d) ((sprint_dist)((d) * SPRINT_DIST_PER_CM))
 #define sprint_dist_th(d) ((sprint_dist)((d) * SPRINT_DIST_PER_TH))
 #define sprint_dist_in(d) ((sprint_dist)((d) * SPRINT_DIST_PER_IN))
+bool sprint_dist_valid(sprint_dist dist);
 sprint_error sprint_dist_print(sprint_dist dist, FILE* stream, sprint_prim_format format);
 sprint_error sprint_dist_string(sprint_dist dist, sprint_stringbuilder* builder, sprint_prim_format format);
 
@@ -83,6 +86,7 @@ extern const sprint_angle SPRINT_ANGLE_MAX;
 extern const sprint_angle SPRINT_ANGLE_MIN;
 #define sprint_angle_deg(a) ((sprint_angle)((a) * SPRINT_ANGLE_NATIVE))
 #define sprint_angle_rad(r) sprint_angle_deg((r) * M_PI / 180d)
+bool sprint_angle_valid(sprint_angle angle);
 sprint_error sprint_angle_print(sprint_angle angle, FILE* stream, sprint_prim_format format);
 sprint_error sprint_angle_string(sprint_angle angle, sprint_stringbuilder* builder, sprint_prim_format format);
 
@@ -91,6 +95,7 @@ typedef struct sprint_tuple {
     sprint_dist y;
 } sprint_tuple;
 sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y);
+bool sprint_tuple_valid(sprint_tuple* tuple);
 sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream, sprint_prim_format format);
 sprint_error sprint_tuple_string(sprint_tuple* tuple, sprint_stringbuilder* builder, sprint_prim_format format);
 

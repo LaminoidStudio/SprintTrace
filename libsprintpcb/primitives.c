@@ -9,8 +9,8 @@
 #include "stringbuilder.h"
 #include "token.h"
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 
 sprint_error sprint_bool_print(bool val, FILE* stream)
@@ -100,6 +100,11 @@ const char* SPRINT_LAYER_NAMES[] = {
         [SPRINT_LAYER_MECHANICAL] = "mechanical"
 };
 
+bool sprint_layer_valid(sprint_layer layer)
+{
+    return layer >= SPRINT_LAYER_COPPER_TOP && layer <= SPRINT_LAYER_MECHANICAL;
+}
+
 sprint_error sprint_layer_print(sprint_layer layer, FILE* stream, sprint_prim_format format)
 {
     if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
@@ -119,7 +124,7 @@ sprint_error sprint_layer_print(sprint_layer layer, FILE* stream, sprint_prim_fo
 sprint_error sprint_layer_string(sprint_layer layer, sprint_stringbuilder* builder, sprint_prim_format format)
 {
     if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    if (layer >= sizeof(SPRINT_LAYER_NAMES) / sizeof(const char*)) return SPRINT_ERROR_ARGUMENT_RANGE;
+    if (!sprint_layer_valid(layer)) return SPRINT_ERROR_ARGUMENT_RANGE;
 
     // Write the string based on the format
     const char* layer_name;
@@ -130,7 +135,7 @@ sprint_error sprint_layer_string(sprint_layer layer, sprint_stringbuilder* build
         case SPRINT_PRIM_FORMAT_COOKED:
             layer_name = SPRINT_LAYER_NAMES[layer];
             if (layer_name == NULL)
-                return SPRINT_ERROR_ARGUMENT_RANGE;
+                return SPRINT_ERROR_ASSERTION;
             return sprint_stringbuilder_put_str(builder, layer_name);
 
         default:
@@ -150,6 +155,11 @@ const int SPRINT_DIST_PRECISION_TH      = 3;
 const int SPRINT_DIST_PRECISION_IN      = SPRINT_DIST_PRECISION_TH + 2;
 const sprint_dist SPRINT_DIST_MAX       = 50 * SPRINT_DIST_PER_CM;
 const sprint_dist SPRINT_DIST_MIN       = -SPRINT_DIST_MAX;
+
+bool sprint_dist_valid(sprint_dist dist)
+{
+    return dist >= SPRINT_DIST_MIN && dist <= SPRINT_DIST_MIN;
+}
 
 sprint_error sprint_dist_print(sprint_dist dist, FILE* stream, sprint_prim_format format)
 {
@@ -249,6 +259,11 @@ const int SPRINT_ANGLE_PRECISION        = 3;
 const sprint_angle SPRINT_ANGLE_MAX     = 360 * SPRINT_ANGLE_NATIVE;
 const sprint_angle SPRINT_ANGLE_MIN     = -SPRINT_DIST_MAX;
 
+bool sprint_angle_valid(sprint_angle angle)
+{
+    return angle >= SPRINT_ANGLE_MIN && angle <= SPRINT_ANGLE_MAX;
+}
+
 sprint_error sprint_angle_print(sprint_angle angle, FILE* stream, sprint_prim_format format)
 {
     if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
@@ -314,6 +329,11 @@ sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y)
     tuple.x = x;
     tuple.y = y;
     return tuple;
+}
+
+bool sprint_tuple_valid(sprint_tuple* tuple)
+{
+    return tuple != NULL && sprint_dist_valid(tuple->x) && sprint_dist_valid(tuple->y);
 }
 
 sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream, sprint_prim_format format)
