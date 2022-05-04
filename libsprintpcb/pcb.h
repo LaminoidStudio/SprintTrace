@@ -9,6 +9,7 @@
 
 #include "primitives.h"
 #include "elements.h"
+#include "grid.h"
 
 #include <stdbool.h>
 
@@ -34,6 +35,7 @@ typedef struct sprint_pcb {
     sprint_dist height;
     sprint_tuple origin;
     sprint_pcb_flags flags;
+    sprint_grid grid;
     sprint_group elements;
 } sprint_pcb;
 
