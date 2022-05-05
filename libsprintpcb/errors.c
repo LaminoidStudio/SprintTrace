@@ -48,3 +48,26 @@ bool sprint_error_print(sprint_error error, FILE* stream, bool capitalized)
     return fputs(str, stream) != EOF;
 }
 
+bool sprint_error_internal(sprint_error error, bool critical, const char* file, int line, const char* context)
+{
+    if (error == SPRINT_ERROR_NONE) return true;
+
+    if (critical)
+        fputs("Critical ", stderr);
+
+    sprint_error_print(error, stderr, !critical);
+    fprintf(stderr, " error occurred in %s:%d", file == NULL ? "" : file, line);
+
+    if (context != NULL)
+        fprintf(stderr, " at %s.", context);
+    else
+        fputc('.', stderr);
+
+    if (critical) {
+        fputs(" Exiting.\n", stderr);
+        exit(error);
+    } else
+        fputc('\n', stderr);
+
+    return false;
+}
