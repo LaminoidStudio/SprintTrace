@@ -7,6 +7,10 @@
 #ifndef LIBSPRINTPCB_ERRORS_H
 #define LIBSPRINTPCB_ERRORS_H
 
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 typedef enum sprint_error {
     SPRINT_ERROR_NONE,
     SPRINT_ERROR_ASSERTION,
@@ -22,5 +26,32 @@ typedef enum sprint_error {
     SPRINT_ERROR_NOT_ASCII,
     SPRINT_ERROR_SYNTAX// fixme
 } sprint_error;
+extern const char* SPRINT_ERROR_NAMES[];
+
+const char* sprint_error_string(sprint_error error);
+bool sprint_error_print(sprint_error error, FILE* stream, bool capitalized);
+
+static bool sprint_error_internal(sprint_error error, bool critical, const char* file, int line)
+{
+    if (error == SPRINT_ERROR_NONE) return true;
+
+    if (critical)
+        fputs("Critical ", stderr);
+
+    sprint_error_print(error, stderr, !critical);
+    fprintf(stderr, " error occurred in %s:%d.", file, line);
+
+    if (critical) {
+        fputs(" Exiting.\n", stderr);
+        exit(error);
+    } else
+        fputc('\n', stderr);
+
+    return false;
+}
+#define sprint_require(error) sprint_error_internal((error), true, __FILE__, __LINE__)
+#define sprint_check(error) sprint_error_internal((error), false, __FILE__, __LINE__)
+#define sprint_assert(critical, success) sprint_error_internal((success) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ASSERTION, \
+                                                        (critical), __FILE__, __LINE__)
 
 #endif //LIBSPRINTPCB_ERRORS_H
