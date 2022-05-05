@@ -36,5 +36,6 @@ bool sprint_error_internal(sprint_error error, bool critical, const char* file, 
 #define sprint_check(error) sprint_error_internal((error), false, __FILE__, __LINE__, #error)
 #define sprint_assert(critical, success) sprint_error_internal((success) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ASSERTION, \
                                                         (critical), __FILE__, __LINE__, #success)
-
+#define sprint_chain(result, error) (((result) != SPRINT_ERROR_NONE) ? false : \
+                                        sprint_error_internal(((result) = (error)), false, __FILE__, __LINE__, #error))
 #endif //LIBSPRINTPCB_ERRORS_H
