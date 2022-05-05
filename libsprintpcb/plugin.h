@@ -9,6 +9,7 @@
 
 #include "pcb.h"
 #include "errors.h"
+#include "stringbuilder.h"
 
 #include <stdio.h>
 
@@ -47,8 +48,7 @@ typedef enum sprint_operation {
     // The processing failed, so perform no operation. The last allowed error code.
     SPRINT_OPERATION_FAILED_END = 255
 } sprint_operation;
-extern const char* SPRINT_OPERATION_SUCCEEDED_NAMES[];
-extern const char* SPRINT_OPERATION_FAILED_NAMES[];
+extern const char* SPRINT_OPERATION_NAMES[];
 
 typedef enum sprint_plugin_state {
     SPRINT_PLUGIN_STATE_UNINITIALIZED,
@@ -61,6 +61,8 @@ typedef enum sprint_plugin_state {
 extern const char* SPRINT_PLUGIN_STATE_NAMES[];
 
 sprint_error sprint_plugin_begin(int argc, char* argv[]);
+sprint_error sprint_plugin_print(FILE* stream);
+sprint_error sprint_plugin_string(sprint_stringbuilder* builder);
 void sprint_plugin_bail(int error);
 sprint_error sprint_plugin_end(sprint_operation operation);
 sprint_pcb* sprint_plugin_get_pcb(void);

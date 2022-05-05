@@ -5,6 +5,13 @@
 //
 
 #include "plugin.h"
+#include "stringbuilder.h"
+
+const char* SPRINT_LANGUAGE_NAMES[] = {
+        [SPRINT_LANGUAGE_ENGLISH] = "English",
+        [SPRINT_LANGUAGE_GERMAN] = "German",
+        [SPRINT_LANGUAGE_FRENCH] = "French"
+};
 
 static struct sprint_plugin {
     sprint_plugin_state state;
@@ -32,6 +39,45 @@ const char* SPRINT_PLUGIN_STATE_NAMES[] = {
         [SPRINT_PLUGIN_STATE_WRITING_OUTPUT] = "writing output",
         [SPRINT_PLUGIN_STATE_EXITING] = "exiting"
 };
+
+sprint_error sprint_plugin_print(FILE* stream)
+{
+    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
+    if (builder == NULL)
+        return SPRINT_ERROR_MEMORY;
+
+    sprint_error error = sprint_plugin_string(builder);
+    if (error == SPRINT_ERROR_NONE)
+        return sprint_stringbuilder_flush(builder, stream);
+
+    sprint_stringbuilder_destroy(builder);
+    return error;
+}
+
+sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
+{
+    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    sprint_stringbuilder_put_str(builder, "sprint_plugin{state=");
+    sprint_stringbuilder_put_str(builder, SPRINT_PLUGIN_STATE_NAMES[sprint_plugin.state]);
+    sprint_stringbuilder_put_str(builder, ", language=");
+    sprint_stringbuilder_put_str(builder, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]);
+    sprint_stringbuilder_put_str(builder, ", operation=");
+    sprint_stringbuilder_put_str(builder, SPRINT_OPERATION_NAMES[sprint_plugin.operation]);
+    sprint_stringbuilder_put_str(builder, ", pcb=");
+    sprint_stringbuilder_format(builder, ", process=%p", sprint_plugin.process);
+    sprint_stringbuilder_put_chr(builder, '}');
+
+    sprint_plugin_state state;
+    sprint_language language;
+    sprint_operation operation;
+    sprint_pcb pcb;
+    void* process;
+    FILE* input;
+    FILE* output;
+}
 
 sprint_pcb* sprint_plugin_get_pcb(void)
 {
