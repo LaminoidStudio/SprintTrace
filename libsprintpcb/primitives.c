@@ -57,7 +57,7 @@ sprint_error sprint_int_string(int val, sprint_stringbuilder* builder)
 
 sprint_error sprint_str_print(const char* str, FILE* stream, sprint_prim_format format)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (str == NULL || stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(15);
     if (builder == NULL)
@@ -338,7 +338,7 @@ bool sprint_tuple_valid(sprint_tuple* tuple)
 
 sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream, sprint_prim_format format)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (tuple == NULL || stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(23);
     if (builder == NULL)
