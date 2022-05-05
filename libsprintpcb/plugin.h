@@ -8,6 +8,7 @@
 #define SPRINTPCB_PLUGIN_H
 
 #include "pcb.h"
+#include "errors.h"
 
 #include <stdio.h>
 
@@ -34,21 +35,11 @@ typedef enum sprint_operation {
     // Allow the user to place the new output elements freely on the circuit board.
     SPRINT_OPERATION_ADD_RELATIVE,
 
-
     // The processing failed, so perform no operation. The first error code.
     SPRINT_OPERATION_FAILED_START = 128,
 
-    // The processing failed due to the command line arguments so perform no operation.
-    SPRINT_OPERATION_FAILED_ARGUMENTS = SPRINT_OPERATION_FAILED_START,
-
-    // The processing failed reading the element input, so perform no operation.
-    SPRINT_OPERATION_FAILED_INPUT,
-
-    // The processing failed writing the element output, so perform no operation.
-    SPRINT_OPERATION_FAILED_OUTPUT,
-
-    // The processing failed internally, so perform no operation.
-    SPRINT_OPERATION_FAILED_INTERNAL,
+    // The processing failed, so perform no operation. The first library specific error code.
+    SPRINT_OPERATION_FAILED_LIBRARY = SPRINT_OPERATION_FAILED_START,
 
     // The processing failed, so perform no operation. The first plugin specific error code.
     SPRINT_OPERATION_FAILED_PLUGIN = 144,
@@ -59,13 +50,21 @@ typedef enum sprint_operation {
 extern const char* SPRINT_OPERATION_SUCCEEDED_NAMES[];
 extern const char* SPRINT_OPERATION_FAILED_NAMES[];
 
-typedef struct sprint_plugin {
-    sprint_language language;
-    sprint_operation operation;
-    sprint_pcb* pcb;
-    void* process;
-    FILE* input;
-    FILE* output;
-} sprint_plugin;
+typedef enum sprint_plugin_state {
+    SPRINT_PLUGIN_STATE_UNINITIALIZED,
+    SPRINT_PLUGIN_STATE_PARSING_FLAGS,
+    SPRINT_PLUGIN_STATE_PARSING_INPUT,
+    SPRINT_PLUGIN_STATE_PROCESSING,
+    SPRINT_PLUGIN_STATE_WRITING_OUTPUT,
+    SPRINT_PLUGIN_STATE_EXITING
+} sprint_plugin_state;
+extern const char* SPRINT_PLUGIN_STATE_NAMES[];
+
+sprint_error sprint_plugin_begin(int argc, char* argv[]);
+void sprint_plugin_bail(int error);
+sprint_error sprint_plugin_end(sprint_operation operation);
+sprint_pcb* sprint_plugin_get_pcb(void);
+sprint_plugin_state sprint_plugin_get_state(void);
+int sprint_plugin_get_exit_code(void);
 
 #endif //SPRINTPCB_PLUGIN_H

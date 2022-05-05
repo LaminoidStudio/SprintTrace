@@ -5,6 +5,7 @@
 //
 
 #include "errors.h"
+#include "plugin.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -55,18 +56,21 @@ bool sprint_error_internal(sprint_error error, bool critical, const char* file, 
     if (critical)
         fputs("Critical ", stderr);
 
+    const char* state = SPRINT_PLUGIN_STATE_NAMES[sprint_plugin_get_state()];
     sprint_error_print(error, stderr, !critical);
-    fprintf(stderr, " error occurred in %s:%d", file == NULL ? "" : file, line);
+    fprintf(stderr, " error occurred while %s in %s:%d", state, file == NULL ? "" : file, line);
 
     if (context != NULL)
         fprintf(stderr, " at %s.", context);
     else
         fputc('.', stderr);
 
-    if (critical) {
+    if (critical)
+    {
         fputs(" Exiting.\n", stderr);
-        exit(error);
-    } else
+        exit(sprint_plugin_get_exit_code());
+    }
+    else
         fputc('\n', stderr);
 
     return false;

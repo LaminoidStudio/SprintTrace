@@ -10,6 +10,7 @@
 #include "libsprintpcb/primitives.h"
 #include "libsprintpcb/elements.h"
 #include "libsprintpcb/stringbuilder.h"
+#include "libsprintpcb/plugin.h"
 
 int main() {
     sprint_element circle = sprint_circle_create(
@@ -22,6 +23,9 @@ int main() {
     sprint_prim_format format_angle = format_dist == SPRINT_PRIM_FORMAT_RAW ? format_dist : SPRINT_PRIM_FORMAT_COOKED;
     sprint_prim_format format_layer = format_angle;
 
+    if (!sprint_assert(false, sprint_stringbuilder_of(NULL) != NULL))
+        printf("Fail\n");
+    sprint_assert(true, format_dist == SPRINT_PRIM_FORMAT_RAW);
 
     sprint_stringbuilder* builder = sprint_stringbuilder_of("Circle and builder test:\n");
     sprint_stringbuilder_put_str(builder, "layer: ");
