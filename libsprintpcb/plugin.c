@@ -44,7 +44,7 @@ sprint_error sprint_plugin_print(FILE* stream)
 {
     if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
+    sprint_stringbuilder* builder = sprint_stringbuilder_create(63);
     if (builder == NULL)
         return SPRINT_ERROR_MEMORY;
 
