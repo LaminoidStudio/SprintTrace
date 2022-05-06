@@ -95,8 +95,8 @@ typedef struct sprint_tuple {
     sprint_dist y;
 } sprint_tuple;
 sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y);
-bool sprint_tuple_valid(sprint_tuple* tuple);
-sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream, sprint_prim_format format);
-sprint_error sprint_tuple_string(sprint_tuple* tuple, sprint_stringbuilder* builder, sprint_prim_format format);
+bool sprint_tuple_valid(sprint_tuple tuple);
+sprint_error sprint_tuple_print(sprint_tuple tuple, FILE* stream, sprint_prim_format format);
+sprint_error sprint_tuple_string(sprint_tuple tuple, sprint_stringbuilder* builder, sprint_prim_format format);
 
 #endif //SPRINTPCB_PRIMITIVES_H

@@ -224,31 +224,20 @@ sprint_error sprint_dist_string(sprint_dist dist, sprint_stringbuilder* builder,
     }
 
     // Keep track of encountered errors and then restore the initial builder count
-    sprint_error error;
+    sprint_error error = SPRINT_ERROR_NONE;
     int initial_count = builder->count;
 
     // Append the integer part and decimal point
-    error = sprint_stringbuilder_format(builder, "%d.", dist / dist_per_unit);
-    if (error != SPRINT_ERROR_NONE) {
-        builder->count = initial_count;
-        return error;
-    }
+    sprint_chain(error, sprint_stringbuilder_format(builder, "%d.", dist / dist_per_unit));
 
     // Append the mantissa part
-    error = sprint_stringbuilder_put_padded(builder, abs(dist % dist_per_unit),
-                                            false, true, dist_precision);
-    if (error != SPRINT_ERROR_NONE) {
-        builder->count = initial_count;
-        return error;
-    }
+    sprint_chain(error, sprint_stringbuilder_put_padded(builder, abs(dist % dist_per_unit),
+                                            false, true, dist_precision));
 
     // Append the unit suffix
-    error = sprint_stringbuilder_put_str(builder, dist_suffix);
-    if (error != SPRINT_ERROR_NONE) {
+    if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, dist_suffix)))
         builder->count = initial_count;
-        return error;
-    }
-    return SPRINT_ERROR_NONE;
+    return error;
 }
 
 const sprint_angle SPRINT_ANGLE_WHOLE   = 1;
@@ -331,14 +320,14 @@ sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y)
     return tuple;
 }
 
-bool sprint_tuple_valid(sprint_tuple* tuple)
+bool sprint_tuple_valid(sprint_tuple tuple)
 {
-    return tuple != NULL && sprint_dist_valid(tuple->x) && sprint_dist_valid(tuple->y);
+    return sprint_dist_valid(tuple.x) && sprint_dist_valid(tuple.y);
 }
 
-sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream, sprint_prim_format format)
+sprint_error sprint_tuple_print(sprint_tuple tuple, FILE* stream, sprint_prim_format format)
 {
-    if (tuple == NULL || stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(23);
     if (builder == NULL)
@@ -352,31 +341,20 @@ sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream, sprint_prim_f
     return error;
 }
 
-sprint_error sprint_tuple_string(sprint_tuple* tuple, sprint_stringbuilder* builder, sprint_prim_format format)
+sprint_error sprint_tuple_string(sprint_tuple tuple, sprint_stringbuilder* builder, sprint_prim_format format)
 {
-    if (tuple == NULL || builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     // Store the initial builder count to be restored on error and try to append the first distance
     int initial_count = builder->count;
-    sprint_error error = sprint_dist_string(tuple->x, builder, format);
-    if (error != SPRINT_ERROR_NONE) {
-        builder->count = initial_count;
-        return error;
-    }
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_dist_string(tuple.x, builder, format));
 
     // Try to append the separator
-    error = format == SPRINT_PRIM_FORMAT_RAW ? sprint_stringbuilder_put_chr(builder, SPRINT_TUPLE_SEPARATOR)
-            : sprint_stringbuilder_format(builder, " %c ", SPRINT_TUPLE_SEPARATOR);
-    if (error != SPRINT_ERROR_NONE) {
-        builder->count = initial_count;
-        return error;
-    }
+    sprint_chain(error, sprint_stringbuilder_put_chr(builder, SPRINT_TUPLE_SEPARATOR));
 
     // Finally, try to append the second tuple
-    error = sprint_dist_string(tuple->y, builder, format);
-    if (error != SPRINT_ERROR_NONE) {
+    if (!sprint_chain(error, sprint_dist_string(tuple.y, builder, format)))
         builder->count = initial_count;
-        return error;
-    }
-    return SPRINT_ERROR_NONE;
+    return error;
 }

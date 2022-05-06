@@ -5,12 +5,14 @@
 //
 
 #include <stdio.h>
+#include <string.h>
 
 #include "libsprintpcb/list.h"
 #include "libsprintpcb/primitives.h"
 #include "libsprintpcb/elements.h"
 #include "libsprintpcb/stringbuilder.h"
 #include "libsprintpcb/plugin.h"
+#include "libsprintpcb/errors.h"
 
 int main() {
     sprint_element circle = sprint_circle_create(
@@ -23,9 +25,8 @@ int main() {
     sprint_prim_format format_angle = format_dist == SPRINT_PRIM_FORMAT_RAW ? format_dist : SPRINT_PRIM_FORMAT_COOKED;
     sprint_prim_format format_layer = format_angle;
 
-    if (!sprint_assert(false, sprint_stringbuilder_of(NULL) != NULL))
-        printf("Fail\n");
-    sprint_assert(true, format_dist == SPRINT_PRIM_FORMAT_RAW);
+    sprint_plugin_print(stdout);
+    fputc('\n', stdout);
 
     sprint_stringbuilder* builder = sprint_stringbuilder_of("Circle and builder test:\n");
     sprint_stringbuilder_put_str(builder, "layer: ");
@@ -37,7 +38,7 @@ int main() {
     sprint_stringbuilder_put_chr(builder, '\n');
 
     sprint_stringbuilder_put_str(builder, "center: ");
-    sprint_tuple_string(&circle.circle.center, builder, format_dist);
+    sprint_tuple_string(circle.circle.center, builder, format_dist);
     sprint_stringbuilder_put_chr(builder, '\n');
 
     sprint_stringbuilder_put_str(builder, "radius: ");
@@ -95,7 +96,7 @@ int main() {
     sprint_list_add(list, &tuple2);
 
     for (int i = 0; i < list->count; i++) {
-        sprint_tuple* tuple = (sprint_tuple*)sprint_list_get(list, i);
+        sprint_tuple tuple = *((sprint_tuple*)sprint_list_get(list, i));
         sprint_tuple_print(tuple, stdout, SPRINT_PRIM_FORMAT_COOKED);
         putchar('\n');
     }
