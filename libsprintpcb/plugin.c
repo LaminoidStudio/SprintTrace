@@ -69,6 +69,7 @@ sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
     sprint_chain(error, sprint_stringbuilder_put_str(builder, ", operation="));
     sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_OPERATION_NAMES[sprint_plugin.operation]));
     sprint_chain(error, sprint_stringbuilder_put_str(builder, ", pcb="));
+    sprint_chain(error, sprint_pcb_string(&sprint_plugin.pcb, builder));
     sprint_chain(error, sprint_stringbuilder_format(builder, ", process=%p", sprint_plugin.process));
     if (!sprint_chain(error, sprint_stringbuilder_put_chr(builder, '}')))
         builder->count = initial_count;

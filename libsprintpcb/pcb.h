@@ -29,6 +29,7 @@ typedef enum sprint_pcb_flags {
     // The board has four instead of two layers.
     SPRINT_PCB_FLAG_MULTILAYER = 1 << 4
 } sprint_pcb_flags;
+extern const char* SPRINT_PCB_FLAG_NAMES[];
 
 typedef struct sprint_pcb {
     sprint_dist width;
@@ -38,5 +39,10 @@ typedef struct sprint_pcb {
     sprint_grid grid;
     sprint_group elements;
 } sprint_pcb;
+
+sprint_error sprint_pcb_flags_print(sprint_pcb_flags flags, FILE* stream);
+sprint_error sprint_pcb_flags_string(sprint_pcb_flags flags, sprint_stringbuilder* builder);
+sprint_error sprint_pcb_print(sprint_pcb* pcb, FILE* stream);
+sprint_error sprint_pcb_string(sprint_pcb* pcb, sprint_stringbuilder* builder);
 
 #endif //SPRINTPCB_PCB_H
