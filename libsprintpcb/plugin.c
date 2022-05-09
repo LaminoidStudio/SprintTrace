@@ -48,6 +48,8 @@ sprint_error sprint_plugin_parse_internal(int argc, char* argv[])
     if (argv == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
     if (argc < 9 || argc > 10) return SPRINT_ERROR_PLUGIN_FLAGS_MISSING;
 
+    const char* separator = ", ";
+
     // Skip the first argument
     argc--;
     argv++;
@@ -64,25 +66,54 @@ sprint_error sprint_plugin_parse_internal(int argc, char* argv[])
         sprint_chain(error, sprint_stringbuilder_put_str(builder, "input file"));
     if (!found_width) {
         if (builder->count > 0)
-            sprint_chain(error, sprint_stringbuilder_put_chr(builder, '|'));
+            sprint_chain(error, sprint_stringbuilder_put_str(builder, separator));
         sprint_chain(error, sprint_stringbuilder_put_str(builder, "width (/W)"));
     }
     if (!found_height) {
         if (builder->count > 0)
-            sprint_chain(error, sprint_stringbuilder_put_chr(builder, '|'));
+            sprint_chain(error, sprint_stringbuilder_put_str(builder, separator));
         sprint_chain(error, sprint_stringbuilder_put_str(builder, "height (/H)"));
     }
     if (builder->count > 0) {
         char* flags_str = sprint_stringbuilder_complete(builder);
         sprint_assert(true, flags_str != NULL);
-        sprint_throw(false, "could not find required arguments");
-        fprintf(stderr, "Error: could not find required arguments: %s\n", flags_str);
+        sprint_throw_format(false)("could not find required arguments: %s", flags_str);
         free(flags_str);
         return found_input ? SPRINT_ERROR_PLUGIN_INPUT_MISSING : SPRINT_ERROR_PLUGIN_FLAGS_MISSING;
     }
 
     // Emit a warning for all missing optional flags except for /A
-    //if (!found_language)
+    if (!found_language)
+        sprint_chain(error, sprint_stringbuilder_put_str(builder, "language (/L)"));
+    if (!found_x) {
+        if (builder->count > 0)
+            sprint_chain(error, sprint_stringbuilder_put_str(builder, separator));
+        sprint_chain(error, sprint_stringbuilder_put_str(builder, "origin X (/X)"));
+    }
+    if (!found_y) {
+        if (builder->count > 0)
+            sprint_chain(error, sprint_stringbuilder_put_str(builder, separator));
+        sprint_chain(error, sprint_stringbuilder_put_str(builder, "origin Y (/Y)"));
+    }
+    if (!found_flags) {
+        if (builder->count > 0)
+            sprint_chain(error, sprint_stringbuilder_put_str(builder, separator));
+        sprint_chain(error, sprint_stringbuilder_put_str(builder, "flags (/M)"));
+    }
+    if (!found_pid) {
+        if (builder->count > 0)
+            sprint_chain(error, sprint_stringbuilder_put_str(builder, separator));
+        sprint_chain(error, sprint_stringbuilder_put_str(builder, "process ID (/P)"));
+    }
+    if (builder->count > 0) {
+        char* flags_str = sprint_stringbuilder_complete(builder);
+        sprint_assert(true, flags_str != NULL);
+        sprint_warning_format()("defaulting missing optional arguments: %s", flags_str);
+        free(flags_str);
+    }
+
+
+    return SPRINT_ERROR_NONE;
 }
 
 sprint_error sprint_plugin_print(FILE* stream)
