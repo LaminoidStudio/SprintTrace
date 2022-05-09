@@ -7,6 +7,8 @@
 #include "plugin.h"
 #include "stringbuilder.h"
 
+#include <stdbool.h>
+
 const char* SPRINT_LANGUAGE_NAMES[] = {
         [SPRINT_LANGUAGE_ENGLISH] = "English",
         [SPRINT_LANGUAGE_GERMAN] = "German",
@@ -17,8 +19,9 @@ static struct sprint_plugin {
     sprint_plugin_state state;
     sprint_language language;
     sprint_operation operation;
+    sprint_process_id process;
     sprint_pcb pcb;
-    void* process;
+    bool selection;
     FILE* input;
     FILE* output;
 } sprint_plugin = {0};
@@ -39,6 +42,48 @@ const char* SPRINT_PLUGIN_STATE_NAMES[] = {
         [SPRINT_PLUGIN_STATE_WRITING_OUTPUT] = "writing output",
         [SPRINT_PLUGIN_STATE_EXITING] = "exiting"
 };
+
+sprint_error sprint_plugin_parse_internal(int argc, char* argv[])
+{
+    if (argv == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (argc < 9 || argc > 10) return SPRINT_ERROR_PLUGIN_FLAGS_MISSING;
+
+    // Skip the first argument
+    argc--;
+    argv++;
+
+    // Keep track of the parameters passed (defaults: language=UK, x=0, y=0, all=false, pid=0; rest is required)
+    bool found_language = false, found_width = false, found_height = false, found_x = false, found_y = false,
+        found_flags = false, found_all = false, found_pid = false, found_input = false;
+
+
+    // Make sure the required parameters are present and emit an error, if not
+    sprint_stringbuilder* builder = sprint_stringbuilder_create(32);
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (!found_input)
+        sprint_chain(error, sprint_stringbuilder_put_str(builder, "input file"));
+    if (!found_width) {
+        if (builder->count > 0)
+            sprint_chain(error, sprint_stringbuilder_put_chr(builder, '|'));
+        sprint_chain(error, sprint_stringbuilder_put_str(builder, "width (/W)"));
+    }
+    if (!found_height) {
+        if (builder->count > 0)
+            sprint_chain(error, sprint_stringbuilder_put_chr(builder, '|'));
+        sprint_chain(error, sprint_stringbuilder_put_str(builder, "height (/H)"));
+    }
+    if (builder->count > 0) {
+        char* flags_str = sprint_stringbuilder_complete(builder);
+        sprint_assert(true, flags_str != NULL);
+        sprint_throw(false, "could not find required arguments");
+        fprintf(stderr, "Error: could not find required arguments: %s\n", flags_str);
+        free(flags_str);
+        return found_input ? SPRINT_ERROR_PLUGIN_INPUT_MISSING : SPRINT_ERROR_PLUGIN_FLAGS_MISSING;
+    }
+
+    // Emit a warning for all missing optional flags except for /A
+    //if (!found_language)
+}
 
 sprint_error sprint_plugin_print(FILE* stream)
 {
