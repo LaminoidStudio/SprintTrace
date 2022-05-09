@@ -77,7 +77,7 @@ sprint_error sprint_plugin_parse_internal(int argc, char* argv[])
     if (builder->count > 0) {
         char* flags_str = sprint_stringbuilder_complete(builder);
         sprint_assert(true, flags_str != NULL);
-        sprint_throw_format(false)("could not find required arguments: %s", flags_str);
+        sprint_throw_format(false, "could not find required arguments: %s", flags_str);
         free(flags_str);
         return found_input ? SPRINT_ERROR_PLUGIN_INPUT_MISSING : SPRINT_ERROR_PLUGIN_FLAGS_MISSING;
     }
@@ -108,7 +108,7 @@ sprint_error sprint_plugin_parse_internal(int argc, char* argv[])
     if (builder->count > 0) {
         char* flags_str = sprint_stringbuilder_complete(builder);
         sprint_assert(true, flags_str != NULL);
-        sprint_warning_format()("defaulting missing optional arguments: %s", flags_str);
+        sprint_warning_format("defaulting missing optional arguments: %s", flags_str);
         free(flags_str);
     }
 

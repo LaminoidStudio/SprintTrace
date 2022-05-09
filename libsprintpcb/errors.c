@@ -112,13 +112,25 @@ bool sprint_error_internal(sprint_error error, bool critical, const char* file, 
     return false;
 }
 
-void sprint_log(const char* format, ...)
+bool sprint_log(const char* what)
 {
-    if (format == NULL) return;
+    if (what == NULL) return false;
 
+    bool success = true;
+    success &= fputs(what, stderr) != EOF;
+    success &= fputc('\n', stderr) != EOF;
+    return success;
+}
+
+bool sprint_log_format(const char* format, ...)
+{
+    if (format == NULL) return false;
+
+    bool success = true;
     va_list args;
     va_start(args, format);
-    vfprintf(stderr, format, args);
-    fputc('\n', stderr);
+    success &= vfprintf(stderr, format, args) != EOF;
+    success &= fputc('\n', stderr) != EOF;
     va_end(args);
+    return success;
 }
