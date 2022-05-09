@@ -48,8 +48,8 @@ void sprint_log(const char* format, ...);
 #define sprint_debug(what) ((void)0)
 #define sprint_debug_format() if (false) sprint_log
 #endif
-#define sprint_warn(what) sprint_warning_internal(__FILE__, __LINE__, (what))
-#define sprint_warn_format() sprint_warn(NULL); sprint_log
+#define sprint_warning(what) sprint_warning_internal(__FILE__, __LINE__, (what))
+#define sprint_warning_format() sprint_warning(NULL); sprint_log
 #define sprint_require(error) sprint_error_internal((error), true, __FILE__, __LINE__, #error)
 #define sprint_check(error) sprint_error_internal((error), false, __FILE__, __LINE__, #error)
 #define sprint_throw(critical, what) sprint_error_internal(SPRINT_ERROR_INTERNAL, critical, __FILE__, __LINE__, what)
