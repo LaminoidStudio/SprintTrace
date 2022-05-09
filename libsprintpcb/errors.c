@@ -55,6 +55,20 @@ bool sprint_error_print(sprint_error error, FILE* stream, bool capitalized)
     return fputs(str, stream) != EOF;
 }
 
+void sprint_debug_internal(const char* file, int line, const char* context)
+{
+    const char* state = SPRINT_PLUGIN_STATE_NAMES[sprint_plugin_get_state()];
+    fprintf(stderr, "Debug [%s, %s:%d]", state, file == NULL ? "" : file, line);
+
+    if (context == NULL || *context != 0)
+        fputs(": ", stderr);
+
+    if (context != NULL) {
+        fputs(context, stderr);
+        fputc('\n', stderr);
+    }
+}
+
 void sprint_warning_internal(const char* file, int line, const char* context)
 {
     const char* state = SPRINT_PLUGIN_STATE_NAMES[sprint_plugin_get_state()];
@@ -79,18 +93,6 @@ bool sprint_error_internal(sprint_error error, bool critical, const char* file, 
     const char* state = SPRINT_PLUGIN_STATE_NAMES[sprint_plugin_get_state()];
     sprint_error_print(error, stderr, !critical);
     fprintf(stderr, " error [%s, %s:%d]", state, file == NULL ? "" : file, line);
-
-    // critical, NULL:       " "        " Exiting.\n"   OK
-    // critical, "":         " "        " Exiting.\n"   OK
-    // false, "":            "\n"       "\n"
-
-    // critical, content:    ": %s\n"   ": %s\nExiting.\n"  OK
-    // false, content:       ": %s\n"   ": %s\n"  OK
-    // false, NULL:          ": "       ": "
-
-    // if content -> ": %s\n"
-    // if critical && !content -> " "
-    //
 
     if (context != NULL && *context != 0)
         fprintf(stderr, ": %s\n", context);
