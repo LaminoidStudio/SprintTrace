@@ -61,9 +61,13 @@ typedef enum sprint_plugin_state {
 } sprint_plugin_state;
 extern const char* SPRINT_PLUGIN_STATE_NAMES[];
 
+// pid_t (Mac, Linux), DWORD (Windows)
 typedef int sprint_process_id;
 
-sprint_error sprint_plugin_parse_internal(int argc, char* argv[]);
+extern const char SPRINT_FLAG_PREFIX;
+extern const char SPRINT_FLAG_DELIMITER;
+
+sprint_error sprint_plugin_parse_internal(int argc, const char* argv[]);
 
 sprint_error sprint_plugin_begin(int argc, char* argv[]);
 sprint_error sprint_plugin_print(FILE* stream);
