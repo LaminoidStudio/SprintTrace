@@ -24,6 +24,7 @@ const char* SPRINT_ERROR_NAMES[] = {
         [SPRINT_ERROR_ARGUMENT_NULL] = "argument null",
         [SPRINT_ERROR_ARGUMENT_RANGE] = "argument range",
         [SPRINT_ERROR_ARGUMENT_FORMAT] = "argument format",
+        [SPRINT_ERROR_ARGUMENT_INCOMPLETE] = "argument incomplete",
         [SPRINT_ERROR_PLUGIN_INPUT_MISSING] = "plugin input missing",
         [SPRINT_ERROR_PLUGIN_INPUT_SYNTAX] = "plugin input syntax",
         [SPRINT_ERROR_PLUGIN_FLAGS_MISSING] = "plugin flags missing",
