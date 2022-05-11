@@ -28,8 +28,8 @@ static struct sprint_plugin {
     sprint_process_id process;
     sprint_pcb pcb;
     bool selection;
-    FILE* input;
-    char* output;
+    const char* input;
+    const char* output;
 } sprint_plugin = {0};
 
 const char* SPRINT_OPERATION_NAMES[] = {
@@ -39,6 +39,14 @@ const char* SPRINT_OPERATION_NAMES[] = {
         [SPRINT_OPERATION_REPLACE_RELATIVE] = "replace relative",
         [SPRINT_OPERATION_ADD_RELATIVE] = "add relative"
 };
+
+bool sprint_operation_valid(sprint_operation operation, bool failed)
+{
+    if (failed && operation >= SPRINT_OPERATION_FAILED_START && operation <= SPRINT_OPERATION_FAILED_END)
+        return true;
+
+    return operation >= SPRINT_OPERATION_NONE && operation <= SPRINT_OPERATION_ADD_RELATIVE;
+}
 
 const char* SPRINT_PLUGIN_STATE_NAMES[] = {
         [SPRINT_PLUGIN_STATE_UNINITIALIZED] = "uninitialized",
@@ -56,6 +64,7 @@ const char SPRINT_FLAG_PREFIX = '-';
 #endif
 
 const char SPRINT_FLAG_DELIMITER = ':';
+const char* SPRINT_OUTPUT_SUFFIX = "_out";
 
 bool sprint_plugin_parse_int_internal(int* output, const char* input)
 {
@@ -90,8 +99,8 @@ bool sprint_plugin_parse_language_internal(int* output, const char* input)
 sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
 {
     // Check, if the number of arguments could be enough
-    if (argc < 3 || argc > 10) {
-        sprint_throw(false, "bad number of arguments");
+    if (argc < 4) {
+        sprint_throw(false, "too few arguments");
         return SPRINT_ERROR_PLUGIN_FLAGS_MISSING;
     }
 
@@ -101,7 +110,7 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
 
     // Keep track of the flags passed (defaults: language=UK, x=0, y=0, all=false, pid=0; rest is required)
     bool found_language = false, found_width = false, found_height = false, found_x = false, found_y = false,
-            found_flags = false, found_all = false, found_pid = false;
+            found_grid = false, found_flags = false, found_all = false, found_pid = false;
 
     // Get the input file name
     const char* input_path = NULL;
@@ -109,7 +118,7 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
         input_path = *argv;
 
     // Parse the flags
-    int language = 0, pcb_width = 0, pcb_height = 0, pcb_origin_x = 0, pcb_origin_y = 0, flags = 0, pid = 0;
+    int language = 0, pcb_width = 0, pcb_height = 0, pcb_origin_x = 0, pcb_origin_y = 0, grid = 0, flags = 0, pid = 0;
     for (argc--, argv++; argc > 0; argc--, argv++) {
         // Skip arguments that are null or empty
         if (*argv == NULL || **argv == 0) continue;
@@ -173,6 +182,13 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
                 found_y = true;
                 break;
 
+            case 'R':
+                if (found_grid)
+                    already_found = true;
+                target_value = &grid;
+                found_grid = true;
+                break;
+
             case 'M':
                 if (found_flags)
                     already_found = true;
@@ -196,7 +212,7 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
                 break;
 
             default:
-                sprint_throw_format(false, "unknown flag: %s", *argv);
+                sprint_warning_format("unknown flag: %s", *argv);
                 return SPRINT_ERROR_PLUGIN_FLAGS_SYNTAX;
         }
 
@@ -233,6 +249,8 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
 
     // Make sure the required parameters are present and emit an error, if not
     sprint_stringbuilder* builder = sprint_stringbuilder_create(32);
+    if (!sprint_assert(false, builder != NULL))
+        return SPRINT_ERROR_ASSERTION;
     sprint_error error = SPRINT_ERROR_NONE;
     if (input_path == NULL)
         sprint_chain(error, sprint_stringbuilder_put_str(builder, "input file"));
@@ -248,15 +266,18 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
     }
     if (builder->count > 0) {
         char* flags_str = sprint_stringbuilder_complete(builder);
-        sprint_assert(true, flags_str != NULL);
-        sprint_throw_format(false, "could not find required argument(s): %s", flags_str);
-        free(flags_str);
+        if (sprint_assert(false, flags_str != NULL)) {
+            sprint_throw_format(false, "could not find required argument(s): %s", flags_str);
+            free(flags_str);
+        }
         return input_path == NULL ? SPRINT_ERROR_PLUGIN_INPUT_MISSING : SPRINT_ERROR_PLUGIN_FLAGS_MISSING;
     }
 
     // Emit a warning for all missing optional flags except for /A
-    if (!found_language)
+    if (!found_language) {
+        language = SPRINT_LANGUAGE_ENGLISH;
         sprint_chain(error, sprint_stringbuilder_put_str(builder, "language (L)"));
+    }
     if (!found_x) {
         if (builder->count > 0)
             sprint_chain(error, sprint_stringbuilder_put_str(builder, error_separator));
@@ -266,6 +287,12 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
         if (builder->count > 0)
             sprint_chain(error, sprint_stringbuilder_put_str(builder, error_separator));
         sprint_chain(error, sprint_stringbuilder_put_str(builder, "origin Y (Y)"));
+    }
+    if (!found_grid) {
+        grid = sprint_dist_um(1270);
+        if (builder->count > 0)
+            sprint_chain(error, sprint_stringbuilder_put_str(builder, error_separator));
+        sprint_chain(error, sprint_stringbuilder_put_str(builder, "grid (R)"));
     }
     if (!found_flags) {
         if (builder->count > 0)
@@ -279,20 +306,84 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
     }
     if (builder->count > 0) {
         char* flags_str = sprint_stringbuilder_complete(builder);
-        sprint_assert(true, flags_str != NULL);
-        sprint_warning_format("defaulting missing argument(s): %s", flags_str);
-        free(flags_str);
+        if (sprint_assert(false, flags_str != NULL)) {
+            sprint_warning_format("defaulting missing argument(s): %s", flags_str);
+            free(flags_str);
+        }
+
+        // Create a new builder
+        builder = sprint_stringbuilder_create(32);
+        if (!sprint_assert(false, builder != NULL))
+            return SPRINT_ERROR_ASSERTION;
     }
 
-    // Try to open the input file
-    sprint_plugin.input;
+    // Determine the last index of a slash or dot in the input path
+    const char *input_ptr, *input_tail = NULL;
+    bool input_tail_slash = false;
+    for (input_ptr = input_path; *input_ptr != 0; input_ptr++)
+        switch (*input_ptr) {
+            case '\\':
+            case '/':
+                input_tail_slash = true;
+                input_tail = input_ptr;
+                break;
 
-    // Determine the name of the output file
-    sprint_plugin.output;
+            case '.':
+                if (input_tail != NULL && !input_tail_slash)
+                    continue;
+
+                input_tail_slash = false;
+                input_tail = input_ptr;
+                break;
+
+            default:
+                if (input_tail != NULL || input_ptr[1] != 0)
+                    continue;
+
+                input_tail = input_ptr;
+                input_tail_slash = true;
+                break;
+        }
+
+    // Copy the first part of the path up to and excluding the dot or up to and including the slash
+    int input_head_length = (int) (input_tail - input_path);
+    if (input_tail_slash)
+        input_head_length++;
+    if (input_head_length > 0 &&
+        !sprint_chain(error, sprint_stringbuilder_put_str_range(builder, input_path, input_head_length)))
+    {
+        sprint_check(sprint_stringbuilder_destroy(builder));
+        return error;
+    }
+
+    // Append the output filename suffix
+    if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_OUTPUT_SUFFIX)))
+        return error;
+
+    // Append the rest of the filename
+    int input_tail_length = (int) (input_ptr - input_path) - input_head_length;
+    if (!sprint_assert(false, input_tail_length >= 0))
+    {
+        sprint_check(sprint_stringbuilder_destroy(builder));
+        return SPRINT_ERROR_ASSERTION;
+    }
+    if (input_tail_length > 0 &&
+        !sprint_chain(error, sprint_stringbuilder_put_str(builder, input_path + input_head_length)))
+    {
+        sprint_check(sprint_stringbuilder_destroy(builder));
+        return error;
+    }
+
+    // Complete the builder and store the input and output path
+    sprint_plugin.input = input_path;
+    sprint_plugin.output = sprint_stringbuilder_complete(builder);
+    if (!sprint_assert(false, sprint_plugin.output != NULL))
+        return SPRINT_ERROR_ASSERTION;
 
     // Store the values into the struct
     sprint_plugin.language = language;
     sprint_plugin.process = pid;
+    sprint_plugin.selection = !found_all;
     sprint_plugin.pcb.width = pcb_width;
     sprint_plugin.pcb.height = pcb_height;
     sprint_plugin.pcb.origin = sprint_tuple_of(pcb_origin_x, pcb_origin_y);
@@ -303,6 +394,9 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
 
 sprint_error sprint_plugin_parse_input_internal()
 {
+    // Open input file
+    sprint_plugin.input;
+
     // TODO
     return SPRINT_ERROR_NONE;
 }
@@ -310,8 +404,6 @@ sprint_error sprint_plugin_parse_input_internal()
 sprint_error sprint_plugin_begin(int argc, const char* argv[])
 {
     if (argv == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    // TODO: close output, if state is not uninitialized; or open output only in the end (better)
 
     // Clear the plugin struct
     memset(&sprint_plugin, 0, sizeof(sprint_plugin));
@@ -330,6 +422,25 @@ sprint_error sprint_plugin_begin(int argc, const char* argv[])
     // Finally, update the state to processing and allow the plugin to run
     sprint_plugin.state = SPRINT_PLUGIN_STATE_PROCESSING;
     return SPRINT_ERROR_NONE;
+}
+
+void sprint_plugin_bail(int error)
+{
+    sprint_operation operation = SPRINT_OPERATION_FAILED_PLUGIN + error;
+    if (!sprint_operation_valid(operation, true) || operation < SPRINT_OPERATION_FAILED_PLUGIN)
+        operation = SPRINT_OPERATION_FAILED_END;
+
+    exit(operation);
+}
+
+sprint_error sprint_plugin_end(sprint_operation operation)
+{
+    if (!sprint_operation_valid(operation, false))
+        return SPRINT_ERROR_ARGUMENT_RANGE;
+
+    // TODO: Write output
+
+    exit(operation);
 }
 
 sprint_error sprint_plugin_print(FILE* stream)
@@ -363,6 +474,8 @@ sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
     sprint_chain(error, sprint_stringbuilder_put_str(builder, ", pcb="));
     sprint_chain(error, sprint_pcb_string(&sprint_plugin.pcb, builder));
     sprint_chain(error, sprint_stringbuilder_format(builder, ", process=%p", sprint_plugin.process));
+    sprint_chain(error, sprint_stringbuilder_format(builder, ", input=%s", sprint_plugin.input));
+    sprint_chain(error, sprint_stringbuilder_format(builder, ", output=%s", sprint_plugin.output));
     if (!sprint_chain(error, sprint_stringbuilder_put_chr(builder, '}')))
         builder->count = initial_count;
 
@@ -372,6 +485,11 @@ sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
 sprint_pcb* sprint_plugin_get_pcb(void)
 {
     return &sprint_plugin.pcb;
+}
+
+bool sprint_plugin_is_selection(void)
+{
+    return sprint_plugin.selection;
 }
 
 sprint_plugin_state sprint_plugin_get_state(void)

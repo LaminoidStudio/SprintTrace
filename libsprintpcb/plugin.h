@@ -50,6 +50,7 @@ typedef enum sprint_operation {
     SPRINT_OPERATION_FAILED_END = 255
 } sprint_operation;
 extern const char* SPRINT_OPERATION_NAMES[];
+bool sprint_operation_valid(sprint_operation operation, bool failed);
 
 typedef enum sprint_plugin_state {
     SPRINT_PLUGIN_STATE_UNINITIALIZED,
@@ -66,6 +67,7 @@ typedef int sprint_process_id;
 
 extern const char SPRINT_FLAG_PREFIX;
 extern const char SPRINT_FLAG_DELIMITER;
+extern const char* SPRINT_OUTPUT_SUFFIX;
 
 sprint_error sprint_plugin_begin(int argc, const char* argv[]);
 sprint_error sprint_plugin_print(FILE* stream);
