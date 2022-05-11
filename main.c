@@ -11,10 +11,14 @@
 #include "libsprintpcb/primitives.h"
 #include "libsprintpcb/elements.h"
 #include "libsprintpcb/stringbuilder.h"
+#include "libsprintpcb/errors.h"
+#include "libsprintpcb/plugin.h"
 
 int gui_main(void);
 
-int main() {
+int main(int argc, const char* argv[]) {
+    sprint_require(sprint_plugin_begin(argc, argv));
+
     sprint_element circle = sprint_circle_create(
             SPRINT_LAYER_MECHANICAL,
             10,
@@ -117,6 +121,7 @@ struct demo_gui {
     nk_size mprog;
     int mslider;
     int mcheck;
+    char* plugin;
 };
 
 void init_gui(struct demo_gui* gui)
@@ -130,6 +135,10 @@ void init_gui(struct demo_gui* gui)
     gui->mslider = 10;
     gui->mcheck = nk_true;
     strcpy(gui->buf2, "Hello, world!");
+
+    sprint_stringbuilder* builder = sprint_stringbuilder_create(63);
+    sprint_require(sprint_plugin_string(builder));
+    gui->plugin = sprint_stringbuilder_complete(builder);
 }
 
 void init_ctx(struct nk_context* ctx)
@@ -166,14 +175,15 @@ void init_ctx(struct nk_context* ctx)
     nk_style_from_table(ctx, table);
 }
 
+sprint_error sprint_plugin_gui(struct nk_context* ctx);
 void handle_gui(struct nk_context* ctx, struct demo_gui* gui)
 {
     /* GUI */
-    if (nk_begin(ctx, gui->title, nk_rect(0, 0, gui->width * 2 / 3, gui->height * 2 / 3),
-            //0))
+    if (nk_begin(ctx, gui->title, nk_rect(0, 0, gui->width, gui->height),
+            0))
             //NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
                  //NK_WINDOW_TITLE))
-                 NK_WINDOW_TITLE|NK_WINDOW_MOVABLE|NK_WINDOW_BORDER))
+            //     NK_WINDOW_TITLE|NK_WINDOW_MOVABLE|NK_WINDOW_BORDER))
         //NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
     {
         enum {EASY, HARD};
@@ -181,11 +191,24 @@ void handle_gui(struct nk_context* ctx, struct demo_gui* gui)
         static int property1 = 20;
         static int property2 = 20;
 
-        nk_layout_row_static(ctx, 30, 80, 2);
-        if (nk_button_label(ctx, "button1"))
-            fprintf(stdout, "button1 pressed\n");
-        if (nk_button_label(ctx, "button2"))
-            fprintf(stdout, "button2 pressed\n");
+        nk_layout_row_dynamic(ctx, 280, 1);
+        if (nk_group_begin(ctx, "PCB", NK_WINDOW_TITLE | NK_WINDOW_BORDER)) {
+            sprint_require(sprint_plugin_gui(ctx));
+            nk_group_end(ctx);
+        }
+
+        nk_layout_row_static(ctx, 30, 80, 5);
+        if (nk_button_label(ctx, "Do nothing"))
+            sprint_plugin_end(SPRINT_OPERATION_NONE);
+        if (nk_button_label(ctx, "Replace abs."))
+            sprint_plugin_end(SPRINT_OPERATION_REPLACE_ABSOLUTE);
+        if (nk_button_label(ctx, "Add abs."))
+            sprint_plugin_end(SPRINT_OPERATION_ADD_ABSOLUTE);
+        if (nk_button_label(ctx, "Replace rel."))
+            sprint_plugin_end(SPRINT_OPERATION_REPLACE_RELATIVE);
+        if (nk_button_label(ctx, "Add rel."))
+            sprint_plugin_end(SPRINT_OPERATION_ADD_RELATIVE);
+
         nk_layout_row_dynamic(ctx, 30, 2);
         if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
         if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;

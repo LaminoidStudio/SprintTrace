@@ -462,6 +462,59 @@ sprint_error sprint_plugin_print(FILE* stream)
     return error;
 }
 
+#include "../nuklear.h"
+sprint_error sprint_plugin_gui(struct nk_context* ctx)
+{
+    sprint_stringbuilder* builder = sprint_stringbuilder_of("State: ");
+    sprint_stringbuilder_put_str(builder, SPRINT_PLUGIN_STATE_NAMES[sprint_plugin.state]);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+
+    builder = sprint_stringbuilder_of("Language: ");
+    sprint_stringbuilder_put_str(builder, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+
+    builder = sprint_stringbuilder_of("Selection: ");
+    sprint_bool_string(sprint_plugin.selection, builder);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+
+    builder = sprint_stringbuilder_of("PCB width: ");
+    sprint_require(sprint_dist_string(sprint_plugin.pcb.width, builder, SPRINT_PRIM_FORMAT_COOKED));
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+
+    builder = sprint_stringbuilder_of("PCB height: ");
+    sprint_require(sprint_dist_string(sprint_plugin.pcb.height, builder, SPRINT_PRIM_FORMAT_COOKED));
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+
+    builder = sprint_stringbuilder_of("PCB origin: ");
+    sprint_require(sprint_tuple_string(sprint_plugin.pcb.origin, builder, SPRINT_PRIM_FORMAT_COOKED));
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+
+    builder = sprint_stringbuilder_of("PCB flags: ");
+    sprint_require(sprint_pcb_flags_string(sprint_plugin.pcb.flags, builder));
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+
+    // todo: grid + elems
+
+    builder = sprint_stringbuilder_of("Input: ");
+    sprint_stringbuilder_put_str(builder, sprint_plugin.input);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+
+    builder = sprint_stringbuilder_of("Output: ");
+    sprint_stringbuilder_put_str(builder, sprint_plugin.output);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+
+    return SPRINT_ERROR_NONE;
+}
+
 sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
 {
     if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
