@@ -15,7 +15,7 @@
 #include "libsprintpcb/errors.h"
 
 int main(int argc, const char* argv[]) {
-    sprint_plugin_parse_internal(argc, argv);
+    sprint_require(sprint_plugin_begin(argc, argv));
 
     sprint_element circle = sprint_circle_create(
             SPRINT_LAYER_MECHANICAL,

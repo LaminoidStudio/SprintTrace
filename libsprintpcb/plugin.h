@@ -57,7 +57,7 @@ typedef enum sprint_plugin_state {
     SPRINT_PLUGIN_STATE_PARSING_INPUT,
     SPRINT_PLUGIN_STATE_PROCESSING,
     SPRINT_PLUGIN_STATE_WRITING_OUTPUT,
-    SPRINT_PLUGIN_STATE_EXITING
+    SPRINT_PLUGIN_STATE_COMPLETED
 } sprint_plugin_state;
 extern const char* SPRINT_PLUGIN_STATE_NAMES[];
 
@@ -67,9 +67,7 @@ typedef int sprint_process_id;
 extern const char SPRINT_FLAG_PREFIX;
 extern const char SPRINT_FLAG_DELIMITER;
 
-sprint_error sprint_plugin_parse_internal(int argc, const char* argv[]);
-
-sprint_error sprint_plugin_begin(int argc, char* argv[]);
+sprint_error sprint_plugin_begin(int argc, const char* argv[]);
 sprint_error sprint_plugin_print(FILE* stream);
 sprint_error sprint_plugin_string(sprint_stringbuilder* builder);
 void sprint_plugin_bail(int error);

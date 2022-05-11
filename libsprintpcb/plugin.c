@@ -9,6 +9,11 @@
 
 #include <stdbool.h>
 
+bool sprint_plugin_parse_int_internal(int* output, const char* input);
+bool sprint_plugin_parse_language_internal(int* output, const char* input);
+sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[]);
+sprint_error sprint_plugin_parse_input_internal();
+
 const char* SPRINT_LANGUAGE_NAMES[] = {
         [SPRINT_LANGUAGE_ENGLISH] = "English",
         [SPRINT_LANGUAGE_GERMAN] = "German",
@@ -23,7 +28,7 @@ static struct sprint_plugin {
     sprint_pcb pcb;
     bool selection;
     FILE* input;
-    FILE* output;
+    char* output;
 } sprint_plugin = {0};
 
 const char* SPRINT_OPERATION_NAMES[] = {
@@ -40,7 +45,7 @@ const char* SPRINT_PLUGIN_STATE_NAMES[] = {
         [SPRINT_PLUGIN_STATE_PARSING_INPUT] = "parsing input",
         [SPRINT_PLUGIN_STATE_PROCESSING] = "processing",
         [SPRINT_PLUGIN_STATE_WRITING_OUTPUT] = "writing output",
-        [SPRINT_PLUGIN_STATE_EXITING] = "exiting"
+        [SPRINT_PLUGIN_STATE_COMPLETED] = "completed"
 };
 
 #ifdef WIN32
@@ -81,9 +86,9 @@ bool sprint_plugin_parse_language_internal(int* output, const char* input)
     return true;
 }
 
-sprint_error sprint_plugin_parse_internal(int argc, const char* argv[])
+sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
 {
-    if (argv == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    // Check, if the number of arguments could be enough
     if (argc < 3 || argc > 10) {
         sprint_throw(false, "bad number of arguments");
         return SPRINT_ERROR_PLUGIN_FLAGS_MISSING;
@@ -95,7 +100,7 @@ sprint_error sprint_plugin_parse_internal(int argc, const char* argv[])
 
     // Keep track of the flags passed (defaults: language=UK, x=0, y=0, all=false, pid=0; rest is required)
     bool found_language = false, found_width = false, found_height = false, found_x = false, found_y = false,
-        found_flags = false, found_all = false, found_pid = false;
+            found_flags = false, found_all = false, found_pid = false;
 
     // Get the input file name
     const char* input_path = NULL;
@@ -278,8 +283,51 @@ sprint_error sprint_plugin_parse_internal(int argc, const char* argv[])
         free(flags_str);
     }
 
+    // Try to open the input file
+    sprint_plugin.input;
 
+    // Determine the name of the output file
+    sprint_plugin.output;
 
+    // Store the values into the struct
+    sprint_plugin.language = language;
+    sprint_plugin.process = pid;
+    sprint_plugin.pcb.width = pcb_width;
+    sprint_plugin.pcb.height = pcb_height;
+    sprint_plugin.pcb.origin = sprint_tuple_of(pcb_origin_x, pcb_origin_y);
+    sprint_plugin.pcb.flags = flags;
+
+    return SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_plugin_parse_input_internal()
+{
+    // TODO
+    return SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_plugin_begin(int argc, const char* argv[])
+{
+    if (argv == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // TODO: close output, if state is not uninitialized; or open output only in the end (better)
+
+    // Clear the plugin struct
+    memset(&sprint_plugin, 0, sizeof(sprint_plugin));
+
+    // Parse the flags
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_plugin.state = SPRINT_PLUGIN_STATE_PARSING_FLAGS;
+    if (!sprint_chain(error, sprint_plugin_parse_flags_internal(argc, argv)))
+        return error;
+
+    // Parse the input
+    sprint_plugin.state = SPRINT_PLUGIN_STATE_PARSING_INPUT;
+    if (!sprint_chain(error, sprint_plugin_parse_input_internal()))
+        return error;
+
+    // Finally, update the state to processing and allow the plugin to run
+    sprint_plugin.state = SPRINT_PLUGIN_STATE_PROCESSING;
     return SPRINT_ERROR_NONE;
 }
 
@@ -328,7 +376,7 @@ sprint_pcb* sprint_plugin_get_pcb(void)
 sprint_plugin_state sprint_plugin_get_state(void)
 {
     if (sprint_plugin.state <= SPRINT_PLUGIN_STATE_UNINITIALIZED ||
-        sprint_plugin.state > SPRINT_PLUGIN_STATE_EXITING)
+        sprint_plugin.state > SPRINT_PLUGIN_STATE_COMPLETED)
         return SPRINT_PLUGIN_STATE_UNINITIALIZED;
 
     return sprint_plugin.state;
