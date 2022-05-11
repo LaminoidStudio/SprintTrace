@@ -54,12 +54,21 @@ const char SPRINT_FLAG_DELIMITER = ':';
 bool sprint_plugin_parse_int_internal(int* output, const char* input)
 {
     if (*input == 0) return false;
-    return sscanf(input, "%d", output) == 1;
+
+    errno = 0;
+    char* number_end = NULL;
+    long number = strtol(input, &number_end, 10);
+    if (errno != 0 || number_end == NULL || *number_end != 0)
+        return false;
+
+    *output = number;
+    return true;
 }
 
 bool sprint_plugin_parse_language_internal(int* output, const char* input)
 {
     if (*input == 0) return false;
+
     if (strcasecmp(input, "UK") == 0)
         *output = SPRINT_LANGUAGE_ENGLISH;
     else if (strcasecmp(input, "DE") == 0)
@@ -68,6 +77,7 @@ bool sprint_plugin_parse_language_internal(int* output, const char* input)
         *output = SPRINT_LANGUAGE_FRENCH;
     else
         return false;
+
     return true;
 }
 
@@ -175,7 +185,7 @@ sprint_error sprint_plugin_parse_internal(int argc, const char* argv[])
                 if (found_all)
                     already_found = true;
                 else
-                    sprint_debug("Importing entire PCB");
+                    sprint_debug("importing entire PCB");
                 found_all = true;
                 break;
 
