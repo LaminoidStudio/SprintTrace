@@ -8,7 +8,10 @@
 #include "stringbuilder.h"
 
 #include <stdbool.h>
+
+#ifndef WIN32
 #include <errno.h>
+#endif
 
 bool sprint_plugin_parse_int_internal(int* output, const char* input);
 bool sprint_plugin_parse_language_internal(int* output, const char* input);
