@@ -9,8 +9,8 @@
 #include "stringbuilder.h"
 #include "token.h"
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 
 sprint_error sprint_bool_print(bool val, FILE* stream)
@@ -57,7 +57,7 @@ sprint_error sprint_int_string(int val, sprint_stringbuilder* builder)
 
 sprint_error sprint_str_print(const char* str, FILE* stream, sprint_prim_format format)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (str == NULL || stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     sprint_stringbuilder* builder = sprint_stringbuilder_create(15);
     if (builder == NULL)
@@ -100,6 +100,11 @@ const char* SPRINT_LAYER_NAMES[] = {
         [SPRINT_LAYER_MECHANICAL] = "mechanical"
 };
 
+bool sprint_layer_valid(sprint_layer layer)
+{
+    return layer >= SPRINT_LAYER_COPPER_TOP && layer <= SPRINT_LAYER_MECHANICAL;
+}
+
 sprint_error sprint_layer_print(sprint_layer layer, FILE* stream, sprint_prim_format format)
 {
     if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
@@ -119,7 +124,7 @@ sprint_error sprint_layer_print(sprint_layer layer, FILE* stream, sprint_prim_fo
 sprint_error sprint_layer_string(sprint_layer layer, sprint_stringbuilder* builder, sprint_prim_format format)
 {
     if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    if (layer >= sizeof(SPRINT_LAYER_NAMES) / sizeof(const char*)) return SPRINT_ERROR_ARGUMENT_RANGE;
+    if (!sprint_layer_valid(layer)) return SPRINT_ERROR_ARGUMENT_RANGE;
 
     // Write the string based on the format
     const char* layer_name;
@@ -130,7 +135,7 @@ sprint_error sprint_layer_string(sprint_layer layer, sprint_stringbuilder* build
         case SPRINT_PRIM_FORMAT_COOKED:
             layer_name = SPRINT_LAYER_NAMES[layer];
             if (layer_name == NULL)
-                return SPRINT_ERROR_ARGUMENT_RANGE;
+                return SPRINT_ERROR_ASSERTION;
             return sprint_stringbuilder_put_str(builder, layer_name);
 
         default:
@@ -150,6 +155,11 @@ const int SPRINT_DIST_PRECISION_TH      = 3;
 const int SPRINT_DIST_PRECISION_IN      = SPRINT_DIST_PRECISION_TH + 2;
 const sprint_dist SPRINT_DIST_MAX       = 50 * SPRINT_DIST_PER_CM;
 const sprint_dist SPRINT_DIST_MIN       = -SPRINT_DIST_MAX;
+
+bool sprint_dist_valid(sprint_dist dist)
+{
+    return dist >= SPRINT_DIST_MIN && dist <= SPRINT_DIST_MIN;
+}
 
 sprint_error sprint_dist_print(sprint_dist dist, FILE* stream, sprint_prim_format format)
 {
@@ -214,31 +224,20 @@ sprint_error sprint_dist_string(sprint_dist dist, sprint_stringbuilder* builder,
     }
 
     // Keep track of encountered errors and then restore the initial builder count
-    sprint_error error;
+    sprint_error error = SPRINT_ERROR_NONE;
     int initial_count = builder->count;
 
     // Append the integer part and decimal point
-    error = sprint_stringbuilder_format(builder, "%d.", dist / dist_per_unit);
-    if (error != SPRINT_ERROR_NONE) {
-        builder->count = initial_count;
-        return error;
-    }
+    sprint_chain(error, sprint_stringbuilder_format(builder, "%d.", dist / dist_per_unit));
 
     // Append the mantissa part
-    error = sprint_stringbuilder_put_padded(builder, abs(dist % dist_per_unit),
-                                            false, true, dist_precision);
-    if (error != SPRINT_ERROR_NONE) {
-        builder->count = initial_count;
-        return error;
-    }
+    sprint_chain(error, sprint_stringbuilder_put_padded(builder, abs(dist % dist_per_unit),
+                                            false, true, dist_precision));
 
     // Append the unit suffix
-    error = sprint_stringbuilder_put_str(builder, dist_suffix);
-    if (error != SPRINT_ERROR_NONE) {
+    if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, dist_suffix)))
         builder->count = initial_count;
-        return error;
-    }
-    return SPRINT_ERROR_NONE;
+    return error;
 }
 
 const sprint_angle SPRINT_ANGLE_WHOLE   = 1;
@@ -248,6 +247,11 @@ const sprint_angle SPRINT_ANGLE_NATIVE  = SPRINT_ANGLE_FINE;
 const int SPRINT_ANGLE_PRECISION        = 3;
 const sprint_angle SPRINT_ANGLE_MAX     = 360 * SPRINT_ANGLE_NATIVE;
 const sprint_angle SPRINT_ANGLE_MIN     = -SPRINT_DIST_MAX;
+
+bool sprint_angle_valid(sprint_angle angle)
+{
+    return angle >= SPRINT_ANGLE_MIN && angle <= SPRINT_ANGLE_MAX;
+}
 
 sprint_error sprint_angle_print(sprint_angle angle, FILE* stream, sprint_prim_format format)
 {
@@ -316,7 +320,12 @@ sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y)
     return tuple;
 }
 
-sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream, sprint_prim_format format)
+bool sprint_tuple_valid(sprint_tuple tuple)
+{
+    return sprint_dist_valid(tuple.x) && sprint_dist_valid(tuple.y);
+}
+
+sprint_error sprint_tuple_print(sprint_tuple tuple, FILE* stream, sprint_prim_format format)
 {
     if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
@@ -332,31 +341,20 @@ sprint_error sprint_tuple_print(sprint_tuple* tuple, FILE* stream, sprint_prim_f
     return error;
 }
 
-sprint_error sprint_tuple_string(sprint_tuple* tuple, sprint_stringbuilder* builder, sprint_prim_format format)
+sprint_error sprint_tuple_string(sprint_tuple tuple, sprint_stringbuilder* builder, sprint_prim_format format)
 {
-    if (tuple == NULL || builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     // Store the initial builder count to be restored on error and try to append the first distance
     int initial_count = builder->count;
-    sprint_error error = sprint_dist_string(tuple->x, builder, format);
-    if (error != SPRINT_ERROR_NONE) {
-        builder->count = initial_count;
-        return error;
-    }
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_dist_string(tuple.x, builder, format));
 
     // Try to append the separator
-    error = format == SPRINT_PRIM_FORMAT_RAW ? sprint_stringbuilder_put_chr(builder, SPRINT_TUPLE_SEPARATOR)
-            : sprint_stringbuilder_format(builder, " %c ", SPRINT_TUPLE_SEPARATOR);
-    if (error != SPRINT_ERROR_NONE) {
-        builder->count = initial_count;
-        return error;
-    }
+    sprint_chain(error, sprint_stringbuilder_put_chr(builder, SPRINT_TUPLE_SEPARATOR));
 
     // Finally, try to append the second tuple
-    error = sprint_dist_string(tuple->y, builder, format);
-    if (error != SPRINT_ERROR_NONE) {
+    if (!sprint_chain(error, sprint_dist_string(tuple.y, builder, format)))
         builder->count = initial_count;
-        return error;
-    }
-    return SPRINT_ERROR_NONE;
+    return error;
 }

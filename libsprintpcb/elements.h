@@ -88,7 +88,8 @@ typedef struct sprint_pad_tht {
 typedef struct sprint_pad_smt {
     sprint_layer layer;
     sprint_tuple position;
-    sprint_tuple size;
+    sprint_dist width;
+    sprint_dist height;
 
     sprint_link link;
     sprint_dist clear;
@@ -222,10 +223,11 @@ struct sprint_element {
     };
 };
 
-sprint_element sprint_track_create(sprint_layer layer, sprint_dist width, int num_points, sprint_tuple* points);
+sprint_error sprint_track_create(sprint_element* element, sprint_layer layer, sprint_dist width,
+                                 int num_points, sprint_tuple* points);
 sprint_element sprint_pad_tht_create(sprint_layer layer, sprint_tuple position, sprint_dist size,
                                      sprint_dist drill, sprint_pad_tht_form form);
-sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, sprint_tuple size);
+sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, sprint_dist width, sprint_dist height);
 sprint_element sprint_zone_create(sprint_layer layer, sprint_dist width, int num_points, sprint_tuple* points);
 sprint_element sprint_text_create(sprint_text_type type, sprint_layer layer, sprint_tuple position,
                                   sprint_dist height, char* text);

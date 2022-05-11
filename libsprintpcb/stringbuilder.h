@@ -48,6 +48,8 @@ sprint_error sprint_stringbuilder_put_chr(sprint_stringbuilder* builder, char ch
 
 sprint_error sprint_stringbuilder_put_str(sprint_stringbuilder* builder, const char* str);
 
+sprint_error sprint_stringbuilder_put_str_range(sprint_stringbuilder* builder, const char* str, int limit);
+
 sprint_error sprint_stringbuilder_put_int(sprint_stringbuilder* builder, int num);
 
 sprint_error sprint_stringbuilder_put_hex(sprint_stringbuilder* builder, int num);

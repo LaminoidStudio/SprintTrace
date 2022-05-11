@@ -10,28 +10,30 @@
 #include <stdlib.h>
 #include <string.h>
 
-sprint_element sprint_track_create(sprint_layer layer, sprint_dist width, int num_points, sprint_tuple* points)
+sprint_error sprint_track_create(sprint_element* element, sprint_layer layer, sprint_dist width,
+                                   int num_points, sprint_tuple* points)
 {
-    // todo input checking
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!sprint_layer_valid(layer) || !sprint_dist_valid(width) || num_points < 0) return SPRINT_ERROR_ARGUMENT_RANGE;
+    if (num_points != 0 && points == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
-    sprint_element element;
-    memset(&element, 0, sizeof(element));
-    element.type = SPRINT_ELEMENT_TRACK;
+    memset(element, 0, sizeof(*element));
+    element->type = SPRINT_ELEMENT_TRACK;
 
     // Required fields
-    element.track.layer = layer;
-    element.track.width = width;
-    element.track.num_points = num_points;
-    element.track.points = points;
+    element->track.layer = layer;
+    element->track.width = width;
+    element->track.num_points = num_points;
+    element->track.points = points;
 
     // Optional fields
-    element.track.clear = 4000;
-    element.track.cutout = false;
-    element.track.soldermask = false;
-    element.track.flatstart = false;
-    element.track.flatend = false;
+    element->track.clear = 4000;
+    element->track.cutout = false;
+    element->track.soldermask = false;
+    element->track.flatstart = false;
+    element->track.flatend = false;
 
-    return element;
+    return SPRINT_ERROR_NONE;
 }
 
 sprint_element sprint_pad_tht_create(sprint_layer layer, sprint_tuple position, sprint_dist size,
@@ -65,7 +67,7 @@ sprint_element sprint_pad_tht_create(sprint_layer layer, sprint_tuple position, 
     return element;
 }
 
-sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, sprint_tuple size)
+sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, sprint_dist width, sprint_dist height)
 {
     // todo input checking
 
@@ -76,7 +78,8 @@ sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, 
     // Required fields
     element.pad_smt.layer = layer;
     element.pad_smt.position = position;
-    element.pad_smt.size = size;
+    element.pad_smt.width = width;
+    element.pad_smt.height = height;
 
     // Optional fields
     element.pad_smt.link.has_id = false;

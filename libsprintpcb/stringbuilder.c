@@ -61,7 +61,8 @@ sprint_error sprint_stringbuilder_destroy(sprint_stringbuilder* builder)
 char* sprint_stringbuilder_complete(sprint_stringbuilder* builder)
 {
     if (sprint_stringbuilder_trim(builder) != SPRINT_ERROR_NONE) {
-        free(builder);
+        if (builder != NULL)
+            free(builder);
         return NULL;
     }
 
@@ -183,11 +184,19 @@ sprint_error sprint_stringbuilder_put_chr(sprint_stringbuilder* builder, char ch
 
 sprint_error sprint_stringbuilder_put_str(sprint_stringbuilder* builder, const char* str)
 {
+    return sprint_stringbuilder_put_str_range(builder, str, INT_MAX);
+}
+
+sprint_error sprint_stringbuilder_put_str_range(sprint_stringbuilder* builder, const char* str, int limit)
+{
     if (builder == NULL || str == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (limit < 0) return SPRINT_ERROR_ARGUMENT_RANGE;
     if (builder->content == NULL) return SPRINT_ERROR_STATE_INVALID;
 
     // Ensure that there is room to put the string
     int additional_length = (int) strlen(str);
+    if (additional_length > limit)
+        additional_length = limit;
     int minimum_capacity = builder->count + additional_length;
     if (builder->content == NULL || minimum_capacity >= builder->capacity)
     {
@@ -196,8 +205,8 @@ sprint_error sprint_stringbuilder_put_str(sprint_stringbuilder* builder, const c
             return error;
     }
 
-    // Safe strcpy because the length is checked ahead of time
-    strcpy(builder->content + builder->count, str);
+    // Copy the string
+    strncpy(builder->content + builder->count, str, additional_length);
     builder->count += additional_length;
     return SPRINT_ERROR_NONE;
 }
