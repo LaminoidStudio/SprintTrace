@@ -47,7 +47,8 @@ bool sprint_log_format(const char* format, ...);
 #ifndef NDEBUG
 #define SPRINT_SOURCE __FILE__
 #define sprint_debug(what) sprint_debug_internal(SPRINT_SOURCE, __LINE__, (what))
-#define sprint_debug_format(format, ...) if (true) { sprint_debug(NULL); sprint_log_format((format), ##__VA_ARGS__); }
+#define sprint_debug_format(format, ...) \
+                    do { sprint_debug(NULL); sprint_log_format((format), ##__VA_ARGS__); } while (false)
 #else
 #define SPRINT_SOURCE (strchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : \
                                             (strrchr(__FILE__, '/') != NULL ? strrchr(__FILE__, '/') + 1 : __FILE__))
@@ -56,13 +57,13 @@ bool sprint_log_format(const char* format, ...);
 #endif
 #define sprint_warning(what) sprint_warning_internal(SPRINT_SOURCE, __LINE__, (what))
 #define sprint_warning_format(format, ...) \
-                    if (true) { sprint_warning(NULL); sprint_log_format((format), ##__VA_ARGS__); }
+                    do { sprint_warning(NULL); sprint_log_format((format), ##__VA_ARGS__); } while (false)
 #define sprint_require(error) sprint_error_internal((error), true, SPRINT_SOURCE, __LINE__, #error)
 #define sprint_check(error) sprint_error_internal((error), false, SPRINT_SOURCE, __LINE__, #error)
 #define sprint_throw(critical, what) \
                     sprint_error_internal(SPRINT_ERROR_INTERNAL, critical, SPRINT_SOURCE, __LINE__, what)
 #define sprint_throw_format(critical, format, ...) \
-                    if (true) { sprint_throw((critical), NULL); sprint_log_format((format), ##__VA_ARGS__); }
+                    do { sprint_throw((critical), NULL); sprint_log_format((format), ##__VA_ARGS__); } while (false)
 #define sprint_assert(critical, success) sprint_error_internal((success) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ASSERTION, \
                                                                 (critical), SPRINT_SOURCE, __LINE__, #success)
 #define sprint_chain(result, error) (((result) != SPRINT_ERROR_NONE) ? false : \
