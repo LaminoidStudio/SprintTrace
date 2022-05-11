@@ -36,7 +36,7 @@ int main() {
     sprint_stringbuilder_put_chr(builder, '\n');
 
     sprint_stringbuilder_put_str(builder, "center: ");
-    sprint_tuple_string(&circle.circle.center, builder, format_dist);
+    sprint_tuple_string(circle.circle.center, builder, format_dist);
     sprint_stringbuilder_put_chr(builder, '\n');
 
     sprint_stringbuilder_put_str(builder, "radius: ");
@@ -95,7 +95,7 @@ int main() {
 
     for (int i = 0; i < list->count; i++) {
         sprint_tuple* tuple = (sprint_tuple*)sprint_list_get(list, i);
-        sprint_tuple_print(tuple, stdout, SPRINT_PRIM_FORMAT_COOKED);
+        sprint_tuple_print(*tuple, stdout, SPRINT_PRIM_FORMAT_COOKED);
         putchar('\n');
     }
 
