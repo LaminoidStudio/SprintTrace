@@ -21,11 +21,14 @@
 #define NK_INCLUDE_DEFAULT_FONT
 #endif
 
+float nk_sin(float x);
+float nk_cos(float x);
+
 #define NK_MEMSET memset
 #define NK_MEMCPY memcpy
 #define NK_SQRT sqrt
-#define NK_SIN sin
-#define NK_COS cos
+#define NK_SIN nk_sin
+#define NK_COS nk_cos
 
 #include "Nuklear/nuklear.h"
 

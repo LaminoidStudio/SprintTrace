@@ -370,7 +370,8 @@ nk_gdi_stroke_arc(HDC dc, short cx, short cy, unsigned short r, float amin, floa
         SetDCPenColor(dc, color);
     else
     {
-        DWORD pen_style = PS_SOLID | PS_ENDCAP_FLAT | PS_GEOMETRIC; /* without that endcap round caps are used which looks really weird for thick arcs */
+        /* the flat endcap makes thick arcs look better */
+        DWORD pen_style = PS_SOLID | PS_ENDCAP_FLAT | PS_GEOMETRIC;
 
         LOGBRUSH brush;
         brush.lbStyle = BS_SOLID;
@@ -382,14 +383,13 @@ nk_gdi_stroke_arc(HDC dc, short cx, short cy, unsigned short r, float amin, floa
     }
 
     /* calculate arc and draw */
-    float start_x = cx + r*NK_COS((amin+adelta)*NK_PI/180.0);
-    float start_y = cy + r*NK_SIN((amin+adelta)*NK_PI/180.0);
-
-    float end_x = cx + r*NK_COS(amin*NK_PI/180.0);
-    float end_y = cy + r*NK_SIN(amin*NK_PI/180.0);
+    int start_x = cx + (int) ((float)r*nk_cos(amin+adelta)),
+        start_y = cy + (int) ((float)r*nk_sin(amin+adelta)),
+        end_x = cx + (int) ((float)r*nk_cos(amin)),
+        end_y = cy + (int) ((float)r*nk_sin(amin));
 
     SetArcDirection(dc, AD_COUNTERCLOCKWISE);
-    Arc(dc, cx-r, cy-r, cx+r, cy+r, start_x, start_y, end_x, end_y);
+    Pie(dc, cx-r, cy-r, cx+r, cy+r, start_x, start_y, end_x, end_y);
 
     if (pen)
     {
@@ -405,11 +405,10 @@ nk_gdi_fill_arc(HDC dc, short cx, short cy, unsigned short r, float amin, float 
     SetDCBrushColor(dc, color);
     SetDCPenColor(dc, color);
 
-    float start_x = cx + r*NK_COS((amin+adelta)*NK_PI/180.0);
-    float start_y = cy + r*NK_SIN((amin+adelta)*NK_PI/180.0);
-
-    float end_x = cx + r*NK_COS(amin*NK_PI/180.0);
-    float end_y = cy + r*NK_SIN(amin*NK_PI/180.0);
+    int start_x = cx + (int) ((float)r*nk_cos(amin+adelta)),
+        start_y = cy + (int) ((float)r*nk_sin(amin+adelta)),
+        end_x = cx + (int) ((float)r*nk_cos(amin)),
+        end_y = cy + (int) ((float)r*nk_sin(amin));
 
     Pie(dc, cx-r, cy-r, cx+r, cy+r, start_x, start_y, end_x, end_y);
 }
@@ -437,6 +436,7 @@ nk_gdi_stroke_circle(HDC dc, short x, short y, unsigned short w,
         SelectObject(dc, pen);
     }
 
+    SelectObject(dc, GetStockObject(NULL_BRUSH));
     SetDCBrushColor(dc, OPAQUE);
     Ellipse(dc, x, y, x + w, y + h);
 
