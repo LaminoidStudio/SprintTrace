@@ -83,12 +83,10 @@ sprint_error sprint_pcb_string(sprint_pcb* pcb, sprint_stringbuilder* builder)
     sprint_chain(error, sprint_dist_string(pcb->width, builder, SPRINT_PRIM_FORMAT_COOKED));
     sprint_chain(error, sprint_stringbuilder_put_str(builder, ", height="));
     sprint_chain(error, sprint_dist_string(pcb->height, builder, SPRINT_PRIM_FORMAT_COOKED));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", origin="));
-    sprint_chain(error, sprint_tuple_string(pcb->origin, builder, SPRINT_PRIM_FORMAT_COOKED));
+    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", grid="));
+    sprint_chain(error, sprint_grid_string(&pcb->grid, builder));
     sprint_chain(error, sprint_stringbuilder_put_str(builder, ", flags="));
     sprint_chain(error, sprint_pcb_flags_string(pcb->flags, builder));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", grid="));
-
     sprint_chain(error, sprint_stringbuilder_put_str(builder, ", elements="));
 
     if (!sprint_chain(error, sprint_stringbuilder_put_chr(builder, '}')))

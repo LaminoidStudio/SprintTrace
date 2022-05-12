@@ -389,7 +389,7 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
     sprint_plugin.selection = !found_all;
     sprint_plugin.pcb.width = pcb_width;
     sprint_plugin.pcb.height = pcb_height;
-    sprint_plugin.pcb.origin = sprint_tuple_of(pcb_origin_x, pcb_origin_y);
+    sprint_plugin.pcb.grid = sprint_grid_of(sprint_tuple_of(pcb_origin_x, pcb_origin_y), grid, grid);
     sprint_plugin.pcb.flags = flags;
 
     return SPRINT_ERROR_NONE;
@@ -474,6 +474,8 @@ sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
     sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]));
     sprint_chain(error, sprint_stringbuilder_put_str(builder, ", operation="));
     sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_OPERATION_NAMES[sprint_plugin.operation]));
+    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", selection="));
+    sprint_chain(error, sprint_bool_string(sprint_plugin.selection, builder));
     sprint_chain(error, sprint_stringbuilder_put_str(builder, ", pcb="));
     sprint_chain(error, sprint_pcb_string(&sprint_plugin.pcb, builder));
     sprint_chain(error, sprint_stringbuilder_format(builder, ", process=%p", sprint_plugin.process));

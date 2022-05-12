@@ -23,17 +23,6 @@ int main(int argc, const char* argv[]) {
             sprint_tuple_of(sprint_dist_um(1), sprint_dist_um(20)),
             10);
 
-    sprint_pcb pcb;
-    memset(&pcb, 0, sizeof(pcb));
-    /*sprint_dist*/ pcb.width = sprint_dist_cm(20);
-    /*sprint_dist*/ pcb.height = sprint_dist_cm(10);
-    /*sprint_tuple*/ pcb.origin = sprint_tuple_of(0, 0);
-    /*sprint_pcb_flags*/ pcb.flags = SPRINT_PCB_FLAG_PLANE_TOP | SPRINT_PCB_FLAG_PLANE_BOTTOM;
-    /*sprint_grid*/ //pcb.grid = ;
-    /*sprint_group*/ //pcb.elements = ;
-    sprint_require(sprint_pcb_print(&pcb, stdout));
-    fputc('\n', stdout);
-
     sprint_prim_format format_dist = SPRINT_PRIM_FORMAT_DIST_UM;
     sprint_prim_format format_angle = format_dist == SPRINT_PRIM_FORMAT_RAW ? format_dist : SPRINT_PRIM_FORMAT_COOKED;
     sprint_prim_format format_layer = format_angle;
