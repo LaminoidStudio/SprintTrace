@@ -388,8 +388,10 @@ nk_gdi_stroke_arc(HDC dc, short cx, short cy, unsigned short r, float amin, floa
         end_x = cx + (int) ((float)r*nk_cos(amin)),
         end_y = cy + (int) ((float)r*nk_sin(amin));
 
+    HGDIOBJ br = SelectObject(dc, GetStockObject(NULL_BRUSH));
     SetArcDirection(dc, AD_COUNTERCLOCKWISE);
     Pie(dc, cx-r, cy-r, cx+r, cy+r, start_x, start_y, end_x, end_y);
+    SelectObject(dc, br);
 
     if (pen)
     {
@@ -428,6 +430,7 @@ nk_gdi_stroke_circle(HDC dc, short x, short y, unsigned short w,
     unsigned short h, unsigned short line_thickness, struct nk_color col)
 {
     COLORREF color = convert_color(col);
+    HGDIOBJ br;
     HPEN pen = NULL;
     if (line_thickness == 1) {
         SetDCPenColor(dc, color);
@@ -436,9 +439,10 @@ nk_gdi_stroke_circle(HDC dc, short x, short y, unsigned short w,
         SelectObject(dc, pen);
     }
 
-    SelectObject(dc, GetStockObject(NULL_BRUSH));
+    br = SelectObject(dc, GetStockObject(NULL_BRUSH));
     SetDCBrushColor(dc, OPAQUE);
     Ellipse(dc, x, y, x + w, y + h);
+    SelectObject(dc, br);
 
     if (pen) {
         SelectObject(dc, GetStockObject(DC_PEN));
