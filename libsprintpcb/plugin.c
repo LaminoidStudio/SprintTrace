@@ -389,7 +389,7 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
     sprint_plugin.selection = !found_all;
     sprint_plugin.pcb.width = pcb_width;
     sprint_plugin.pcb.height = pcb_height;
-    sprint_plugin.pcb.origin = sprint_tuple_of(pcb_origin_x, pcb_origin_y);
+    sprint_plugin.pcb.grid = sprint_grid_of(sprint_tuple_of(pcb_origin_x, pcb_origin_y), grid, grid);
     sprint_plugin.pcb.flags = flags;
 
     return SPRINT_ERROR_NONE;
@@ -462,6 +462,31 @@ sprint_error sprint_plugin_print(FILE* stream)
     return error;
 }
 
+sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
+{
+    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    int initial_count = builder->count;
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_stringbuilder_put_str(builder, "sprint_plugin{state="));
+    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_PLUGIN_STATE_NAMES[sprint_plugin.state]));
+    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", language="));
+    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]));
+    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", operation="));
+    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_OPERATION_NAMES[sprint_plugin.operation]));
+    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", selection="));
+    sprint_chain(error, sprint_bool_string(sprint_plugin.selection, builder));
+    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", pcb="));
+    sprint_chain(error, sprint_pcb_string(&sprint_plugin.pcb, builder));
+    sprint_chain(error, sprint_stringbuilder_format(builder, ", process=%p", sprint_plugin.process));
+    sprint_chain(error, sprint_stringbuilder_format(builder, ", input=%s", sprint_plugin.input));
+    sprint_chain(error, sprint_stringbuilder_format(builder, ", output=%s", sprint_plugin.output));
+    if (!sprint_chain(error, sprint_stringbuilder_put_chr(builder, '}')))
+        builder->count = initial_count;
+
+    return error;
+}
+
 #include "../nuklear.h"
 sprint_error sprint_plugin_gui(struct nk_context* ctx)
 {
@@ -490,8 +515,8 @@ sprint_error sprint_plugin_gui(struct nk_context* ctx)
     nk_layout_row_dynamic(ctx, 15, 1);
     nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
 
-    builder = sprint_stringbuilder_of("PCB origin: ");
-    sprint_require(sprint_tuple_string(sprint_plugin.pcb.origin, builder, SPRINT_PRIM_FORMAT_COOKED));
+    builder = sprint_stringbuilder_of("PCB grid: ");
+    sprint_require(sprint_grid_string(&sprint_plugin.pcb.grid, builder));
     nk_layout_row_dynamic(ctx, 15, 1);
     nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
 
@@ -513,29 +538,6 @@ sprint_error sprint_plugin_gui(struct nk_context* ctx)
     nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
 
     return SPRINT_ERROR_NONE;
-}
-
-sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
-{
-    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    int initial_count = builder->count;
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, "sprint_plugin{state="));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_PLUGIN_STATE_NAMES[sprint_plugin.state]));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", language="));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", operation="));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_OPERATION_NAMES[sprint_plugin.operation]));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", pcb="));
-    sprint_chain(error, sprint_pcb_string(&sprint_plugin.pcb, builder));
-    sprint_chain(error, sprint_stringbuilder_format(builder, ", process=%p", sprint_plugin.process));
-    sprint_chain(error, sprint_stringbuilder_format(builder, ", input=%s", sprint_plugin.input));
-    sprint_chain(error, sprint_stringbuilder_format(builder, ", output=%s", sprint_plugin.output));
-    if (!sprint_chain(error, sprint_stringbuilder_put_chr(builder, '}')))
-        builder->count = initial_count;
-
-    return error;
 }
 
 sprint_pcb* sprint_plugin_get_pcb(void)

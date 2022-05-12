@@ -34,9 +34,8 @@ extern const char* SPRINT_PCB_FLAG_NAMES[];
 typedef struct sprint_pcb {
     sprint_dist width;
     sprint_dist height;
-    sprint_tuple origin;
-    sprint_pcb_flags flags;
     sprint_grid grid;
+    sprint_pcb_flags flags;
     sprint_group elements;
 } sprint_pcb;
 

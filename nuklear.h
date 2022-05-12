@@ -5,9 +5,9 @@
 #ifndef SPRINTPCB_NUKLEAR_H
 #define SPRINTPCB_NUKLEAR_H
 
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_DEFAULT_ALLOCATOR
