@@ -13,6 +13,10 @@
 #include <string.h>
 #include <stdbool.h>
 
+#ifndef WIN32
+#include <limits.h>
+#endif
+
 sprint_stringbuilder* sprint_stringbuilder_create(int capacity)
 {
     if (capacity < 0) return NULL;
