@@ -141,7 +141,6 @@ nk_gdi_stroke_rect(HDC dc, short x, short y, unsigned short w,
     unsigned short h, unsigned short r, unsigned short line_thickness, struct nk_color col)
 {
     COLORREF color = convert_color(col);
-    HGDIOBJ br;
     HPEN pen = NULL;
 
     if (line_thickness == 1) {
@@ -151,7 +150,7 @@ nk_gdi_stroke_rect(HDC dc, short x, short y, unsigned short w,
         SelectObject(dc, pen);
     }
 
-    br = SelectObject(dc, GetStockObject(NULL_BRUSH));
+    HGDIOBJ br = SelectObject(dc, GetStockObject(NULL_BRUSH));
     if (r == 0) {
         Rectangle(dc, x, y, x + w, y + h);
     } else {
