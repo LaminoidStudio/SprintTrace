@@ -197,7 +197,7 @@ void handle_gui(struct nk_context* ctx, struct demo_gui* gui)
             nk_group_end(ctx);
         }
 
-        nk_layout_row_static(ctx, 30, 80, 5);
+        nk_layout_row_static(ctx, 30, 100, 5);
         if (nk_button_label(ctx, "Do nothing"))
             sprint_plugin_end(SPRINT_OPERATION_NONE);
         if (nk_button_label(ctx, "Replace abs."))
