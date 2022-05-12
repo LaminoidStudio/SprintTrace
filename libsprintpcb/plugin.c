@@ -490,12 +490,7 @@ sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
 #include "../nuklear.h"
 sprint_error sprint_plugin_gui(struct nk_context* ctx)
 {
-    sprint_stringbuilder* builder = sprint_stringbuilder_of("State: ");
-    sprint_stringbuilder_put_str(builder, SPRINT_PLUGIN_STATE_NAMES[sprint_plugin.state]);
-    nk_layout_row_dynamic(ctx, 15, 1);
-    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
-
-    builder = sprint_stringbuilder_of("Language: ");
+    sprint_stringbuilder* builder = sprint_stringbuilder_of("Language: ");
     sprint_stringbuilder_put_str(builder, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]);
     nk_layout_row_dynamic(ctx, 15, 1);
     nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);

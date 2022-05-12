@@ -191,7 +191,7 @@ void handle_gui(struct nk_context* ctx, struct demo_gui* gui)
         static int property1 = 20;
         static int property2 = 20;
 
-        nk_layout_row_dynamic(ctx, 280, 1);
+        nk_layout_row_dynamic(ctx, 200, 1);
         if (nk_group_begin(ctx, "PCB", NK_WINDOW_TITLE | NK_WINDOW_BORDER)) {
             sprint_require(sprint_plugin_gui(ctx));
             nk_group_end(ctx);
