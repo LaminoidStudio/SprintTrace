@@ -12,12 +12,19 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+// true, false, 123, 123/456, TEXT, |string|
 typedef enum sprint_tokenizer_state {
     SPRINT_SLICER_STATE_SCANNING,
-    SPRINT_SLICER_STATE_IDENTIFIER,
-    SPRINT_SLICER_STATE_VALUE_START,
-    SPRINT_SLICER_STATE_VALUE
-
+    SPRINT_SLICER_STATE_INVALID,
+    SPRINT_SLICER_STATE_WORD,
+    SPRINT_SLICER_STATE_NUMBER,
+    SPRINT_SLICER_STATE_STRING_START,
+    SPRINT_SLICER_STATE_STRING,
+    SPRINT_SLICER_STATE_STRING_END,
+    SPRINT_SLICER_STATE_VALUE_SEPARATOR,
+    SPRINT_SLICER_STATE_TUPLE_SEPARATOR,
+    SPRINT_SLICER_STATE_STATEMENT_SEPARATOR,
+    SPRINT_SLICER_STATE_STATEMENT_TERMINATOR
 } sprint_tokenizer_state;
 
 extern const char SPRINT_STATEMENT_SEPARATOR;
@@ -37,6 +44,7 @@ typedef struct sprint_source_origin {
 } sprint_source_origin;
 
 typedef enum sprint_token_type {
+    SPRINT_TOKEN_TYPE_NONE,
     SPRINT_TOKEN_TYPE_WORD,
     SPRINT_TOKEN_TYPE_NUMBER,
     SPRINT_TOKEN_TYPE_STRING,
@@ -63,6 +71,13 @@ struct sprint_tokenizer {
     };
 };
 
+bool sprint_tokenizer_state_valid(sprint_tokenizer_state state);
+sprint_tokenizer_state sprint_tokenizer_first_state(char first_chr);
+sprint_tokenizer_state sprint_tokenizer_next_state(sprint_tokenizer_state current_state, char next_chr);
+bool sprint_tokenizer_is_idle(sprint_tokenizer_state state);
+bool sprint_tokenizer_is_recorded(sprint_tokenizer_state current_state, sprint_tokenizer_state next_state);
+bool sprint_tokenizer_is_complete(sprint_tokenizer_state current_state, sprint_tokenizer_state next_state);
+sprint_token_type sprint_tokenizer_state_type(sprint_tokenizer_state state);
 sprint_tokenizer* sprint_tokenizer_from_str(const char* str, bool free);
 sprint_tokenizer* sprint_tokenizer_from_file(const char* path);
 sprint_error sprint_tokenizer_destroy(sprint_tokenizer* tokenizer);
