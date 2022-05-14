@@ -31,6 +31,36 @@ const char* SPRINT_ERROR_NAMES[] = {
         [SPRINT_ERROR_PLUGIN_FLAGS_SYNTAX] = "plugin flags syntax"
 };
 
+sprint_error sprint_rethrow(sprint_error error)
+{
+    switch (error) {
+        case SPRINT_ERROR_NONE:
+        case SPRINT_ERROR_INTERNAL:
+        case SPRINT_ERROR_ASSERTION:
+        case SPRINT_ERROR_UNDERFLOW:
+        case SPRINT_ERROR_OVERFLOW:
+        case SPRINT_ERROR_MEMORY:
+        case SPRINT_ERROR_IO:
+        case SPRINT_ERROR_EOF:
+        case SPRINT_ERROR_STATE_INVALID:
+        case SPRINT_ERROR_PLUGIN_INPUT_MISSING:
+        case SPRINT_ERROR_PLUGIN_INPUT_SYNTAX:
+        case SPRINT_ERROR_PLUGIN_FLAGS_MISSING:
+        case SPRINT_ERROR_PLUGIN_FLAGS_SYNTAX:
+            return error;
+
+        case SPRINT_ERROR_ARGUMENT_NULL:
+        case SPRINT_ERROR_ARGUMENT_RANGE:
+        case SPRINT_ERROR_ARGUMENT_FORMAT:
+        case SPRINT_ERROR_ARGUMENT_INCOMPLETE:
+            return SPRINT_ERROR_INTERNAL;
+
+        default:
+            sprint_warning_format("unknown error %d rethrown", error);
+            return error;
+    }
+}
+
 const char* sprint_error_string(sprint_error error)
 {
     const char* str = "unknown";

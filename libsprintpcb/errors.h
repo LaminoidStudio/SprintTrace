@@ -42,6 +42,7 @@ bool sprint_error_print(sprint_error error, FILE* stream, bool capitalized);
 void sprint_debug_internal(const char* file, int line, const char* context);
 void sprint_warning_internal(const char* file, int line, const char* context);
 bool sprint_error_internal(sprint_error error, bool critical, const char* file, int line, const char* context);
+sprint_error sprint_rethrow(sprint_error error);
 bool sprint_log(const char* what);
 bool sprint_log_format(const char* format, ...);
 #ifndef NDEBUG
