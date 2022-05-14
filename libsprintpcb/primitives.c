@@ -227,12 +227,9 @@ sprint_error sprint_dist_string(sprint_dist dist, sprint_stringbuilder* builder,
     sprint_error error = SPRINT_ERROR_NONE;
     int initial_count = builder->count;
 
-    // Append the integer part and decimal point
-    sprint_chain(error, sprint_stringbuilder_format(builder, "%d.", dist / dist_per_unit));
-
-    // Append the mantissa part
-    sprint_chain(error, sprint_stringbuilder_put_padded(builder, abs(dist % dist_per_unit),
-                                            false, true, dist_precision));
+    // Append the integer part, decimal point and mantissa
+    sprint_chain(error, sprint_stringbuilder_format(builder, "%d.%0*d",
+                                                dist / dist_per_unit, dist_precision, abs(dist % dist_per_unit)));
 
     // Append the unit suffix
     if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, dist_suffix)))
@@ -274,7 +271,7 @@ sprint_error sprint_angle_string(sprint_angle angle, sprint_stringbuilder* build
     if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     // Keep track of encountered errors and then restore the initial builder count
-    sprint_error error;
+    sprint_error error = SPRINT_ERROR_NONE;
     int initial_count = builder->count;
 
     // Write the string based on the format
@@ -283,28 +280,14 @@ sprint_error sprint_angle_string(sprint_angle angle, sprint_stringbuilder* build
             return sprint_stringbuilder_put_int(builder, angle);
 
         case SPRINT_PRIM_FORMAT_COOKED:
-            // Append the integer part and decimal point
-            error = sprint_stringbuilder_format(builder, "%d.", angle / SPRINT_ANGLE_NATIVE);
-            if (error != SPRINT_ERROR_NONE) {
-                builder->count = initial_count;
-                return error;
-            }
-
-            // Append the mantissa part
-            error = sprint_stringbuilder_put_padded(builder, abs(angle % SPRINT_ANGLE_NATIVE),
-                                                    false, true, SPRINT_ANGLE_PRECISION);
-            if (error != SPRINT_ERROR_NONE) {
-                builder->count = initial_count;
-                return error;
-            }
+            // Append the integer part, decimal point and mantissa part
+            sprint_chain(error, sprint_stringbuilder_format(builder, "%d.%0*d", angle / SPRINT_ANGLE_NATIVE,
+                                                        SPRINT_ANGLE_PRECISION, abs(angle % SPRINT_ANGLE_NATIVE)));
 
             // Append the unit suffix
-            error = sprint_stringbuilder_put_str(builder, "deg");
-            if (error != SPRINT_ERROR_NONE) {
+            if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, "deg")))
                 builder->count = initial_count;
-                return error;
-            }
-            return SPRINT_ERROR_NONE;
+            return error;
 
         default:
             return SPRINT_ERROR_ARGUMENT_RANGE;
