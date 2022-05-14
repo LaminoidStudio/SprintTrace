@@ -125,7 +125,7 @@ sprint_error sprint_stringbuilder_format(sprint_stringbuilder* builder, const ch
     {
         sprint_error error = sprint_stringbuilder_grow(builder, builder->capacity * 2 + minimum_capacity);
         if (error != SPRINT_ERROR_NONE)
-            return error;
+            return sprint_rethrow(error);
     }
 
     // Actually write the formatted content
@@ -159,7 +159,7 @@ sprint_error sprint_stringbuilder_put_range(sprint_stringbuilder* builder, sprin
     {
         sprint_error error = sprint_stringbuilder_grow(builder, builder->capacity * 2 + minimum_capacity);
         if (error != SPRINT_ERROR_NONE)
-            return error;
+            return sprint_rethrow(error);
     }
 
     // Copy the contents of the source to the builder and increase the size
@@ -177,7 +177,7 @@ sprint_error sprint_stringbuilder_put_chr(sprint_stringbuilder* builder, char ch
     {
         sprint_error error = sprint_stringbuilder_grow(builder, builder->capacity * 2);
         if (error != SPRINT_ERROR_NONE)
-            return error;
+            return sprint_rethrow(error);
     }
 
     // Store the character
@@ -206,7 +206,7 @@ sprint_error sprint_stringbuilder_put_str_range(sprint_stringbuilder* builder, c
     {
         sprint_error error = sprint_stringbuilder_grow(builder, builder->capacity * 2 + minimum_capacity);
         if (error != SPRINT_ERROR_NONE)
-            return error;
+            return sprint_rethrow(error);
     }
 
     // Copy the string

@@ -30,12 +30,12 @@ sprint_error sprint_grid_print(sprint_grid* grid, FILE* stream)
     if (builder == NULL)
         return SPRINT_ERROR_MEMORY;
 
-    sprint_error error = sprint_grid_string(grid, builder);
-    if (error == SPRINT_ERROR_NONE)
-        return sprint_stringbuilder_flush(builder, stream);
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_grid_string(grid, builder));
+    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
+        sprint_stringbuilder_destroy(builder);
 
-    sprint_stringbuilder_destroy(builder);
-    return error;
+    return sprint_rethrow(error);
 }
 
 sprint_error sprint_grid_string(sprint_grid* grid, sprint_stringbuilder* builder)
@@ -54,5 +54,5 @@ sprint_error sprint_grid_string(sprint_grid* grid, sprint_stringbuilder* builder
     if (!sprint_chain(error, sprint_stringbuilder_put_chr(builder, '}')))
         builder->count = initial_count;
 
-    return error;
+    return sprint_rethrow(error);
 }

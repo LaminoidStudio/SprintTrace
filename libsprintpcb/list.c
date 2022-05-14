@@ -49,7 +49,7 @@ sprint_error sprint_list_add(sprint_list* list, void* element)
         int new_capacity = list->capacity * 2;
         if (new_capacity < list->capacity) return SPRINT_ERROR_OVERFLOW;
         sprint_error error = sprint_list_grow(list, new_capacity);
-        if (error != SPRINT_ERROR_NONE) return error;
+        if (error != SPRINT_ERROR_NONE) return sprint_rethrow(error);
     }
 
     // Copy the new element to the end of the list and increment the count

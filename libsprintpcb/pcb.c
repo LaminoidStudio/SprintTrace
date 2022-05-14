@@ -22,12 +22,12 @@ sprint_error sprint_pcb_flags_print(sprint_pcb_flags flags, FILE* stream)
     if (builder == NULL)
         return SPRINT_ERROR_MEMORY;
 
-    sprint_error error = sprint_pcb_flags_string(flags, builder);
-    if (error == SPRINT_ERROR_NONE)
-        return sprint_stringbuilder_flush(builder, stream);
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_pcb_flags_string(flags, builder));
+    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
+        sprint_stringbuilder_destroy(builder);
 
-    sprint_stringbuilder_destroy(builder);
-    return error;
+    return sprint_rethrow(error);
 }
 
 sprint_error sprint_pcb_flags_string(sprint_pcb_flags flags, sprint_stringbuilder* builder)
@@ -54,7 +54,7 @@ sprint_error sprint_pcb_flags_string(sprint_pcb_flags flags, sprint_stringbuilde
     if (!found)
         sprint_chain(error, sprint_stringbuilder_put_str(builder, flags == 0 ? "none" : "invalid"));
 
-    return error;
+    return sprint_rethrow(error);
 }
 
 sprint_error sprint_pcb_print(sprint_pcb* pcb, FILE* stream)
@@ -65,12 +65,12 @@ sprint_error sprint_pcb_print(sprint_pcb* pcb, FILE* stream)
     if (builder == NULL)
         return SPRINT_ERROR_MEMORY;
 
-    sprint_error error = sprint_pcb_string(pcb, builder);
-    if (error == SPRINT_ERROR_NONE)
-        return sprint_stringbuilder_flush(builder, stream);
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_pcb_string(pcb, builder));
+    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
+        sprint_stringbuilder_destroy(builder);
 
-    sprint_stringbuilder_destroy(builder);
-    return error;
+    return sprint_rethrow(error);
 }
 
 sprint_error sprint_pcb_string(sprint_pcb* pcb, sprint_stringbuilder* builder)
@@ -92,5 +92,5 @@ sprint_error sprint_pcb_string(sprint_pcb* pcb, sprint_stringbuilder* builder)
     if (!sprint_chain(error, sprint_stringbuilder_put_chr(builder, '}')))
         builder->count = initial_count;
 
-    return error;
+    return sprint_rethrow(error);
 }

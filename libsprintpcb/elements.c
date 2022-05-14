@@ -344,12 +344,12 @@ sprint_error sprint_element_type_print(sprint_element_type type, FILE* stream, s
     if (builder == NULL)
         return SPRINT_ERROR_MEMORY;
 
-    sprint_error error = sprint_element_type_string(type, builder, format);
-    if (error == SPRINT_ERROR_NONE)
-        return sprint_stringbuilder_flush(builder, stream);
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_element_type_string(type, builder, format));
+    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
+        sprint_stringbuilder_destroy(builder);
 
-    sprint_stringbuilder_destroy(builder);
-    return error;
+    return sprint_rethrow(error);
 }
 
 sprint_error sprint_element_type_string(sprint_element_type type, sprint_stringbuilder* builder,
@@ -362,13 +362,13 @@ sprint_error sprint_element_type_string(sprint_element_type type, sprint_stringb
     const char* type_name;
     switch (format) {
         case SPRINT_PRIM_FORMAT_RAW:
-            return sprint_stringbuilder_put_int(builder, type);
+            return sprint_rethrow(sprint_stringbuilder_put_int(builder, type));
 
         case SPRINT_PRIM_FORMAT_COOKED:
             type_name = SPRINT_ELEMENT_TYPE_NAMES[type];
             if (type_name == NULL)
                 return SPRINT_ERROR_ARGUMENT_RANGE;
-            return sprint_stringbuilder_put_str(builder, type_name);
+            return sprint_rethrow(sprint_stringbuilder_put_str(builder, type_name));
 
         default:
             return SPRINT_ERROR_ARGUMENT_RANGE;

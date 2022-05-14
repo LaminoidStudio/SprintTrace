@@ -267,6 +267,10 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
             sprint_chain(error, sprint_stringbuilder_put_str(builder, error_separator));
         sprint_chain(error, sprint_stringbuilder_put_str(builder, "height (H)"));
     }
+    if (error != SPRINT_ERROR_NONE) {
+        sprint_check(sprint_stringbuilder_destroy(builder));
+        return sprint_rethrow(error);
+    }
     if (builder->count > 0) {
         char* flags_str = sprint_stringbuilder_complete(builder);
         if (sprint_assert(false, flags_str != NULL)) {
@@ -306,6 +310,10 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
         if (builder->count > 0)
             sprint_chain(error, sprint_stringbuilder_put_str(builder, error_separator));
         sprint_chain(error, sprint_stringbuilder_put_str(builder, "process ID (P)"));
+    }
+    if (error != SPRINT_ERROR_NONE) {
+        sprint_check(sprint_stringbuilder_destroy(builder));
+        return sprint_rethrow(error);
     }
     if (builder->count > 0) {
         char* flags_str = sprint_stringbuilder_complete(builder);
@@ -356,12 +364,14 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
         !sprint_chain(error, sprint_stringbuilder_put_str_range(builder, input_path, input_head_length)))
     {
         sprint_check(sprint_stringbuilder_destroy(builder));
-        return error;
+        return sprint_rethrow(error);
     }
 
     // Append the output filename suffix
-    if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_OUTPUT_SUFFIX)))
-        return error;
+    if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_OUTPUT_SUFFIX))) {
+        sprint_check(sprint_stringbuilder_destroy(builder));
+        return sprint_rethrow(error);
+    }
 
     // Append the rest of the filename
     int input_tail_length = (int) (input_ptr - input_path) - input_head_length;
@@ -374,7 +384,7 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
         !sprint_chain(error, sprint_stringbuilder_put_str(builder, input_path + input_head_length)))
     {
         sprint_check(sprint_stringbuilder_destroy(builder));
-        return error;
+        return sprint_rethrow(error);
     }
 
     // Complete the builder and store the input and output path
@@ -415,12 +425,12 @@ sprint_error sprint_plugin_begin(int argc, const char* argv[])
     sprint_error error = SPRINT_ERROR_NONE;
     sprint_plugin.state = SPRINT_PLUGIN_STATE_PARSING_FLAGS;
     if (!sprint_chain(error, sprint_plugin_parse_flags_internal(argc, argv)))
-        return error;
+        return sprint_rethrow(error);
 
     // Parse the input
     sprint_plugin.state = SPRINT_PLUGIN_STATE_PARSING_INPUT;
     if (!sprint_chain(error, sprint_plugin_parse_input_internal()))
-        return error;
+        return sprint_rethrow(error);
 
     // Finally, update the state to processing and allow the plugin to run
     sprint_plugin.state = SPRINT_PLUGIN_STATE_PROCESSING;
@@ -454,12 +464,12 @@ sprint_error sprint_plugin_print(FILE* stream)
     if (builder == NULL)
         return SPRINT_ERROR_MEMORY;
 
-    sprint_error error = sprint_plugin_string(builder);
-    if (error == SPRINT_ERROR_NONE)
-        return sprint_stringbuilder_flush(builder, stream);
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_plugin_string(builder));
+    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
+        sprint_stringbuilder_destroy(builder);
 
-    sprint_stringbuilder_destroy(builder);
-    return error;
+    return sprint_rethrow(error);
 }
 
 sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
@@ -484,7 +494,7 @@ sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
     if (!sprint_chain(error, sprint_stringbuilder_put_chr(builder, '}')))
         builder->count = initial_count;
 
-    return error;
+    return sprint_rethrow(error);
 }
 
 sprint_pcb* sprint_plugin_get_pcb(void)
