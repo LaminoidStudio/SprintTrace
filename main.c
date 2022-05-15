@@ -20,6 +20,7 @@ int main(int argc, const char* argv[]) {
 
     const char* test_text_io = "ZONE,LAYER=1,SOLDERMASK=true,WIDTH=0,P0=332158/408480,P1=332158/409045,P2=332158/409610;\n"
                                "TRACK,LAYER=7,WIDTH=2000,P0=928537/606471,P1=78537/606471,P2=78537/56471,P3=928537/56471,P4=928537/606471;";
+    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     sprint_tokenizer* tokenizer = sprint_tokenizer_from_str(test_text_io, false);
     char current_chr, next_chr;
     sprint_tokenizer_state current_state, next_state;
@@ -35,7 +36,18 @@ int main(int argc, const char* argv[]) {
         sprint_require(error);
         next_state = sprint_tokenizer_next_state(current_state, next_chr);
 
+        if (sprint_tokenizer_is_recorded(current_state))
+            sprint_stringbuilder_put_chr(builder, current_chr);
+
         printf("%c: %s -> %s\n", current_chr, SPRINT_TOKENIZER_STATE_NAMES[current_state], SPRINT_TOKENIZER_STATE_NAMES[next_state]);
+
+        if (!sprint_tokenizer_is_complete(current_state, next_state))
+            continue;
+
+        char* value = sprint_stringbuilder_complete(builder);
+        printf(">> '%s'\n", value);
+        free(value);
+        builder = sprint_stringbuilder_create(7);
     }
     sprint_tokenizer_destroy(tokenizer);
 
@@ -52,7 +64,7 @@ int main(int argc, const char* argv[]) {
     sprint_plugin_print(stdout);
     fputc('\n', stdout);
 
-    sprint_stringbuilder* builder = sprint_stringbuilder_of("Circle and builder test:\n");
+    builder = sprint_stringbuilder_of("Circle and builder test:\n");
     sprint_stringbuilder_put_str(builder, "layer: ");
     sprint_layer_string(circle.circle.layer, builder, format_layer);
     sprint_stringbuilder_put_chr(builder, '\n');
