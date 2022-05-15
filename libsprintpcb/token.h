@@ -62,6 +62,7 @@ typedef struct sprint_token {
 
 struct sprint_tokenizer {
     sprint_source_origin origin;
+    bool preloaded;
     bool last_cr;
     sprint_error (*read)(sprint_tokenizer* tokenizer, char* result);
     bool (*close)(sprint_tokenizer* tokenizer);

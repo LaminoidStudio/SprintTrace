@@ -212,8 +212,12 @@ void sprint_tokenizer_count_internal(sprint_tokenizer* tokenizer, char chr)
     if ((current_cr || current_lf) && !(current_lf & tokenizer->last_cr)) {
         tokenizer->origin.line++;
         tokenizer->origin.pos = 0;
-    } else
+    } else if (tokenizer->preloaded)
         tokenizer->origin.pos++;
+
+    // Handle the preload flag
+    if (!tokenizer->preloaded)
+        tokenizer->preloaded = true;
 
     // Clear the last carriage return flag, if it is on and this is not one
     if (!current_cr & tokenizer->last_cr)
