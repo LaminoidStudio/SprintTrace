@@ -44,10 +44,11 @@ int main(int argc, const char* argv[]) {
         if (!sprint_tokenizer_is_complete(current_state, next_state))
             continue;
 
-        char* value = sprint_stringbuilder_complete(builder);
+        size_t value_size = builder->count + 1;
+        char value[value_size];
+        sprint_stringbuilder_output(builder, value, value_size);
+        sprint_stringbuilder_clear(builder);
         printf(">> '%s'\n", value);
-        free(value);
-        builder = sprint_stringbuilder_create(7);
     }
     sprint_tokenizer_destroy(tokenizer);
 
