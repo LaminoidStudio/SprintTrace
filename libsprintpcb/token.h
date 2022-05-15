@@ -77,7 +77,7 @@ bool sprint_tokenizer_state_valid(sprint_tokenizer_state state);
 sprint_tokenizer_state sprint_tokenizer_first_state(char first_chr);
 sprint_tokenizer_state sprint_tokenizer_next_state(sprint_tokenizer_state current_state, char next_chr);
 bool sprint_tokenizer_is_idle(sprint_tokenizer_state state);
-bool sprint_tokenizer_is_recorded(sprint_tokenizer_state current_state, sprint_tokenizer_state next_state);
+bool sprint_tokenizer_is_recorded(sprint_tokenizer_state state);
 bool sprint_tokenizer_is_complete(sprint_tokenizer_state current_state, sprint_tokenizer_state next_state);
 sprint_token_type sprint_tokenizer_state_type(sprint_tokenizer_state state);
 sprint_tokenizer* sprint_tokenizer_from_str(const char* str, bool free);

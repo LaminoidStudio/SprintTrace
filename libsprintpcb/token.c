@@ -80,13 +80,12 @@ bool sprint_tokenizer_is_idle(sprint_tokenizer_state state)
     return state == SPRINT_SLICER_STATE_SCANNING;
 }
 
-bool sprint_tokenizer_is_recorded(sprint_tokenizer_state current_state, sprint_tokenizer_state next_state)
+bool sprint_tokenizer_is_recorded(sprint_tokenizer_state state)
 {
-    if (!sprint_assert(false, sprint_tokenizer_state_valid(current_state)) ||
-        sprint_assert(false, sprint_tokenizer_state_valid(next_state)))
+    if (!sprint_assert(false, sprint_tokenizer_state_valid(state)))
         return false;
 
-    switch (current_state) {
+    switch (state) {
         case SPRINT_SLICER_STATE_INVALID:
         case SPRINT_SLICER_STATE_WORD:
         case SPRINT_SLICER_STATE_NUMBER:
@@ -100,8 +99,10 @@ bool sprint_tokenizer_is_recorded(sprint_tokenizer_state current_state, sprint_t
         case SPRINT_SLICER_STATE_SCANNING:
         case SPRINT_SLICER_STATE_STRING_START:
         case SPRINT_SLICER_STATE_STRING_END:
+            return false;
+
         default:
-            sprint_warning_format("unimplemented state: %d", current_state);
+            sprint_warning_format("unimplemented state: %d", state);
             return false;
     }
 }
@@ -109,7 +110,7 @@ bool sprint_tokenizer_is_recorded(sprint_tokenizer_state current_state, sprint_t
 bool sprint_tokenizer_is_complete(sprint_tokenizer_state current_state, sprint_tokenizer_state next_state)
 {
     if (!sprint_assert(false, sprint_tokenizer_state_valid(current_state)) ||
-        sprint_assert(false, sprint_tokenizer_state_valid(next_state)))
+        !sprint_assert(false, sprint_tokenizer_state_valid(next_state)))
         return true;
 
     switch (current_state) {
@@ -128,6 +129,8 @@ bool sprint_tokenizer_is_complete(sprint_tokenizer_state current_state, sprint_t
         case SPRINT_SLICER_STATE_TUPLE_SEPARATOR:
         case SPRINT_SLICER_STATE_STATEMENT_SEPARATOR:
         case SPRINT_SLICER_STATE_STATEMENT_TERMINATOR:
+            return true;
+
         default:
             sprint_warning_format("unimplemented state: %d", current_state);
             return true;
