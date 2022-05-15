@@ -84,6 +84,16 @@ char* sprint_stringbuilder_complete(sprint_stringbuilder* builder)
     return result;
 }
 
+int sprint_stringbuilder_count(sprint_stringbuilder* builder)
+{
+    return builder == NULL ? 0 : builder->count;
+}
+
+int sprint_stringbuilder_capacity(sprint_stringbuilder* builder)
+{
+    return builder == NULL ? 0 : builder->capacity;
+}
+
 sprint_error sprint_stringbuilder_flush(sprint_stringbuilder* builder, FILE* stream)
 {
     if (builder == NULL || stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
