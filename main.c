@@ -19,38 +19,23 @@ int main(int argc, const char* argv[]) {
     sprint_require(sprint_plugin_begin(argc, argv));
 
     const char* test_text_io = "ZONE,LAYER=1,SOLDERMASK=true,WIDTH=0,P0=332158/408480,P1=332158/409045,P2=332158/409610;\n"
-                               "# This is a comment that will be ignored\n"
+                               "TRACK;# This is a comment that will be ignored\n"
                                "TRACK,LAYER=7,WIDTH=2000,P0=928537/606471,P1=78537/606471,P2=78537/56471,P3=928537/56471,P4=928537/606471;";
     sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     sprint_tokenizer* tokenizer = sprint_tokenizer_from_str(test_text_io, false);
-    char current_chr, next_chr;
-    sprint_tokenizer_state current_state, next_state;
-    sprint_error error = tokenizer->read(tokenizer, &next_chr);
-    sprint_require(error);
-    next_state = sprint_tokenizer_first_state(next_chr);
+    sprint_token token = {0};
     while (true) {
-        current_chr = next_chr;
-        current_state = next_state;
-
-        error = tokenizer->read(tokenizer, &next_chr);
-        if (error == SPRINT_ERROR_EOF) break;
-        sprint_require(error);
-        next_state = sprint_tokenizer_next_state(current_state, next_chr);
-
-        if (sprint_tokenizer_is_recorded(current_state))
-            sprint_stringbuilder_put_chr(builder, current_chr);
-
-        printf("%c: %s -> %s\n", current_chr >= ' ' && current_chr < 127 ? current_chr : ' ',
-               SPRINT_TOKENIZER_STATE_NAMES[current_state], SPRINT_TOKENIZER_STATE_NAMES[next_state]);
-
-        if (!sprint_tokenizer_is_complete(current_state, next_state))
-            continue;
+        sprint_error error = sprint_tokenizer_next(tokenizer, &token, builder);
+        if (error == SPRINT_ERROR_EOF) {
+            sprint_assert(true, token.type != SPRINT_TOKEN_TYPE_INVALID);
+            break;
+        }
 
         size_t value_size = builder->count + 1;
         char value[value_size];
         sprint_stringbuilder_output(builder, value, value_size);
-        sprint_stringbuilder_clear(builder);
-        printf(">> '%s'\n", value);
+        sprint_assert(true, value != NULL);
+        printf("%s at %d:%d: %s\n", SPRINT_TOKEN_TYPE_NAMES[token.type], token.origin.line, token.origin.pos, value);
     }
     sprint_tokenizer_destroy(tokenizer);
 

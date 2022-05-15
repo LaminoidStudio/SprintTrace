@@ -5,6 +5,7 @@
 //
 
 #include "token.h"
+#include "stringbuilder.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +25,18 @@ const char* SPRINT_TOKENIZER_STATE_NAMES[] = {
         [SPRINT_SLICER_STATE_STATEMENT_TERMINATOR] = "statement terminator"
 };
 
+const char* SPRINT_TOKEN_TYPE_NAMES[] = {
+        [SPRINT_TOKEN_TYPE_NONE] = "none",
+        [SPRINT_TOKEN_TYPE_INVALID] = "invalid",
+        [SPRINT_TOKEN_TYPE_WORD] = "word",
+        [SPRINT_TOKEN_TYPE_NUMBER] = "number",
+        [SPRINT_TOKEN_TYPE_STRING] = "string",
+        [SPRINT_TOKEN_TYPE_VALUE_SEPARATOR] = "value separator",
+        [SPRINT_TOKEN_TYPE_TUPLE_SEPARATOR] = "tuple separator",
+        [SPRINT_TOKEN_TYPE_STATEMENT_SEPARATOR] = "statement separator",
+        [SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR] = "terminator"
+};
+
 const char SPRINT_COMMENT_PREFIX = '#';
 const char SPRINT_STATEMENT_SEPARATOR = ',';
 const char SPRINT_STATEMENT_TERMINATOR = ';';
@@ -34,8 +47,8 @@ const char* SPRINT_TRUE_VALUE = "true";
 const char* SPRINT_FALSE_VALUE = "false";
 
 void sprint_tokenizer_count_internal(sprint_tokenizer* tokenizer, char chr);
-sprint_error sprint_tokenizer_read_str_internal(sprint_tokenizer* tokenizer, char* result);
-sprint_error sprint_tokenizer_read_file_internal(sprint_tokenizer* tokenizer, char* result);
+bool sprint_tokenizer_read_str_internal(sprint_tokenizer* tokenizer);
+bool sprint_tokenizer_read_file_internal(sprint_tokenizer* tokenizer);
 bool sprint_tokenizer_close_str_internal(sprint_tokenizer* tokenizer);
 bool sprint_tokenizer_close_file_internal(sprint_tokenizer* tokenizer);
 
@@ -44,12 +57,12 @@ bool sprint_tokenizer_state_valid(sprint_tokenizer_state state)
     return state >= SPRINT_SLICER_STATE_SCANNING && state <= SPRINT_SLICER_STATE_STATEMENT_TERMINATOR;
 }
 
-sprint_tokenizer_state sprint_tokenizer_first_state(char first_chr)
+sprint_tokenizer_state sprint_tokenizer_state_first(char first_chr)
 {
-    return sprint_tokenizer_next_state(SPRINT_SLICER_STATE_SCANNING, first_chr);
+    return sprint_tokenizer_state_next(SPRINT_SLICER_STATE_SCANNING, first_chr);
 }
 
-sprint_tokenizer_state sprint_tokenizer_next_state(sprint_tokenizer_state current_state, char next_chr)
+sprint_tokenizer_state sprint_tokenizer_state_next(sprint_tokenizer_state current_state, char next_chr)
 {
     if (!sprint_assert(false, sprint_tokenizer_state_valid(current_state)))
         return SPRINT_SLICER_STATE_INVALID;
@@ -90,12 +103,12 @@ sprint_tokenizer_state sprint_tokenizer_next_state(sprint_tokenizer_state curren
     return SPRINT_SLICER_STATE_INVALID;
 }
 
-bool sprint_tokenizer_is_idle(sprint_tokenizer_state state)
+bool sprint_tokenizer_state_idle(sprint_tokenizer_state state)
 {
     return state == SPRINT_SLICER_STATE_SCANNING;
 }
 
-bool sprint_tokenizer_is_recorded(sprint_tokenizer_state state)
+bool sprint_tokenizer_state_recorded(sprint_tokenizer_state state)
 {
     if (!sprint_assert(false, sprint_tokenizer_state_valid(state)))
         return false;
@@ -123,7 +136,7 @@ bool sprint_tokenizer_is_recorded(sprint_tokenizer_state state)
     }
 }
 
-bool sprint_tokenizer_is_complete(sprint_tokenizer_state current_state, sprint_tokenizer_state next_state)
+bool sprint_tokenizer_state_complete(sprint_tokenizer_state current_state, sprint_tokenizer_state next_state)
 {
     if (!sprint_assert(false, sprint_tokenizer_state_valid(current_state)) ||
         !sprint_assert(false, sprint_tokenizer_state_valid(next_state)))
@@ -161,9 +174,10 @@ sprint_token_type sprint_tokenizer_state_type(sprint_tokenizer_state state)
 
     switch (state) {
         case SPRINT_SLICER_STATE_SCANNING:
-        case SPRINT_SLICER_STATE_INVALID:
         case SPRINT_SLICER_STATE_COMMENT:
             return SPRINT_TOKEN_TYPE_NONE;
+        case SPRINT_SLICER_STATE_INVALID:
+            return SPRINT_TOKEN_TYPE_INVALID;
         case SPRINT_SLICER_STATE_WORD:
             return SPRINT_TOKEN_TYPE_WORD;
         case SPRINT_SLICER_STATE_NUMBER:
@@ -218,6 +232,72 @@ sprint_tokenizer* sprint_tokenizer_from_file(const char* path)
     return tokenizer;
 }
 
+/**
+ * Reads the next token from the tokenizer.
+ * @param tokenizer The tokenizer instance.
+ * @param output The target reference to write the read token to.
+ * @param builder The builder to write the contents of the token to.
+ * @return No error returned on success. At the end of input, returns EOF in combination with an empty or invalid token.
+ */
+sprint_error sprint_tokenizer_next(sprint_tokenizer* tokenizer, sprint_token* output, sprint_stringbuilder* builder)
+{
+    if (tokenizer == NULL || output == NULL || builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (tokenizer->read == NULL) return SPRINT_ERROR_STATE_INVALID;
+
+    // Clear the output
+    memset(output, 0, sizeof(*output));
+
+    // Make sure the builder is empty
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (sprint_stringbuilder_count(builder) > 0 && !sprint_chain(error, sprint_stringbuilder_clear(builder)))
+        return sprint_rethrow(error);
+
+    // Make sure the tokenizer is preloaded by reading the first character and determining the first state
+    if (!tokenizer->preloaded && tokenizer->read(tokenizer))
+        tokenizer->next_state = sprint_tokenizer_state_first(tokenizer->next_chr);
+
+    // Process until reaching EOF
+    bool scanning = true;
+    while (!tokenizer->last_eof) {
+        // Move to the next character and state
+        char current_chr = tokenizer->next_chr;
+        sprint_tokenizer_state current_state = tokenizer->next_state;
+
+        // Store the origin, if at a transition
+        if (scanning && sprint_tokenizer_state_type(current_state) != SPRINT_TOKEN_TYPE_NONE) {
+            output->origin = tokenizer->origin;
+            scanning = false;
+        }
+
+        // Read the next character (ignoring whether it succeeded) and determine the state
+        tokenizer->read(tokenizer);
+        tokenizer->next_state = sprint_tokenizer_state_next(current_state, tokenizer->next_chr);
+
+        // Decide, whether to record it
+        if (sprint_tokenizer_state_recorded(current_state) &&
+            !sprint_chain(error, sprint_stringbuilder_put_chr(builder, current_chr)))
+            return sprint_rethrow(error);
+
+        // Check, whether the token is complete
+        if (!sprint_tokenizer_state_complete(current_state, tokenizer->next_state))
+            continue;
+
+        // Update the type and return success
+        output->type = sprint_tokenizer_state_type(current_state);
+        return SPRINT_ERROR_NONE;
+    }
+
+    // If the EOF was reached without finding anything, output an empty token instead of an invalid one
+    if (scanning) {
+        output->type = SPRINT_TOKEN_TYPE_NONE;
+        output->origin = tokenizer->origin;
+    } else
+        output->type = SPRINT_TOKEN_TYPE_INVALID;
+
+    // And return an EOF error
+    return SPRINT_ERROR_EOF;
+}
+
 sprint_error sprint_tokenizer_destroy(sprint_tokenizer* tokenizer)
 {
     if (tokenizer == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
@@ -241,58 +321,62 @@ void sprint_tokenizer_count_internal(sprint_tokenizer* tokenizer, char chr)
 
     // Determine, if there has been a line-ending and update the last state accordingly
     bool current_cr = chr == '\r', current_lf = chr == '\n';
-    tokenizer->last_cr |= current_cr;
 
-    // Decide, whether to update the position or line
-    if ((current_cr || current_lf) && !(current_lf & tokenizer->last_cr)) {
+    // Update the position
+    if (current_cr | current_lf & !tokenizer->last_cr) {
         tokenizer->origin.line++;
         tokenizer->origin.pos = 0;
-    } else if (tokenizer->preloaded)
+    } else if (tokenizer->preloaded & !(current_cr | current_lf | tokenizer->last_cr | tokenizer->last_lf))
         tokenizer->origin.pos++;
 
-    // Handle the preload flag
-    if (!tokenizer->preloaded)
-        tokenizer->preloaded = true;
+    // Set the preload flag
+    tokenizer->preloaded = true;
 
-    // Clear the last carriage return flag, if it is on and this is not one
-    if (!current_cr & tokenizer->last_cr)
-        tokenizer->last_cr = false;
+    // Update the flags
+    tokenizer->last_cr = current_cr;
+    tokenizer->last_lf = current_lf;
 }
 
-sprint_error sprint_tokenizer_read_str_internal(sprint_tokenizer* tokenizer, char* result)
+bool sprint_tokenizer_read_str_internal(sprint_tokenizer* tokenizer)
 {
-    if (tokenizer == NULL || result == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    if (tokenizer->str == NULL) return SPRINT_ERROR_STATE_INVALID;
+    if (tokenizer == NULL || tokenizer->str == NULL || tokenizer->last_eof) return false;
 
     // Read the character and check, if the EOF is reached
     char chr = *tokenizer->str;
-    if (chr == 0)
-        return SPRINT_ERROR_EOF;
+    if (chr == 0) {
+        // If so, store a new line, set the EOF flag and fail
+        tokenizer->next_chr = '\n';
+        tokenizer->last_eof = true;
+        return false;
+    }
 
     // Increment the pointer
     tokenizer->str++;
 
     // Count and store the character
     sprint_tokenizer_count_internal(tokenizer, chr);
-    *result = chr;
-    return SPRINT_ERROR_NONE;
+    tokenizer->next_chr = chr;
+    return true;
 }
 
-sprint_error sprint_tokenizer_read_file_internal(sprint_tokenizer* tokenizer, char* result)
+bool sprint_tokenizer_read_file_internal(sprint_tokenizer* tokenizer)
 {
-    if (tokenizer == NULL || result == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    if (tokenizer->file == NULL) return SPRINT_ERROR_STATE_INVALID;
+    if (tokenizer == NULL || tokenizer->file == NULL || tokenizer->last_eof) return false;
 
     // Read the character and check, if the EOF is reached
     int raw_chr = fgetc(tokenizer->file);
-    if (raw_chr == EOF)
-        return SPRINT_ERROR_EOF;
+    if (raw_chr == EOF) {
+        // If so, store a new line, set the EOF flag and fail
+        tokenizer->next_chr = '\n';
+        tokenizer->last_eof = true;
+        return false;
+    }
     char chr = (char) raw_chr;
 
     // Count and store the character
     sprint_tokenizer_count_internal(tokenizer, chr);
-    *result = chr;
-    return SPRINT_ERROR_NONE;
+    tokenizer->next_chr = chr;
+    return true;
 }
 
 bool sprint_tokenizer_close_str_internal(sprint_tokenizer* tokenizer)
