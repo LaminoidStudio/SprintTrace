@@ -26,6 +26,7 @@ typedef enum sprint_tokenizer_state {
     SPRINT_SLICER_STATE_STATEMENT_SEPARATOR,
     SPRINT_SLICER_STATE_STATEMENT_TERMINATOR
 } sprint_tokenizer_state;
+extern const char* SPRINT_TOKENIZER_STATE_NAMES[];
 
 extern const char SPRINT_STATEMENT_SEPARATOR;
 extern const char SPRINT_STATEMENT_TERMINATOR;

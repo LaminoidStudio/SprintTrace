@@ -9,6 +9,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+const char* SPRINT_TOKENIZER_STATE_NAMES[] = {
+        [SPRINT_SLICER_STATE_SCANNING] = "scanning",
+        [SPRINT_SLICER_STATE_INVALID] = "invalid",
+        [SPRINT_SLICER_STATE_WORD] = "word",
+        [SPRINT_SLICER_STATE_NUMBER] = "number",
+        [SPRINT_SLICER_STATE_STRING_START] = "string start",
+        [SPRINT_SLICER_STATE_STRING] = "string",
+        [SPRINT_SLICER_STATE_STRING_END] = "string end",
+        [SPRINT_SLICER_STATE_VALUE_SEPARATOR] = "value separator",
+        [SPRINT_SLICER_STATE_TUPLE_SEPARATOR] = "tuple separator",
+        [SPRINT_SLICER_STATE_STATEMENT_SEPARATOR] = "statement separator",
+        [SPRINT_SLICER_STATE_STATEMENT_TERMINATOR] = "statement terminator"
+};
+
 const char SPRINT_STATEMENT_SEPARATOR = ',';
 const char SPRINT_STATEMENT_TERMINATOR = ';';
 const char SPRINT_VALUE_SEPARATOR = '=';
