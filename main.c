@@ -12,10 +12,32 @@
 #include "libsprintpcb/elements.h"
 #include "libsprintpcb/stringbuilder.h"
 #include "libsprintpcb/plugin.h"
+#include "libsprintpcb/token.h"
 #include "libsprintpcb/errors.h"
 
 int main(int argc, const char* argv[]) {
     sprint_require(sprint_plugin_begin(argc, argv));
+
+    const char* test_text_io = "ZONE,LAYER=1,SOLDERMASK=true,WIDTH=0,P0=332158/408480,P1=332158/409045,P2=332158/409610;\n"
+                               "TRACK,LAYER=7,WIDTH=2000,P0=928537/606471,P1=78537/606471,P2=78537/56471,P3=928537/56471,P4=928537/606471;";
+    sprint_tokenizer* tokenizer = sprint_tokenizer_from_str(test_text_io, false);
+    char current_chr, next_chr;
+    sprint_tokenizer_state current_state, next_state;
+    sprint_error error = tokenizer->read(tokenizer, &next_chr);
+    sprint_require(error);
+    next_state = sprint_tokenizer_first_state(next_chr);
+    while (true) {
+        current_chr = next_chr;
+        current_state = next_state;
+
+        error = tokenizer->read(tokenizer, &next_chr);
+        if (error == SPRINT_ERROR_EOF) break;
+        sprint_require(error);
+        next_state = sprint_tokenizer_next_state(current_state, next_chr);
+
+        printf("%c: %s -> %s\n", current_chr, SPRINT_TOKENIZER_STATE_NAMES[current_state], SPRINT_TOKENIZER_STATE_NAMES[next_state]);
+    }
+    sprint_tokenizer_destroy(tokenizer);
 
     sprint_element circle = sprint_circle_create(
             SPRINT_LAYER_MECHANICAL,
