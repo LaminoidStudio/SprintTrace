@@ -16,6 +16,7 @@
 typedef enum sprint_tokenizer_state {
     SPRINT_SLICER_STATE_SCANNING,
     SPRINT_SLICER_STATE_INVALID,
+    SPRINT_SLICER_STATE_COMMENT,
     SPRINT_SLICER_STATE_WORD,
     SPRINT_SLICER_STATE_NUMBER,
     SPRINT_SLICER_STATE_STRING_START,
@@ -28,6 +29,7 @@ typedef enum sprint_tokenizer_state {
 } sprint_tokenizer_state;
 extern const char* SPRINT_TOKENIZER_STATE_NAMES[];
 
+extern const char SPRINT_COMMENT_PREFIX;
 extern const char SPRINT_STATEMENT_SEPARATOR;
 extern const char SPRINT_STATEMENT_TERMINATOR;
 extern const char SPRINT_VALUE_SEPARATOR;

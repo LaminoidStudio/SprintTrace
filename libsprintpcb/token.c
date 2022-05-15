@@ -12,6 +12,7 @@
 const char* SPRINT_TOKENIZER_STATE_NAMES[] = {
         [SPRINT_SLICER_STATE_SCANNING] = "scanning",
         [SPRINT_SLICER_STATE_INVALID] = "invalid",
+        [SPRINT_SLICER_STATE_COMMENT] = "comment",
         [SPRINT_SLICER_STATE_WORD] = "word",
         [SPRINT_SLICER_STATE_NUMBER] = "number",
         [SPRINT_SLICER_STATE_STRING_START] = "string start",
@@ -23,6 +24,7 @@ const char* SPRINT_TOKENIZER_STATE_NAMES[] = {
         [SPRINT_SLICER_STATE_STATEMENT_TERMINATOR] = "statement terminator"
 };
 
+const char SPRINT_COMMENT_PREFIX = '#';
 const char SPRINT_STATEMENT_SEPARATOR = ',';
 const char SPRINT_STATEMENT_TERMINATOR = ';';
 const char SPRINT_VALUE_SEPARATOR = '=';
@@ -52,15 +54,30 @@ sprint_tokenizer_state sprint_tokenizer_next_state(sprint_tokenizer_state curren
     if (!sprint_assert(false, sprint_tokenizer_state_valid(current_state)))
         return SPRINT_SLICER_STATE_INVALID;
 
+    // Handle enclosed strings
     if (current_state == SPRINT_SLICER_STATE_STRING_START || current_state == SPRINT_SLICER_STATE_STRING)
         return next_chr == SPRINT_STRING_DELIMITER || next_chr == '\n' || next_chr == '\r' ?
             SPRINT_SLICER_STATE_STRING_END : SPRINT_SLICER_STATE_STRING;
 
+    // Handle comments that end at the end of the line
+    if (current_state == SPRINT_SLICER_STATE_COMMENT && next_chr != '\n' && next_chr != '\r' ||
+        next_chr == SPRINT_COMMENT_PREFIX)
+        return SPRINT_SLICER_STATE_COMMENT;
+
+    // Handle scanning through white-space
+    if (next_chr == ' ' || next_chr == '\t' || next_chr == '\n' || next_chr == '\r')
+        return SPRINT_SLICER_STATE_SCANNING;
+
+    // Handle words
     if (next_chr >= 'A' && next_chr <= 'Z' || next_chr >= 'a' && next_chr <= 'z' || next_chr == '_')
         return SPRINT_SLICER_STATE_WORD;
+
+    // Handle numbers
     if (next_chr >= '0' && next_chr <= '9' || next_chr == '-' &&
         current_state != SPRINT_SLICER_STATE_NUMBER && current_state != SPRINT_SLICER_STATE_WORD)
         return SPRINT_SLICER_STATE_NUMBER;
+
+    // Handle the single digit separators and terminator
     if (next_chr == SPRINT_VALUE_SEPARATOR)
         return SPRINT_SLICER_STATE_VALUE_SEPARATOR;
     if (next_chr == SPRINT_TUPLE_SEPARATOR)
@@ -69,8 +86,6 @@ sprint_tokenizer_state sprint_tokenizer_next_state(sprint_tokenizer_state curren
         return SPRINT_SLICER_STATE_STATEMENT_SEPARATOR;
     if (next_chr == SPRINT_STATEMENT_TERMINATOR)
         return SPRINT_SLICER_STATE_STATEMENT_TERMINATOR;
-    if (next_chr == ' ' || next_chr == '\t' || next_chr == '\n' || next_chr == '\r')
-        return SPRINT_SLICER_STATE_SCANNING;
 
     return SPRINT_SLICER_STATE_INVALID;
 }
@@ -97,6 +112,7 @@ bool sprint_tokenizer_is_recorded(sprint_tokenizer_state state)
             return true;
 
         case SPRINT_SLICER_STATE_SCANNING:
+        case SPRINT_SLICER_STATE_COMMENT:
         case SPRINT_SLICER_STATE_STRING_START:
         case SPRINT_SLICER_STATE_STRING_END:
             return false;
@@ -115,6 +131,7 @@ bool sprint_tokenizer_is_complete(sprint_tokenizer_state current_state, sprint_t
 
     switch (current_state) {
         case SPRINT_SLICER_STATE_SCANNING:
+        case SPRINT_SLICER_STATE_COMMENT:
         case SPRINT_SLICER_STATE_STRING_START:
         case SPRINT_SLICER_STATE_STRING:
             return false;
@@ -145,6 +162,7 @@ sprint_token_type sprint_tokenizer_state_type(sprint_tokenizer_state state)
     switch (state) {
         case SPRINT_SLICER_STATE_SCANNING:
         case SPRINT_SLICER_STATE_INVALID:
+        case SPRINT_SLICER_STATE_COMMENT:
             return SPRINT_TOKEN_TYPE_NONE;
         case SPRINT_SLICER_STATE_WORD:
             return SPRINT_TOKEN_TYPE_WORD;
