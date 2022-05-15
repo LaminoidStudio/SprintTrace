@@ -71,6 +71,11 @@ typedef struct sprint_token {
     sprint_source_origin origin;
 } sprint_token;
 
+sprint_error sprint_token_tag(sprint_token* token, sprint_stringbuilder* builder, char** output);
+sprint_error sprint_token_bool(sprint_token* token, sprint_stringbuilder* builder, bool* output);
+sprint_error sprint_token_int(sprint_token* token, sprint_stringbuilder* builder, int* output);
+sprint_error sprint_token_str(sprint_token* token, sprint_stringbuilder* builder, char** output);
+
 typedef struct sprint_tokenizer sprint_tokenizer;
 
 struct sprint_tokenizer {

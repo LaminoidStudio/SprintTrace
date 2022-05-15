@@ -6,9 +6,12 @@
 
 #include "token.h"
 #include "stringbuilder.h"
+#include "errors.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 
 const char* SPRINT_TOKENIZER_STATE_NAMES[] = {
         [SPRINT_SLICER_STATE_SCANNING] = "scanning",
@@ -198,6 +201,91 @@ sprint_token_type sprint_tokenizer_state_type(sprint_tokenizer_state state)
             sprint_throw_format(false, "unimplemented state: %d", state);
             return SPRINT_TOKEN_TYPE_NONE;
     }
+}
+
+sprint_error sprint_token_tag(sprint_token* token, sprint_stringbuilder* builder, char** output)
+{
+    if (token == NULL || builder == NULL || output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (token->type != SPRINT_TOKEN_TYPE_WORD) return SPRINT_ERROR_ARGUMENT_FORMAT;
+    if (sprint_stringbuilder_count(builder) < 1) return SPRINT_ERROR_ARGUMENT_INCOMPLETE;
+
+    // Allocate a dynamic buffer
+    size_t size = sprint_stringbuilder_count(builder) + 1;
+    *output = malloc(size);
+    if (*output == NULL)
+        return SPRINT_ERROR_MEMORY;
+
+    // Copy the value
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_stringbuilder_output(builder, *output, size));
+    return sprint_rethrow(error);
+}
+
+sprint_error sprint_token_bool(sprint_token* token, sprint_stringbuilder* builder, bool* output)
+{
+    if (token == NULL || builder == NULL || output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (token->type != SPRINT_TOKEN_TYPE_WORD) return SPRINT_ERROR_ARGUMENT_FORMAT;
+    if (sprint_stringbuilder_count(builder) < 1) return SPRINT_ERROR_ARGUMENT_INCOMPLETE;
+
+    // Copy the value
+    size_t size = sprint_stringbuilder_count(builder) + 1;
+    char buffer[size];
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (!sprint_chain(error, sprint_stringbuilder_output(builder, buffer, size)))
+        return sprint_rethrow(error);
+
+    // Determine the boolean value
+    if (strcasecmp(buffer, SPRINT_TRUE_VALUE) == 0)
+        *output = true;
+    else if (strcasecmp(buffer, SPRINT_FALSE_VALUE) == 0)
+        *output = false;
+    else
+        return SPRINT_ERROR_ARGUMENT_FORMAT;
+
+    return SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_token_int(sprint_token* token, sprint_stringbuilder* builder, int* output)
+{
+    if (token == NULL || builder == NULL || output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (token->type != SPRINT_TOKEN_TYPE_NUMBER) return SPRINT_ERROR_ARGUMENT_FORMAT;
+    if (sprint_stringbuilder_count(builder) < 1) return SPRINT_ERROR_ARGUMENT_INCOMPLETE;
+
+    // Copy the value
+    size_t size = sprint_stringbuilder_count(builder) + 1;
+    char buffer[size];
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (!sprint_chain(error, sprint_stringbuilder_output(builder, buffer, size)))
+        return sprint_rethrow(error);
+
+    // Convert the number
+    errno = 0;
+    char* number_end = NULL;
+    long number = strtol(buffer, &number_end, 10);
+    if (errno != 0 || number_end == NULL || *number_end != 0)
+        return SPRINT_ERROR_ARGUMENT_FORMAT;
+
+    // Assign the converted number
+    *output = number;
+    return SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_token_str(sprint_token* token, sprint_stringbuilder* builder, char** output)
+{
+    if (token == NULL || builder == NULL || output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (token->type != SPRINT_TOKEN_TYPE_STRING) return SPRINT_ERROR_ARGUMENT_FORMAT;
+    if (sprint_stringbuilder_count(builder) < 1) return SPRINT_ERROR_ARGUMENT_INCOMPLETE;
+
+    // Allocate a dynamic buffer
+    size_t size = sprint_stringbuilder_count(builder) + 1;
+    *output = malloc(size);
+    if (*output == NULL)
+        return SPRINT_ERROR_MEMORY;
+
+    // Copy the value
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_stringbuilder_output(builder, *output, size));
+    return sprint_rethrow(error);
 }
 
 sprint_tokenizer* sprint_tokenizer_from_str(const char* str, bool free)
