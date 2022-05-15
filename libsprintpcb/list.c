@@ -36,6 +36,21 @@ sprint_error sprint_list_destroy(sprint_list* list)
     return SPRINT_ERROR_NONE;
 }
 
+int sprint_list_count(sprint_list* list)
+{
+    return list == NULL ? 0 : list->count;
+}
+
+int sprint_list_size(sprint_list* list)
+{
+    return list == NULL ? 0 : list->size;
+}
+
+int sprint_list_capacity(sprint_list* list)
+{
+    return list == NULL ? 0 : list->capacity;
+}
+
 sprint_error sprint_list_add(sprint_list* list, void* element)
 {
     if (list == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
