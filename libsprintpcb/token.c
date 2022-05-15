@@ -274,7 +274,6 @@ sprint_error sprint_token_str(sprint_token* token, sprint_stringbuilder* builder
 {
     if (token == NULL || builder == NULL || output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
     if (token->type != SPRINT_TOKEN_TYPE_STRING) return SPRINT_ERROR_ARGUMENT_FORMAT;
-    if (sprint_stringbuilder_count(builder) < 1) return SPRINT_ERROR_ARGUMENT_INCOMPLETE;
 
     // Allocate a dynamic buffer
     size_t size = sprint_stringbuilder_count(builder) + 1;
