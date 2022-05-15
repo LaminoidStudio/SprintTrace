@@ -54,8 +54,6 @@ sprint_error sprint_stringbuilder_put_int(sprint_stringbuilder* builder, int num
 
 sprint_error sprint_stringbuilder_put_hex(sprint_stringbuilder* builder, int num);
 
-sprint_error sprint_stringbuilder_put_padded(sprint_stringbuilder* builder, int num, bool hex, bool zero, int width);
-
 char* sprint_stringbuilder_substr(sprint_stringbuilder* builder, int start, int length);
 
 sprint_error sprint_stringbuilder_at(sprint_stringbuilder* builder, char* result, int position);
