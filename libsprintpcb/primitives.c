@@ -158,7 +158,12 @@ const sprint_dist SPRINT_DIST_MIN       = -SPRINT_DIST_MAX;
 
 bool sprint_dist_valid(sprint_dist dist)
 {
-    return dist >= SPRINT_DIST_MIN && dist <= SPRINT_DIST_MIN;
+    return dist >= SPRINT_DIST_MIN && dist <= SPRINT_DIST_MAX;
+}
+
+bool sprint_size_valid(sprint_dist size)
+{
+    return size >= 0 && size <= SPRINT_DIST_MAX;
 }
 
 sprint_error sprint_dist_print(sprint_dist dist, FILE* stream, sprint_prim_format format)

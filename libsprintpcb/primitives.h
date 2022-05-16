@@ -74,6 +74,7 @@ extern const sprint_dist SPRINT_DIST_MIN;
 #define sprint_dist_th(d) ((sprint_dist)((d) * SPRINT_DIST_PER_TH))
 #define sprint_dist_in(d) ((sprint_dist)((d) * SPRINT_DIST_PER_IN))
 bool sprint_dist_valid(sprint_dist dist);
+bool sprint_size_valid(sprint_dist size);
 sprint_error sprint_dist_print(sprint_dist dist, FILE* stream, sprint_prim_format format);
 sprint_error sprint_dist_string(sprint_dist dist, sprint_stringbuilder* builder, sprint_prim_format format);
 
