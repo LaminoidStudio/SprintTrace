@@ -30,9 +30,10 @@ typedef struct sprint_track {
     sprint_dist clear;
     bool cutout;
     bool soldermask;
-    bool flatstart;
-    bool flatend;
+    bool flat_start;
+    bool flat_end;
 } sprint_track;
+bool sprint_track_valid(sprint_track* track);
 
 typedef enum sprint_pad_tht_form {
     // Round
@@ -62,6 +63,7 @@ typedef enum sprint_pad_tht_form {
     // Rectangular, portrait
     SPRINT_PAD_THT_FORM_HIGH_RECTANGULAR
 } sprint_pad_tht_form;
+bool sprint_pad_tht_form_valid(sprint_pad_tht_form form);
 
 typedef struct sprint_pad_tht {
     // Required
@@ -81,9 +83,10 @@ typedef struct sprint_pad_tht {
     bool via;
     bool thermal;
     int thermal_tracks;
-    unsigned int thermal_tracks_width;
+    int thermal_tracks_width;
     bool thermal_tracks_individual;
 } sprint_pad_tht;
+bool sprint_pad_tht_valid(sprint_pad_tht* pad);
 
 typedef struct sprint_pad_smt {
     sprint_layer layer;
@@ -96,9 +99,10 @@ typedef struct sprint_pad_smt {
     bool soldermask;
     sprint_angle rotation;
     bool thermal;
-    unsigned int thermal_tracks;
+    int thermal_tracks;
     int thermal_tracks_width;
 } sprint_pad_smt;
+bool sprint_pad_smt_valid(sprint_pad_smt* pad);
 
 typedef struct sprint_zone {
     sprint_layer layer;
@@ -113,12 +117,14 @@ typedef struct sprint_zone {
     bool hatch_auto;
     sprint_dist hatch_width;
 } sprint_zone;
+bool sprint_zone_valid(sprint_zone* zone);
 
 typedef enum sprint_text_type {
     SPRINT_TEXT_REGULAR,
     SPRINT_TEXT_ID,
     SPRINT_TEXT_VALUE
 } sprint_text_type;
+bool sprint_text_type_valid(sprint_text_type type);
 
 typedef enum sprint_text_style {
     // Narrow width text
@@ -130,6 +136,7 @@ typedef enum sprint_text_style {
     // Wide width text
     SPRINT_TEXT_STYLE_WIDE
 } sprint_text_style;
+bool sprint_text_style_valid(sprint_text_style style);
 
 typedef enum sprint_text_thickness {
     // Thin stroke text
@@ -141,6 +148,7 @@ typedef enum sprint_text_thickness {
     // Thick stroke text
     SPRINT_TEXT_THICKNESS_THICK
 } sprint_text_thickness;
+bool sprint_text_thickness_valid(sprint_text_thickness thickness);
 
 typedef struct sprint_text {
     sprint_text_type type;
@@ -160,6 +168,7 @@ typedef struct sprint_text {
 
     bool visible;
 } sprint_text;
+bool sprint_text_valid(sprint_text* text);
 
 typedef struct sprint_circle {
     sprint_layer layer;
@@ -225,12 +234,14 @@ struct sprint_element {
 
 sprint_error sprint_track_create(sprint_element* element, sprint_layer layer, sprint_dist width,
                                  int num_points, sprint_tuple* points);
-sprint_element sprint_pad_tht_create(sprint_layer layer, sprint_tuple position, sprint_dist size,
-                                     sprint_dist drill, sprint_pad_tht_form form);
-sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, sprint_dist width, sprint_dist height);
-sprint_element sprint_zone_create(sprint_layer layer, sprint_dist width, int num_points, sprint_tuple* points);
-sprint_element sprint_text_create(sprint_text_type type, sprint_layer layer, sprint_tuple position,
-                                  sprint_dist height, char* text);
+sprint_error sprint_pad_tht_create(sprint_element* element, sprint_layer layer, sprint_tuple position,
+                                   sprint_dist size, sprint_dist drill, sprint_pad_tht_form form);
+sprint_error sprint_pad_smt_create(sprint_element* element, sprint_layer layer, sprint_tuple position,
+                                     sprint_dist width, sprint_dist height);
+sprint_error sprint_zone_create(sprint_element* element, sprint_layer layer, sprint_dist width,
+                                int num_points, sprint_tuple* points);
+sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, sprint_layer layer,
+                                sprint_tuple position, sprint_dist height, char* text);
 sprint_element sprint_circle_create(sprint_layer layer, sprint_dist width, sprint_tuple center, sprint_dist radius);
 sprint_element sprint_component_create(sprint_text* text_id, sprint_text* text_value,
                                        int num_elements, sprint_element* elements);

@@ -10,12 +10,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+bool sprint_track_valid(sprint_track* track)
+{
+    return track != NULL && sprint_layer_valid(track->layer) && sprint_size_valid(track->width) &&
+        track->num_points >= 0 && (track->num_points == 0) == (track->points == NULL) &&
+        sprint_size_valid(track->clear);
+}
+
+static const sprint_track SPRINT_TRACK_DEFAULT = {
+        .clear = 4000,
+        .cutout = false,
+        .soldermask = false,
+        .flat_start = false,
+        .flat_end = false
+};
+
 sprint_error sprint_track_create(sprint_element* element, sprint_layer layer, sprint_dist width,
                                    int num_points, sprint_tuple* points)
 {
-    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    if (!sprint_layer_valid(layer) || !sprint_dist_valid(width) || num_points < 0) return SPRINT_ERROR_ARGUMENT_RANGE;
-    if (num_points != 0 && points == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (element == NULL || num_points > 0 && points == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     memset(element, 0, sizeof(*element));
     element->type = SPRINT_ELEMENT_TRACK;
@@ -27,125 +40,217 @@ sprint_error sprint_track_create(sprint_element* element, sprint_layer layer, sp
     element->track.points = points;
 
     // Optional fields
-    element->track.clear = 4000;
-    element->track.cutout = false;
-    element->track.soldermask = false;
-    element->track.flatstart = false;
-    element->track.flatend = false;
+    element->track.clear = SPRINT_TRACK_DEFAULT.clear;
+    element->track.cutout = SPRINT_TRACK_DEFAULT.cutout;
+    element->track.soldermask = SPRINT_TRACK_DEFAULT.soldermask;
+    element->track.flat_start = SPRINT_TRACK_DEFAULT.flat_start;
+    element->track.flat_end = SPRINT_TRACK_DEFAULT.flat_end;
+
+    return sprint_track_valid(&element->track) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
+}
+
+bool sprint_pad_tht_form_valid(sprint_pad_tht_form form)
+{
+    return form >= SPRINT_PAD_THT_FORM_ROUND && form <= SPRINT_PAD_THT_FORM_HIGH_RECTANGULAR;
+}
+
+static const sprint_pad_tht SPRINT_PAD_THT_DEFAULT = {
+        .link.has_id = false,
+        .link.num_connections = 0,
+        .clear = 4000,
+        .soldermask = true,
+        .rotation = 0,
+        .via = false,
+        .thermal = false,
+        .thermal_tracks = 0x55555555,
+        .thermal_tracks_width = 100,
+        .thermal_tracks_individual = false
+};
+
+bool sprint_pad_tht_valid(sprint_pad_tht* pad)
+{
+    return pad != NULL && sprint_layer_valid(pad->layer) && sprint_tuple_valid(pad->position) &&
+        sprint_size_valid(pad->size) && sprint_size_valid(pad->drill) &&
+        sprint_pad_tht_form_valid(pad->form) && pad->link.num_connections >= 0 &&
+        sprint_size_valid(pad->clear) && sprint_angle_valid(pad->rotation) &&
+        pad->thermal_tracks_width >= 50 && pad->thermal_tracks_width <= 300;
+}
+
+sprint_error sprint_pad_tht_create(sprint_element* element, sprint_layer layer, sprint_tuple position,
+                                   sprint_dist size, sprint_dist drill, sprint_pad_tht_form form)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    memset(element, 0, sizeof(*element));
+    element->type = SPRINT_ELEMENT_PAD_THT;
+
+    // Required fields
+    element->pad_tht.layer = layer;
+    element->pad_tht.position = position;
+    element->pad_tht.size = size;
+    element->pad_tht.drill = drill;
+    element->pad_tht.form = form;
+
+    // Optional fields
+    element->pad_tht.link = SPRINT_PAD_THT_DEFAULT.link;
+    element->pad_tht.clear = SPRINT_PAD_THT_DEFAULT.clear;
+    element->pad_tht.soldermask = SPRINT_PAD_THT_DEFAULT.soldermask;
+    element->pad_tht.rotation = SPRINT_PAD_THT_DEFAULT.rotation;
+    element->pad_tht.via = SPRINT_PAD_THT_DEFAULT.via;
+    element->pad_tht.thermal = SPRINT_PAD_THT_DEFAULT.thermal;
+    element->pad_tht.thermal_tracks = SPRINT_PAD_THT_DEFAULT.thermal_tracks;
+    element->pad_tht.thermal_tracks_width = SPRINT_PAD_THT_DEFAULT.thermal_tracks_width;
+    element->pad_tht.thermal_tracks_individual = SPRINT_PAD_THT_DEFAULT.thermal_tracks_individual;
+
+    return sprint_pad_tht_valid(&element->pad_tht) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
+}
+
+bool sprint_pad_smt_valid(sprint_pad_smt* pad)
+{
+    return pad != NULL && sprint_layer_valid(pad->layer) && sprint_tuple_valid(pad->position) &&
+           sprint_size_valid(pad->width) && sprint_size_valid(pad->height) &&
+           pad->link.num_connections >= 0 && sprint_size_valid(pad->clear) &&
+           sprint_angle_valid(pad->rotation) && pad->thermal_tracks >= 0 && pad->thermal_tracks <= 0xff &&
+           pad->thermal_tracks_width >= 50 && pad->thermal_tracks_width <= 300;
+}
+
+static const sprint_pad_smt SPRINT_PAD_SMT_DEFAULT = {
+        .link.has_id = false,
+        .link.num_connections = 0,
+        .clear = 4000,
+        .soldermask = true,
+        .rotation = 0,
+        .thermal = false,
+        .thermal_tracks = 0x55,
+        .thermal_tracks_width = 100
+};
+
+sprint_error sprint_pad_smt_create(sprint_element* element, sprint_layer layer, sprint_tuple position,
+                                     sprint_dist width, sprint_dist height)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    memset(element, 0, sizeof(*element));
+    element->type = SPRINT_ELEMENT_PAD_SMT;
+
+    // Required fields
+    element->pad_smt.layer = layer;
+    element->pad_smt.position = position;
+    element->pad_smt.width = width;
+    element->pad_smt.height = height;
+
+    // Optional fields
+    element->pad_smt.link = SPRINT_PAD_SMT_DEFAULT.link;
+    element->pad_smt.clear = SPRINT_PAD_SMT_DEFAULT.clear;
+    element->pad_smt.soldermask = SPRINT_PAD_SMT_DEFAULT.soldermask;
+    element->pad_smt.rotation = SPRINT_PAD_SMT_DEFAULT.rotation;
+    element->pad_smt.thermal = SPRINT_PAD_SMT_DEFAULT.thermal;
+    element->pad_smt.thermal_tracks = SPRINT_PAD_SMT_DEFAULT.thermal_tracks;
+    element->pad_smt.thermal_tracks_width = SPRINT_PAD_SMT_DEFAULT.thermal_tracks_width;
+
+    return sprint_pad_smt_valid(&element->pad_smt) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
+}
+
+bool sprint_zone_valid(sprint_zone* zone)
+{
+    return zone != NULL && sprint_layer_valid(zone->layer) && sprint_size_valid(zone->width) &&
+           zone->num_points >= 0 && (zone->num_points == 0) == (zone->points == NULL) && sprint_size_valid(zone->clear);
+}
+
+static const sprint_zone SPRINT_ZONE_DEFAULT = {
+        .clear = 4000,
+        .cutout = false,
+        .soldermask = false,
+        .hatch = false,
+        .hatch_auto = true
+};
+
+sprint_error sprint_zone_create(sprint_element* element, sprint_layer layer, sprint_dist width,
+                                int num_points, sprint_tuple* points)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    memset(element, 0, sizeof(*element));
+    element->type = SPRINT_ELEMENT_ZONE;
+
+    // Required fields
+    element->zone.layer = layer;
+    element->zone.width = width;
+    element->zone.num_points = num_points;
+    element->zone.points = points;
+
+    // Optional fields
+    element->zone.clear = SPRINT_ZONE_DEFAULT.clear;
+    element->zone.cutout = SPRINT_ZONE_DEFAULT.cutout;
+    element->zone.soldermask = SPRINT_ZONE_DEFAULT.soldermask;
+    element->zone.hatch = SPRINT_ZONE_DEFAULT.hatch;
+    element->zone.hatch_auto = SPRINT_ZONE_DEFAULT.hatch_auto;
+
+    return sprint_zone_valid(&element->zone) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
+}
+
+bool sprint_text_type_valid(sprint_text_type type)
+{
+    return type >= SPRINT_TEXT_REGULAR && type <= SPRINT_TEXT_VALUE;
+}
+
+bool sprint_text_style_valid(sprint_text_style style)
+{
+    return style >= SPRINT_TEXT_STYLE_NARROW && style <= SPRINT_TEXT_STYLE_WIDE;
+}
+
+bool sprint_text_thickness_valid(sprint_text_thickness thickness)
+{
+    return thickness >= SPRINT_TEXT_THICKNESS_THIN && thickness <= SPRINT_TEXT_THICKNESS_THICK;
+}
+
+bool sprint_text_valid(sprint_text* text)
+{
+    return text != NULL && sprint_text_type_valid(text->type) && sprint_layer_valid(text->layer) &&
+           sprint_tuple_valid(text->position) && sprint_size_valid(text->height) &&
+           sprint_size_valid(text->clear) && sprint_text_style_valid(text->style) &&
+           sprint_text_thickness_valid(text->thickness) && sprint_angle_valid(text->rotation);
+}
+
+static const sprint_text SPRINT_TEXT_DEFAULT = {
+        .clear = 4000,
+        .cutout = false,
+        .soldermask = false,
+        .style = SPRINT_TEXT_STYLE_REGULAR,
+        .thickness = SPRINT_TEXT_THICKNESS_REGULAR,
+        .rotation = 0,
+        .mirror_horizontal = false,
+        .mirror_vertical = false,
+        .visible = true
+};
+
+sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, sprint_layer layer,
+                                sprint_tuple position, sprint_dist height, char* text)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    memset(element, 0, sizeof(*element));
+    element->type = SPRINT_ELEMENT_TEXT;
+
+    // Required fields
+    element->text.type = type;
+    element->text.layer = layer;
+    element->text.position = position;
+    element->text.height = height;
+    element->text.text = text;
+
+    // Optional fields
+    element->text.clear = SPRINT_TEXT_DEFAULT.clear;
+    element->text.cutout = SPRINT_TEXT_DEFAULT.cutout;
+    element->text.soldermask = SPRINT_TEXT_DEFAULT.soldermask;
+    element->text.style = SPRINT_TEXT_DEFAULT.style;
+    element->text.thickness = SPRINT_TEXT_DEFAULT.thickness;
+    element->text.rotation = SPRINT_TEXT_DEFAULT.rotation;
+    element->text.mirror_horizontal = SPRINT_TEXT_DEFAULT.mirror_horizontal;
+    element->text.mirror_vertical = SPRINT_TEXT_DEFAULT.mirror_vertical;
+    element->text.visible = SPRINT_TEXT_DEFAULT.visible;
 
     return SPRINT_ERROR_NONE;
-}
-
-sprint_element sprint_pad_tht_create(sprint_layer layer, sprint_tuple position, sprint_dist size,
-                                     sprint_dist drill, sprint_pad_tht_form form)
-{
-    // todo input checking
-
-    sprint_element element;
-    memset(&element, 0, sizeof(element));
-    element.type = SPRINT_ELEMENT_PAD_THT;
-
-    // Required fields
-    element.pad_tht.layer = layer;
-    element.pad_tht.position = position;
-    element.pad_tht.size = size;
-    element.pad_tht.drill = drill;
-    element.pad_tht.form = form;
-
-    // Optional fields
-    element.pad_tht.link.has_id = false;
-    element.pad_tht.link.num_connections = 0;
-    element.pad_tht.clear = 4000;
-    element.pad_tht.soldermask = true;
-    element.pad_tht.rotation = 0;
-    element.pad_tht.via = false;
-    element.pad_tht.thermal = false;
-    element.pad_tht.thermal_tracks = 0x55555555;
-    element.pad_tht.thermal_tracks_width = 100;
-    element.pad_tht.thermal_tracks_individual = false;
-
-    return element;
-}
-
-sprint_element sprint_pad_smt_create(sprint_layer layer, sprint_tuple position, sprint_dist width, sprint_dist height)
-{
-    // todo input checking
-
-    sprint_element element;
-    memset(&element, 0, sizeof(element));
-    element.type = SPRINT_ELEMENT_PAD_SMT;
-
-    // Required fields
-    element.pad_smt.layer = layer;
-    element.pad_smt.position = position;
-    element.pad_smt.width = width;
-    element.pad_smt.height = height;
-
-    // Optional fields
-    element.pad_smt.link.has_id = false;
-    element.pad_smt.link.num_connections = 0;
-    element.pad_smt.clear = 4000;
-    element.pad_smt.soldermask = true;
-    element.pad_smt.rotation = 0;
-    element.pad_smt.thermal = false;
-    element.pad_smt.thermal_tracks = 0x55;
-    element.pad_smt.thermal_tracks_width = 100;
-
-    return element;
-}
-
-sprint_element sprint_zone_create(sprint_layer layer, sprint_dist width, int num_points, sprint_tuple* points)
-{
-    // todo input checking
-
-    sprint_element element;
-    memset(&element, 0, sizeof(element));
-    element.type = SPRINT_ELEMENT_ZONE;
-
-    // Required fields
-    element.zone.layer = layer;
-    element.zone.width = width;
-    element.zone.num_points = num_points;
-    element.zone.points = points;
-
-    // Optional fields
-    element.zone.clear = 4000;
-    element.zone.cutout = false;
-    element.zone.soldermask = false;
-    element.zone.hatch = false;
-    element.zone.hatch_auto = true;
-
-    return element;
-}
-
-sprint_element sprint_text_create(sprint_text_type type, sprint_layer layer, sprint_tuple position,
-                                  sprint_dist height, char* text)
-{
-    // todo input checking
-
-    sprint_element element;
-    memset(&element, 0, sizeof(element));
-    element.type = SPRINT_ELEMENT_TEXT;
-
-    // Required fields
-    element.text.type = type;
-    element.text.layer = layer;
-    element.text.position = position;
-    element.text.height = height;
-    element.text.text = text;
-
-    // Optional fields
-    element.text.clear = 4000;
-    element.text.cutout = false;
-    element.text.soldermask = false;
-    element.text.style = SPRINT_TEXT_STYLE_REGULAR;
-    element.text.thickness = SPRINT_TEXT_THICKNESS_REGULAR;
-    element.text.rotation = 0;
-    element.text.mirror_horizontal = false;
-    element.text.mirror_vertical = false;
-    element.text.visible = true;
-
-    return element;
 }
 
 sprint_element sprint_circle_create(sprint_layer layer, sprint_dist width, sprint_tuple center, sprint_dist radius)
