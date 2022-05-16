@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+const int SPRINT_ELEMENT_DEPTH = 1000;
+
 bool sprint_track_valid(sprint_track* track)
 {
     return track != NULL && sprint_layer_valid(track->layer) && sprint_size_valid(track->width) &&
@@ -348,11 +350,13 @@ sprint_element sprint_group_create(int num_elements, sprint_element* elements)
     return element;
 }
 
-sprint_error sprint_element_destroy(sprint_element* element)
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "misc-no-recursion"
+static sprint_error sprint_element_destroy_internal(sprint_element* element, int depth)
 {
     // Make sure the element is not null
-    if (element == NULL)
-        return SPRINT_ERROR_ARGUMENT_NULL;
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (depth < 0 || depth >= SPRINT_ELEMENT_DEPTH) return SPRINT_ERROR_RECURSION;
 
     // If the element is not parsed, free nothing - the application is responsible for cleaning up
     if (!element->parsed)
@@ -433,7 +437,7 @@ sprint_error sprint_element_destroy(sprint_element* element)
             // Free the elements recursively
             if (element->component.elements != NULL) {
                 for (int index = 0; index < element->component.num_elements; index++)
-                    sprint_check(sprint_element_destroy(&element->component.elements[index]));
+                    sprint_check(sprint_element_destroy_internal(&element->component.elements[index], depth + 1));
                 free(element->component.elements);
                 element->component.elements = NULL;
             }
@@ -456,7 +460,7 @@ sprint_error sprint_element_destroy(sprint_element* element)
             // Free the elements recursively
             if (element->group.elements != NULL) {
                 for (int index = 0; index < element->group.num_elements; index++)
-                    sprint_check(sprint_element_destroy(&element->group.elements[index]));
+                    sprint_check(sprint_element_destroy_internal(&element->group.elements[index], depth + 1));
                 free(element->group.elements);
                 element->group.elements = NULL;
             }
@@ -472,7 +476,12 @@ sprint_error sprint_element_destroy(sprint_element* element)
     free(element);
     return SPRINT_ERROR_NONE;
 }
+#pragma clang diagnostic pop
 
+sprint_error sprint_element_destroy(sprint_element* element)
+{
+    return sprint_element_destroy_internal(element, 0);
+}
 
 const char* SPRINT_ELEMENT_TYPE_NAMES[] = {
         [SPRINT_ELEMENT_TRACK] = "track",

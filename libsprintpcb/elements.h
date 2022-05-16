@@ -14,6 +14,11 @@
 
 typedef struct sprint_element sprint_element;
 
+/**
+ * The maximum recursive element depth.
+ */
+extern const int SPRINT_ELEMENT_DEPTH;
+
 typedef struct sprint_link {
     bool has_id;
     int id;
