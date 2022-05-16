@@ -335,19 +335,23 @@ sprint_error sprint_component_create(sprint_element* element, sprint_text* text_
     return sprint_component_valid(&element->component) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
 
-sprint_element sprint_group_create(int num_elements, sprint_element* elements)
+bool sprint_group_valid(sprint_group* group)
 {
-    // todo input checking
+    return group != NULL && group->num_elements >= 0 && (group->num_elements == 0) == (group->elements == NULL);
+}
 
-    sprint_element element;
-    memset(&element, 0, sizeof(element));
-    element.type = SPRINT_ELEMENT_GROUP;
+sprint_error sprint_group_create(sprint_element* element, int num_elements, sprint_element* elements)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    memset(element, 0, sizeof(*element));
+    element->type = SPRINT_ELEMENT_GROUP;
 
     // Required fields
-    element.group.num_elements = num_elements;
-    element.group.elements = elements;
+    element->group.num_elements = num_elements;
+    element->group.elements = elements;
 
-    return element;
+    return sprint_group_valid(&element->group) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
 
 #pragma clang diagnostic push

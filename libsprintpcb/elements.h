@@ -252,7 +252,7 @@ sprint_error sprint_circle_create(sprint_element* element, sprint_layer layer, s
                                   sprint_tuple center, sprint_dist radius);
 sprint_error sprint_component_create(sprint_element* element, sprint_text* text_id, sprint_text* text_value,
                                      int num_elements, sprint_element* elements);
-sprint_element sprint_group_create(int num_elements, sprint_element* elements);
+sprint_error sprint_group_create(sprint_element* element, int num_elements, sprint_element* elements);
 sprint_error sprint_element_destroy(sprint_element* element);
 
 extern const char* SPRINT_ELEMENT_TYPE_NAMES[];
