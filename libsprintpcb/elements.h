@@ -196,6 +196,7 @@ typedef struct sprint_component {
     char* package;
     sprint_angle rotation;
 } sprint_component;
+bool sprint_component_valid(sprint_component* component);
 
 typedef struct sprint_group {
     int num_elements;
@@ -244,8 +245,8 @@ sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, 
                                 sprint_tuple position, sprint_dist height, char* text);
 sprint_error sprint_circle_create(sprint_element* element, sprint_layer layer, sprint_dist width,
                                   sprint_tuple center, sprint_dist radius);
-sprint_element sprint_component_create(sprint_text* text_id, sprint_text* text_value,
-                                       int num_elements, sprint_element* elements);
+sprint_error sprint_component_create(sprint_element* element, sprint_text* text_id, sprint_text* text_value,
+                                     int num_elements, sprint_element* elements);
 sprint_element sprint_group_create(int num_elements, sprint_element* elements);
 sprint_error sprint_element_destroy(sprint_element* element);
 

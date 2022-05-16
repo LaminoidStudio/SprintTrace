@@ -154,7 +154,8 @@ sprint_error sprint_pad_smt_create(sprint_element* element, sprint_layer layer, 
 bool sprint_zone_valid(sprint_zone* zone)
 {
     return zone != NULL && sprint_layer_valid(zone->layer) && sprint_size_valid(zone->width) &&
-           zone->num_points >= 0 && (zone->num_points == 0) == (zone->points == NULL) && sprint_size_valid(zone->clear);
+           zone->num_points >= 0 && (zone->num_points == 0) == (zone->points == NULL) &&
+           sprint_size_valid(zone->clear);
 }
 
 static const sprint_zone SPRINT_ZONE_DEFAULT = {
@@ -295,28 +296,41 @@ sprint_error sprint_circle_create(sprint_element* element, sprint_layer layer, s
     return sprint_circle_valid(&element->circle) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
 
-sprint_element sprint_component_create(sprint_text* text_id, sprint_text* text_value,
+bool sprint_component_valid(sprint_component* component)
+{
+    return component != NULL && sprint_text_valid(component->text_id) && sprint_text_valid(component->text_value) &&
+           component->num_elements >= 0 && (component->num_elements == 0) == (component->elements == NULL) &&
+           sprint_angle_valid(component->rotation);
+}
+
+static const sprint_component SPRINT_COMPONENT_DEFAULT = {
+        .comment = NULL,
+        .use_pickplace = false,
+        .package = NULL,
+        .rotation = 0
+};
+
+sprint_error sprint_component_create(sprint_element* element, sprint_text* text_id, sprint_text* text_value,
                                        int num_elements, sprint_element* elements)
 {
-    // todo input checking
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
-    sprint_element element;
-    memset(&element, 0, sizeof(element));
-    element.type = SPRINT_ELEMENT_COMPONENT;
+    memset(element, 0, sizeof(*element));
+    element->type = SPRINT_ELEMENT_COMPONENT;
 
     // Required fields
-    element.component.text_id = text_id;
-    element.component.text_value = text_value;
-    element.component.num_elements = num_elements;
-    element.component.elements = elements;
+    element->component.text_id = text_id;
+    element->component.text_value = text_value;
+    element->component.num_elements = num_elements;
+    element->component.elements = elements;
 
     // Optional fields
-    element.component.comment = NULL;
-    element.component.use_pickplace = false;
-    element.component.package = NULL;
-    element.component.rotation = 0;
+    element->component.comment = SPRINT_COMPONENT_DEFAULT.comment;
+    element->component.use_pickplace = SPRINT_COMPONENT_DEFAULT.use_pickplace;
+    element->component.package = SPRINT_COMPONENT_DEFAULT.package;
+    element->component.rotation = SPRINT_COMPONENT_DEFAULT.rotation;
 
-    return element;
+    return sprint_component_valid(&element->component) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
 
 sprint_element sprint_group_create(int num_elements, sprint_element* elements)
@@ -345,6 +359,7 @@ sprint_error sprint_element_destroy(sprint_element* element)
         return SPRINT_ERROR_NONE;
 
     // Free allocated memory based on the type
+    sprint_error error = SPRINT_ERROR_NONE;
     switch (element->type) {
         case SPRINT_ELEMENT_TRACK:
             // Free the points
@@ -397,22 +412,32 @@ sprint_error sprint_element_destroy(sprint_element* element)
         case SPRINT_ELEMENT_COMPONENT:
             // Free the ID text
             if (element->component.text_id != NULL) {
+                if (element->component.text_id->text != NULL) {
+                    free(element->component.text_id->text);
+                    element->component.text_id->text = NULL;
+                }
                 free(element->component.text_id);
                 element->component.text_id = NULL;
             }
 
             // Free the value text
             if (element->component.text_value != NULL) {
+                if (element->component.text_value->text != NULL) {
+                    free(element->component.text_value->text);
+                    element->component.text_value->text = NULL;
+                }
                 free(element->component.text_value);
                 element->component.text_value = NULL;
             }
 
-            // Free the elements
-            element->component.num_elements = 0;
+            // Free the elements recursively
             if (element->component.elements != NULL) {
+                for (int index = 0; index < element->component.num_elements; index++)
+                    sprint_check(sprint_element_destroy(&element->component.elements[index]));
                 free(element->component.elements);
                 element->component.elements = NULL;
             }
+            element->component.num_elements = 0;
 
             // Free the comment
             if (element->component.comment != NULL) {
@@ -428,12 +453,14 @@ sprint_error sprint_element_destroy(sprint_element* element)
             break;
 
         case SPRINT_ELEMENT_GROUP:
-            // Free the elements
-            element->group.num_elements = 0;
+            // Free the elements recursively
             if (element->group.elements != NULL) {
+                for (int index = 0; index < element->group.num_elements; index++)
+                    sprint_check(sprint_element_destroy(&element->group.elements[index]));
                 free(element->group.elements);
                 element->group.elements = NULL;
             }
+            element->group.num_elements = 0;
             break;
 
         default:
