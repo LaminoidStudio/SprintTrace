@@ -119,29 +119,43 @@ sprint_error sprint_stringbuilder_output(sprint_stringbuilder* builder, char* de
 
 sprint_error sprint_stringbuilder_format(sprint_stringbuilder* builder, const char* format, ...)
 {
-    if (builder == NULL || format == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    // Determine the required buffer space
     va_list args;
     va_start(args, format);
+    sprint_error error = sprint_stringbuilder_format_args(builder, format, args);
+    va_end(args);
+    return error;
+}
+
+sprint_error sprint_stringbuilder_format_args(sprint_stringbuilder* builder, const char* format, va_list args)
+{
+    if (builder == NULL || format == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Make a copy of the arguments for later
+    va_list args2;
+    va_copy(args2, args);
+
+    // Determine the required buffer space
     int additional_length = vsnprintf(NULL, 0, format, args);
     va_end(args);
-    if (additional_length < 0)
+    if (additional_length < 0) {
+        va_end(args2);
         return SPRINT_ERROR_ARGUMENT_FORMAT;
+    }
 
     // Grow the buffer to fit the new content
     int minimum_capacity = builder->count + additional_length;
     if (builder->content == NULL || minimum_capacity >= builder->capacity)
     {
         sprint_error error = sprint_stringbuilder_grow(builder, builder->capacity * 2 + minimum_capacity);
-        if (error != SPRINT_ERROR_NONE)
+        if (error != SPRINT_ERROR_NONE) {
+            va_end(args2);
             return sprint_rethrow(error);
+        }
     }
 
     // Actually write the formatted content
-    va_start(args, format);
-    int written_length = vsnprintf(builder->content + builder->count, builder->capacity + 1, format, args);
-    va_end(args);
+    int written_length = vsnprintf(builder->content + builder->count, builder->capacity + 1, format, args2);
+    va_end(args2);
     if (written_length != additional_length)
         return SPRINT_ERROR_ASSERTION;
 
