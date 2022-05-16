@@ -17,6 +17,7 @@ const char* SPRINT_ERROR_NAMES[] = {
         [SPRINT_ERROR_ASSERTION] = "assertion",
         [SPRINT_ERROR_UNDERFLOW] = "underflow",
         [SPRINT_ERROR_OVERFLOW] = "overflow",
+        [SPRINT_ERROR_RECURSION] = "recursion",
         [SPRINT_ERROR_MEMORY] = "memory",
         [SPRINT_ERROR_IO] = "I/O",
         [SPRINT_ERROR_EOF] = "EOF",
