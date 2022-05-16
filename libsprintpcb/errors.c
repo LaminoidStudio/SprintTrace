@@ -40,6 +40,7 @@ sprint_error sprint_rethrow(sprint_error error)
         case SPRINT_ERROR_ASSERTION:
         case SPRINT_ERROR_UNDERFLOW:
         case SPRINT_ERROR_OVERFLOW:
+        case SPRINT_ERROR_RECURSION:
         case SPRINT_ERROR_MEMORY:
         case SPRINT_ERROR_IO:
         case SPRINT_ERROR_EOF:
