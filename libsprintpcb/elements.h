@@ -242,7 +242,8 @@ sprint_error sprint_zone_create(sprint_element* element, sprint_layer layer, spr
                                 int num_points, sprint_tuple* points);
 sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, sprint_layer layer,
                                 sprint_tuple position, sprint_dist height, char* text);
-sprint_element sprint_circle_create(sprint_layer layer, sprint_dist width, sprint_tuple center, sprint_dist radius);
+sprint_error sprint_circle_create(sprint_element* element, sprint_layer layer, sprint_dist width,
+                                  sprint_tuple center, sprint_dist radius);
 sprint_element sprint_component_create(sprint_text* text_id, sprint_text* text_value,
                                        int num_elements, sprint_element* elements);
 sprint_element sprint_group_create(int num_elements, sprint_element* elements);

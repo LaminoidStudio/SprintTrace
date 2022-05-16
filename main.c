@@ -39,11 +39,12 @@ int main(int argc, const char* argv[]) {
     }
     sprint_tokenizer_destroy(tokenizer);
 
-    sprint_element circle = sprint_circle_create(
+    sprint_element circle;
+    sprint_require(sprint_circle_create(&circle,
             SPRINT_LAYER_MECHANICAL,
             10,
             sprint_tuple_of(sprint_dist_um(1), sprint_dist_um(20)),
-            10);
+            10));
 
     sprint_prim_format format_dist = SPRINT_PRIM_FORMAT_DIST_UM;
     sprint_prim_format format_angle = format_dist == SPRINT_PRIM_FORMAT_RAW ? format_dist : SPRINT_PRIM_FORMAT_COOKED;

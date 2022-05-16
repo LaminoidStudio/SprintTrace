@@ -250,32 +250,49 @@ sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, 
     element->text.mirror_vertical = SPRINT_TEXT_DEFAULT.mirror_vertical;
     element->text.visible = SPRINT_TEXT_DEFAULT.visible;
 
-    return SPRINT_ERROR_NONE;
+    return sprint_text_valid(&element->text) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
 
-sprint_element sprint_circle_create(sprint_layer layer, sprint_dist width, sprint_tuple center, sprint_dist radius)
+bool sprint_circle_valid(sprint_circle* circle)
 {
-    // todo input checking
+    return circle != NULL && sprint_layer_valid(circle->layer) && sprint_size_valid(circle->width) &&
+           sprint_tuple_valid(circle->center) && sprint_size_valid(circle->radius) &&
+           sprint_size_valid(circle->clear) && sprint_angle_valid(circle->start) &&
+           sprint_angle_valid(circle->stop);
+}
 
-    sprint_element element;
-    memset(&element, 0, sizeof(element));
-    element.type = SPRINT_ELEMENT_CIRCLE;
+static const sprint_circle SPRINT_CIRCLE_DEFAULT = {
+        .clear = 4000,
+        .cutout = false,
+        .soldermask = false,
+        .start = 0,
+        .stop = 0,
+        .fill = false
+};
+
+sprint_error sprint_circle_create(sprint_element* element, sprint_layer layer, sprint_dist width,
+                                  sprint_tuple center, sprint_dist radius)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    memset(element, 0, sizeof(*element));
+    element->type = SPRINT_ELEMENT_CIRCLE;
 
     // Required fields
-    element.circle.layer = layer;
-    element.circle.width = width;
-    element.circle.center = center;
-    element.circle.radius = radius;
+    element->circle.layer = layer;
+    element->circle.width = width;
+    element->circle.center = center;
+    element->circle.radius = radius;
 
     // Optional fields
-    element.circle.clear = 4000;
-    element.circle.cutout = false;
-    element.circle.soldermask = false;
-    element.circle.start = 0;
-    element.circle.stop = 0;
-    element.circle.fill = false;
+    element->circle.clear = SPRINT_CIRCLE_DEFAULT.clear;
+    element->circle.cutout = SPRINT_CIRCLE_DEFAULT.cutout;
+    element->circle.soldermask = SPRINT_CIRCLE_DEFAULT.soldermask;
+    element->circle.start = SPRINT_CIRCLE_DEFAULT.start;
+    element->circle.stop = SPRINT_CIRCLE_DEFAULT.stop;
+    element->circle.fill = SPRINT_CIRCLE_DEFAULT.fill;
 
-    return element;
+    return sprint_circle_valid(&element->circle) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
 
 sprint_element sprint_component_create(sprint_text* text_id, sprint_text* text_value,
