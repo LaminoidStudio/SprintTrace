@@ -16,6 +16,17 @@
 #include "libsprintpcb/errors.h"
 
 int main(int argc, const char* argv[]) {
+    sprint_tuple points[2] = {sprint_tuple_of(300, 400), sprint_tuple_of(500, 600)};
+    sprint_element track;
+    sprint_require(sprint_track_create(&track,
+                                       SPRINT_LAYER_COPPER_BOTTOM,
+                                       sprint_dist_mm(10),
+                                       2, points));
+    track.track.flat_start = true;
+    sprint_element_print(&track, stdout, SPRINT_PRIM_FORMAT_RAW);
+    sprint_element_print(&track, stdout, SPRINT_PRIM_FORMAT_DIST_MM);
+    sprint_element_destroy(&track);
+
     sprint_require(sprint_plugin_begin(argc, argv));
 
     const char* test_text_io = "ZONE,LAYER=1,SOLDERMASK=true,WIDTH=0,P0=332158/408480,P1=332158/409045,P2=332158/409610;\n"

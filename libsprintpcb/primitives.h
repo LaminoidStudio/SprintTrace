@@ -29,6 +29,7 @@ typedef enum sprint_prim_format {
     SPRINT_PRIM_FORMAT_DIST_TH,
     SPRINT_PRIM_FORMAT_DIST_IN
 } sprint_prim_format;
+bool sprint_prim_format_valid(sprint_prim_format format);
 
 sprint_error sprint_str_print(const char* str, FILE* stream, sprint_prim_format format);
 sprint_error sprint_str_string(const char* str, sprint_stringbuilder* builder, sprint_prim_format format);

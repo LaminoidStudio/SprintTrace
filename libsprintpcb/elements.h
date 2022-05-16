@@ -19,6 +19,11 @@ typedef struct sprint_element sprint_element;
  */
 extern const int SPRINT_ELEMENT_DEPTH;
 
+/**
+ * The length of the indentation to add for every depth layer to raw output.
+ */
+extern const int SPRINT_ELEMENT_INDENT;
+
 typedef struct sprint_link {
     bool has_id;
     int id;
@@ -156,7 +161,6 @@ typedef enum sprint_text_thickness {
 bool sprint_text_thickness_valid(sprint_text_thickness thickness);
 
 typedef struct sprint_text {
-    sprint_text_type type;
     sprint_layer layer;
     sprint_tuple position;
     sprint_dist height;
@@ -214,10 +218,13 @@ typedef enum sprint_element_type {
     SPRINT_ELEMENT_PAD_SMT,
     SPRINT_ELEMENT_ZONE,
     SPRINT_ELEMENT_TEXT,
+    SPRINT_ELEMENT_TEXT_ID,
+    SPRINT_ELEMENT_TEXT_VALUE,
     SPRINT_ELEMENT_CIRCLE,
     SPRINT_ELEMENT_COMPONENT,
     SPRINT_ELEMENT_GROUP
 } sprint_element_type;
+sprint_element_type sprint_element_type_text(sprint_text_type type);
 
 struct sprint_element {
     // The type of this element
@@ -238,6 +245,13 @@ struct sprint_element {
     };
 };
 
+extern const char* SPRINT_ELEMENT_TYPE_NAMES[];
+
+sprint_error sprint_element_type_print(sprint_element_type type, FILE* stream);
+sprint_error sprint_element_type_string(sprint_element_type type, sprint_stringbuilder* builder);
+const char* sprint_element_type_to_tag(sprint_element_type type, bool closing);
+sprint_error sprint_element_type_from_tag(sprint_element_type* type, bool* closing, const char* tag);
+
 sprint_error sprint_track_create(sprint_element* element, sprint_layer layer, sprint_dist width,
                                  int num_points, sprint_tuple* points);
 sprint_error sprint_pad_tht_create(sprint_element* element, sprint_layer layer, sprint_tuple position,
@@ -253,12 +267,10 @@ sprint_error sprint_circle_create(sprint_element* element, sprint_layer layer, s
 sprint_error sprint_component_create(sprint_element* element, sprint_text* text_id, sprint_text* text_value,
                                      int num_elements, sprint_element* elements);
 sprint_error sprint_group_create(sprint_element* element, int num_elements, sprint_element* elements);
+
+const char* sprint_element_tag(sprint_element* element);
+sprint_error sprint_element_print(sprint_element* element, FILE* stream, sprint_prim_format format);
+sprint_error sprint_element_string(sprint_element* element, sprint_stringbuilder* builder, sprint_prim_format format);
 sprint_error sprint_element_destroy(sprint_element* element);
-
-extern const char* SPRINT_ELEMENT_TYPE_NAMES[];
-
-sprint_error sprint_element_type_print(sprint_element_type type, FILE* stream, sprint_prim_format format);
-sprint_error sprint_element_type_string(sprint_element_type type, sprint_stringbuilder* builder,
-                                        sprint_prim_format format);
 
 #endif //SPRINTPCB_ELEMENTS_H
