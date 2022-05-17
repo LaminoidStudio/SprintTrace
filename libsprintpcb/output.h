@@ -29,7 +29,7 @@ struct sprint_output {
 };
 
 sprint_output* sprint_output_create_str(int capacity);
-sprint_output* sprint_output_create_file(FILE* stream);
+sprint_output* sprint_output_create_file(FILE* stream, bool close);
 sprint_error sprint_output_put_int(sprint_output* output, int val);
 sprint_error sprint_output_put_chr(sprint_output* output, char chr);
 sprint_error sprint_output_put_str(sprint_output* output, const char* str);

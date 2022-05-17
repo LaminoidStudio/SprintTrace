@@ -45,7 +45,7 @@ sprint_output* sprint_output_create_str(int capacity)
     return output;
 }
 
-sprint_output* sprint_output_create_file(FILE* stream)
+sprint_output* sprint_output_create_file(FILE* stream, bool close)
 {
     if (stream == NULL) return NULL;
 
@@ -59,7 +59,7 @@ sprint_output* sprint_output_create_file(FILE* stream)
     output->write_chr = sprint_output_write_chr_file_internal;
     output->write_str = sprint_output_write_str_file_internal;
     output->write_format = sprint_output_write_format_file_internal;
-    output->close = sprint_output_close_file_internal;
+    output->close = close ? sprint_output_close_file_internal : NULL;
 
     return output;
 }
@@ -100,10 +100,10 @@ sprint_error sprint_output_format(sprint_output* output, const char* format, ...
 sprint_error sprint_output_destroy(sprint_output* output, char** contents)
 {
     if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    if (output->close == NULL) return SPRINT_ERROR_STATE_INVALID;
 
-    bool success = output->close(output, contents);
+    bool success = output->close == NULL ? true : output->close(output, contents);
     memset(output, 0, sizeof(*output));
+    free(output);
     return success ? SPRINT_ERROR_NONE : SPRINT_ERROR_IO;
 }
 
