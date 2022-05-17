@@ -24,7 +24,56 @@ sprint_error sprint_int_output(int val, sprint_output* output)
 
 bool sprint_prim_format_valid(sprint_prim_format format)
 {
-    return format >= SPRINT_PRIM_FORMAT_RAW && format <= SPRINT_PRIM_FORMAT_DIST_IN;
+    return format >= SPRINT_PRIM_FORMAT_RAW && format <= SPRINT_PRIM_FORMAT_ANGLE_WHOLE;
+}
+
+bool sprint_prim_format_cooked(sprint_prim_format format)
+{
+    switch (format) {
+        case SPRINT_PRIM_FORMAT_RAW:
+        case SPRINT_PRIM_FORMAT_ANGLE_FINE:
+        case SPRINT_PRIM_FORMAT_ANGLE_COARSE:
+        case SPRINT_PRIM_FORMAT_ANGLE_WHOLE:
+            return false;
+
+        case SPRINT_PRIM_FORMAT_COOKED:
+        case SPRINT_PRIM_FORMAT_DIST_UM:
+        case SPRINT_PRIM_FORMAT_DIST_MM:
+        case SPRINT_PRIM_FORMAT_DIST_CM:
+        case SPRINT_PRIM_FORMAT_DIST_TH:
+        case SPRINT_PRIM_FORMAT_DIST_IN:
+            return true;
+
+        default:
+            sprint_throw_format(false, "unknown primitive format: %d", format);
+            return false;
+    }
+}
+
+sprint_prim_format sprint_prim_format_of(sprint_prim_format format, bool cooked)
+{
+    switch (format) {
+        case SPRINT_PRIM_FORMAT_RAW:
+        case SPRINT_PRIM_FORMAT_COOKED:
+            break;
+
+        case SPRINT_PRIM_FORMAT_DIST_UM:
+        case SPRINT_PRIM_FORMAT_DIST_MM:
+        case SPRINT_PRIM_FORMAT_DIST_CM:
+        case SPRINT_PRIM_FORMAT_DIST_TH:
+        case SPRINT_PRIM_FORMAT_DIST_IN:
+            return cooked ? format : SPRINT_PRIM_FORMAT_RAW;
+
+        case SPRINT_PRIM_FORMAT_ANGLE_FINE:
+        case SPRINT_PRIM_FORMAT_ANGLE_COARSE:
+        case SPRINT_PRIM_FORMAT_ANGLE_WHOLE:
+            return cooked ? SPRINT_PRIM_FORMAT_COOKED : format;
+
+        default:
+            sprint_throw_format(false, "unknown primitive format: %d", format);
+    }
+
+    return cooked ? SPRINT_PRIM_FORMAT_COOKED : SPRINT_PRIM_FORMAT_RAW;
 }
 
 sprint_error sprint_str_output(const char* str, sprint_output* output, sprint_prim_format format)
@@ -33,11 +82,11 @@ sprint_error sprint_str_output(const char* str, sprint_output* output, sprint_pr
     if (!sprint_prim_format_valid(format)) return SPRINT_ERROR_ARGUMENT_RANGE;
 
     // Write the string based on the format
-    if (format == SPRINT_PRIM_FORMAT_RAW)
-        return sprint_rethrow(sprint_output_format(output, "%c%s%c",
-                                               SPRINT_STRING_DELIMITER, str, SPRINT_STRING_DELIMITER));
-    else
+    if (sprint_prim_format_cooked(format))
         return sprint_rethrow(sprint_output_format(output, "\"%s\"", str));
+    else
+        return sprint_rethrow(sprint_output_format(output, "%c%s%c",
+                                                   SPRINT_STRING_DELIMITER, str, SPRINT_STRING_DELIMITER));
 }
 
 
@@ -63,7 +112,7 @@ sprint_error sprint_layer_output(sprint_layer layer, sprint_output* output, spri
 
     // Write the string based on the format
     const char* layer_name;
-    if (format != SPRINT_PRIM_FORMAT_RAW) {
+    if (sprint_prim_format_cooked(format)) {
         layer_name = SPRINT_LAYER_NAMES[layer];
         if (!sprint_assert(false, layer_name != NULL))
             return SPRINT_ERROR_ASSERTION;
@@ -98,14 +147,12 @@ bool sprint_size_valid(sprint_dist size)
 sprint_error sprint_dist_output(sprint_dist dist, sprint_output* output, sprint_prim_format format)
 {
     if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!sprint_prim_format_valid(format)) return SPRINT_ERROR_ARGUMENT_RANGE;
 
     int dist_per_unit;
     int dist_precision;
     const char* dist_suffix;
     switch (format) {
-        case SPRINT_PRIM_FORMAT_RAW:
-            return sprint_rethrow(sprint_output_put_int(output, dist));
-
         case SPRINT_PRIM_FORMAT_COOKED:
         case SPRINT_PRIM_FORMAT_DIST_MM:
             dist_per_unit = SPRINT_DIST_PER_MM;
@@ -138,7 +185,10 @@ sprint_error sprint_dist_output(sprint_dist dist, sprint_output* output, sprint_
             break;
 
         default:
-            return SPRINT_ERROR_ARGUMENT_RANGE;
+            if (!sprint_assert(false, !sprint_prim_format_cooked(format)))
+                return SPRINT_ERROR_ASSERTION;
+
+            return sprint_rethrow(sprint_output_put_int(output, dist));
     }
 
     // Append the integer part, decimal point and mantissa
@@ -171,7 +221,7 @@ sprint_error sprint_angle_output(sprint_angle angle, sprint_output* output, spri
 
     // Write the string based on the format
     sprint_error error = SPRINT_ERROR_NONE;
-    if (format != SPRINT_PRIM_FORMAT_RAW) {
+    if (sprint_prim_format_cooked(format)) {
         // Append the integer part, decimal point and mantissa part
         sprint_chain(error, sprint_output_format(output, "%d.%0*d", angle / SPRINT_ANGLE_NATIVE,
                                                         SPRINT_ANGLE_PRECISION, abs(angle % SPRINT_ANGLE_NATIVE)));
@@ -179,8 +229,33 @@ sprint_error sprint_angle_output(sprint_angle angle, sprint_output* output, spri
         // Append the unit suffix
         sprint_chain(error, sprint_output_put_str(output, "deg"));
         return sprint_rethrow(error);
-    } else
-        return sprint_rethrow(sprint_output_put_int(output, angle));
+    }
+
+    // Handle the different raw precisions
+    sprint_angle factor;
+    switch (format) {
+        case SPRINT_PRIM_FORMAT_RAW:
+            factor = 1;
+            break;
+        case SPRINT_PRIM_FORMAT_ANGLE_FINE:
+            factor = SPRINT_ANGLE_NATIVE / SPRINT_ANGLE_FINE;
+            break;
+        case SPRINT_PRIM_FORMAT_ANGLE_COARSE:
+            factor = SPRINT_ANGLE_NATIVE / SPRINT_ANGLE_COARSE;
+            break;
+        case SPRINT_PRIM_FORMAT_ANGLE_WHOLE:
+            factor = SPRINT_ANGLE_NATIVE / SPRINT_ANGLE_WHOLE;
+            break;
+        default:
+            return SPRINT_ERROR_ARGUMENT_RANGE;
+    }
+
+    // Never divide by zero
+    if (!sprint_assert(false, factor > 0))
+        return SPRINT_ERROR_ASSERTION;
+
+    // And output the raw scaled value
+    return sprint_rethrow(sprint_output_put_int(output, angle / factor));
 }
 
 sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y)

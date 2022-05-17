@@ -24,9 +24,14 @@ typedef enum sprint_prim_format {
     SPRINT_PRIM_FORMAT_DIST_MM,
     SPRINT_PRIM_FORMAT_DIST_CM,
     SPRINT_PRIM_FORMAT_DIST_TH,
-    SPRINT_PRIM_FORMAT_DIST_IN
+    SPRINT_PRIM_FORMAT_DIST_IN,
+    SPRINT_PRIM_FORMAT_ANGLE_FINE,
+    SPRINT_PRIM_FORMAT_ANGLE_COARSE,
+    SPRINT_PRIM_FORMAT_ANGLE_WHOLE
 } sprint_prim_format;
 bool sprint_prim_format_valid(sprint_prim_format format);
+bool sprint_prim_format_cooked(sprint_prim_format format);
+sprint_prim_format sprint_prim_format_of(sprint_prim_format format, bool cooked);
 
 sprint_error sprint_str_output(const char* str, sprint_output* output, sprint_prim_format format);
 
