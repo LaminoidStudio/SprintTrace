@@ -78,8 +78,13 @@ sprint_prim_format sprint_prim_format_of(sprint_prim_format format, bool cooked)
 
 sprint_error sprint_str_output(const char* str, sprint_output* output, sprint_prim_format format)
 {
-    if (str == NULL || output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
     if (!sprint_prim_format_valid(format)) return SPRINT_ERROR_ARGUMENT_RANGE;
+    if (str != NULL && strchr(str, SPRINT_STRING_DELIMITER) != NULL) return SPRINT_ERROR_ARGUMENT_FORMAT;
+
+    // Default the string to empty, if it is null
+    if (str == NULL)
+        str = "";
 
     // Write the string based on the format
     if (sprint_prim_format_cooked(format))
