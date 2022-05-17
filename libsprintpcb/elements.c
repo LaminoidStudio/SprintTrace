@@ -115,8 +115,7 @@ sprint_error sprint_element_type_from_tag(sprint_element_type* type, bool* closi
 bool sprint_track_valid(sprint_track* track)
 {
     return track != NULL && sprint_layer_valid(track->layer) && sprint_size_valid(track->width) &&
-        track->num_points >= 0 && (track->num_points == 0) == (track->points == NULL) &&
-        sprint_size_valid(track->clear);
+        track->num_points >= 2 && track->points != NULL && sprint_size_valid(track->clear);
 }
 
 static const sprint_track SPRINT_TRACK_DEFAULT = {
@@ -284,8 +283,7 @@ sprint_error sprint_pad_smt_create(sprint_element* element, sprint_layer layer, 
 bool sprint_zone_valid(sprint_zone* zone)
 {
     return zone != NULL && sprint_layer_valid(zone->layer) && sprint_size_valid(zone->width) &&
-           zone->num_points >= 0 && (zone->num_points == 0) == (zone->points == NULL) &&
-           sprint_size_valid(zone->clear);
+           zone->num_points >= 2 && zone->points != NULL && sprint_size_valid(zone->clear);
 }
 
 static const sprint_zone SPRINT_ZONE_DEFAULT = {
@@ -670,7 +668,41 @@ static sprint_error sprint_pad_smt_output_internal(sprint_pad_smt* pad, sprint_o
 static sprint_error sprint_zone_output_internal(sprint_zone* zone, sprint_output* output,
                                                 sprint_prim_format format)
 {
+    bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "LAYER", "layer"));
+    sprint_chain(error, sprint_layer_output(zone->layer, output, format));
+    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "WIDTH", "width"));
+    sprint_chain(error, sprint_dist_output(zone->width, output, format));
+    if (zone->clear != SPRINT_ZONE_DEFAULT.clear) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CLEAR", "clear"));
+        sprint_chain(error, sprint_dist_output(zone->clear, output, format));
+    }
+    if (zone->cutout != SPRINT_ZONE_DEFAULT.cutout) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CUTOUT", "cutout"));
+        sprint_chain(error, sprint_bool_output(zone->cutout, output));
+    }
+    if (zone->soldermask != SPRINT_ZONE_DEFAULT.soldermask) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SOLDERMASK", "soldermask"));
+        sprint_chain(error, sprint_bool_output(zone->soldermask, output));
+    }
+    if (zone->hatch != SPRINT_ZONE_DEFAULT.hatch) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "HATCH", "hatch"));
+        sprint_chain(error, sprint_bool_output(zone->hatch, output));
+        if (zone->hatch_auto != SPRINT_ZONE_DEFAULT.hatch_auto) {
+            sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "HATCH_AUTO", "hatch auto"));
+            sprint_chain(error, sprint_bool_output(zone->hatch_auto, output));
+        }
+        if (!zone->hatch_auto) {
+            sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "HATCH_WIDTH", "hatch width"));
+            sprint_chain(error, sprint_dist_output(zone->hatch_width, output, format));
+        }
+    }
+    for (int index = 0; index < zone->num_points; index++) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, index, "P", "p"));
+        sprint_chain(error, sprint_tuple_output(zone->points[index], output, format));
+    }
+    return sprint_rethrow(error);
 }
 
 static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output* output,
