@@ -10,6 +10,8 @@
 #include "primitives.h"
 #include "elements.h"
 #include "grid.h"
+#include "output.h"
+#include "errors.h"
 
 #include <stdbool.h>
 
@@ -39,9 +41,7 @@ typedef struct sprint_pcb {
     sprint_group elements;
 } sprint_pcb;
 
-sprint_error sprint_pcb_flags_print(sprint_pcb_flags flags, FILE* stream);
-sprint_error sprint_pcb_flags_string(sprint_pcb_flags flags, sprint_stringbuilder* builder);
-sprint_error sprint_pcb_print(sprint_pcb* pcb, FILE* stream);
-sprint_error sprint_pcb_string(sprint_pcb* pcb, sprint_stringbuilder* builder);
+sprint_error sprint_pcb_flags_output(sprint_pcb_flags flags, sprint_output* output);
+sprint_error sprint_pcb_output(sprint_pcb* pcb, sprint_output* output);
 
 #endif //SPRINTPCB_PCB_H

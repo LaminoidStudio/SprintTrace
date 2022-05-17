@@ -7,7 +7,9 @@
 #ifndef SPRINTPCB_GRID_H
 #define SPRINTPCB_GRID_H
 
+#include "output.h"
 #include "primitives.h"
+#include "errors.h"
 
 typedef struct sprint_grid {
     sprint_tuple origin;
@@ -17,7 +19,6 @@ typedef struct sprint_grid {
 
 sprint_grid sprint_grid_of(sprint_tuple origin, sprint_dist width, sprint_dist height);
 bool sprint_grid_valid(sprint_grid* grid);
-sprint_error sprint_grid_print(sprint_grid* grid, FILE* stream);
-sprint_error sprint_grid_string(sprint_grid* grid, sprint_stringbuilder* builder);
+sprint_error sprint_grid_output(sprint_grid* grid, sprint_output* output);
 
 #endif //SPRINTPCB_GRID_H

@@ -16,6 +16,7 @@
 #include "libsprintpcb/errors.h"
 
 int main(int argc, const char* argv[]) {
+    sprint_output* output = sprint_output_create_file(stdout, false);
     sprint_tuple points[2] = {sprint_tuple_of(300, 400), sprint_tuple_of(500, 600)};
     sprint_element track;
     sprint_require(sprint_track_create(&track,
@@ -23,8 +24,8 @@ int main(int argc, const char* argv[]) {
                                        sprint_dist_mm(10),
                                        2, points));
     track.track.flat_start = true;
-    sprint_element_print(&track, stdout, SPRINT_PRIM_FORMAT_RAW);
-    sprint_element_print(&track, stdout, SPRINT_PRIM_FORMAT_DIST_MM);
+    sprint_element_output(&track, output, SPRINT_PRIM_FORMAT_RAW);
+    sprint_element_output(&track, output, SPRINT_PRIM_FORMAT_DIST_MM);
     sprint_element_destroy(&track);
 
     sprint_require(sprint_plugin_begin(argc, argv));
@@ -61,58 +62,8 @@ int main(int argc, const char* argv[]) {
     sprint_prim_format format_angle = format_dist == SPRINT_PRIM_FORMAT_RAW ? format_dist : SPRINT_PRIM_FORMAT_COOKED;
     sprint_prim_format format_layer = format_angle;
 
-    sprint_plugin_print(stdout);
-    fputc('\n', stdout);
-
-    builder = sprint_stringbuilder_of("Circle and builder test:\n");
-    sprint_stringbuilder_put_str(builder, "layer: ");
-    sprint_layer_string(circle.circle.layer, builder, format_layer);
-    sprint_stringbuilder_put_chr(builder, '\n');
-
-    sprint_stringbuilder_put_str(builder, "width: ");
-    sprint_dist_string(circle.circle.width, builder, format_dist);
-    sprint_stringbuilder_put_chr(builder, '\n');
-
-    sprint_stringbuilder_put_str(builder, "center: ");
-    sprint_tuple_string(circle.circle.center, builder, format_dist);
-    sprint_stringbuilder_put_chr(builder, '\n');
-
-    sprint_stringbuilder_put_str(builder, "radius: ");
-    sprint_dist_string(circle.circle.radius, builder, format_dist);
-    sprint_stringbuilder_put_chr(builder, '\n');
-
-    sprint_stringbuilder_put_str(builder, "clear: ");
-    sprint_dist_string(circle.circle.clear, builder, format_dist);
-    sprint_stringbuilder_put_chr(builder, '\n');
-
-    sprint_stringbuilder_put_str(builder, "(cutout): ");
-    sprint_bool_string(circle.circle.cutout, builder);
-    sprint_stringbuilder_put_chr(builder, '\n');
-
-    sprint_stringbuilder_put_str(builder, "(soldermask): ");
-    sprint_bool_string(circle.circle.soldermask, builder);
-    sprint_stringbuilder_put_chr(builder, '\n');
-
-    sprint_stringbuilder_put_str(builder, "(start): ");
-    sprint_angle_string(circle.circle.start, builder, format_angle);
-    sprint_stringbuilder_put_chr(builder, '\n');
-
-    sprint_stringbuilder_put_str(builder, "(stop): ");
-    sprint_angle_string(circle.circle.stop, builder, format_angle);
-    sprint_stringbuilder_put_chr(builder, '\n');
-
-    sprint_stringbuilder_put_str(builder, "(fill): ");
-    sprint_bool_string(circle.circle.fill, builder);
-    sprint_stringbuilder_put_chr(builder, '\n');
-    sprint_element_destroy(&circle);
-
-    sprint_stringbuilder_put_str(builder, "String test: ");
-    sprint_str_string("my string raw", builder, SPRINT_PRIM_FORMAT_RAW);
-    sprint_stringbuilder_put_chr(builder, ' ');
-    sprint_str_string("my string cooked", builder, SPRINT_PRIM_FORMAT_COOKED);
-    sprint_stringbuilder_put_chr(builder, '\n');
-
-    sprint_stringbuilder_flush(builder, stdout);
+    sprint_plugin_output(output);
+    sprint_output_put_chr(output, '\n');
 
     sprint_tuple tuple1 = sprint_tuple_of(1, 2), tuple2 = sprint_tuple_of(3, 4);
 
@@ -133,11 +84,12 @@ int main(int argc, const char* argv[]) {
 
     for (int i = 0; i < list->count; i++) {
         sprint_tuple tuple = *((sprint_tuple*)sprint_list_get(list, i));
-        sprint_tuple_print(tuple, stdout, SPRINT_PRIM_FORMAT_COOKED);
+        sprint_tuple_output(tuple, output, SPRINT_PRIM_FORMAT_COOKED);
         putchar('\n');
     }
 
     sprint_list_destroy(list);
+    sprint_output_destroy(output, NULL);
 
     return 0;
 }

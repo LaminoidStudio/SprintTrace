@@ -8,17 +8,14 @@
 #define SPRINTPCB_PRIMITIVES_H
 
 #include "errors.h"
-#include "stringbuilder.h"
+#include "output.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdbool.h>
 
-sprint_error sprint_bool_print(bool val, FILE* stream);
-sprint_error sprint_bool_string(bool val, sprint_stringbuilder* builder);
-
-sprint_error sprint_int_print(int val, FILE* stream);
-sprint_error sprint_int_string(int val, sprint_stringbuilder* builder);
+sprint_error sprint_bool_output(bool val, sprint_output* output);
+sprint_error sprint_int_output(int val, sprint_output* output);
 
 typedef enum sprint_prim_format {
     SPRINT_PRIM_FORMAT_RAW,
@@ -31,8 +28,7 @@ typedef enum sprint_prim_format {
 } sprint_prim_format;
 bool sprint_prim_format_valid(sprint_prim_format format);
 
-sprint_error sprint_str_print(const char* str, FILE* stream, sprint_prim_format format);
-sprint_error sprint_str_string(const char* str, sprint_stringbuilder* builder, sprint_prim_format format);
+sprint_error sprint_str_output(const char* str, sprint_output* output, sprint_prim_format format);
 
 typedef enum sprint_layer {
     // The top copper layer (C1)
@@ -58,8 +54,7 @@ typedef enum sprint_layer {
 } sprint_layer;
 extern const char* SPRINT_LAYER_NAMES[];
 bool sprint_layer_valid(sprint_layer layer);
-sprint_error sprint_layer_print(sprint_layer layer, FILE* stream, sprint_prim_format format);
-sprint_error sprint_layer_string(sprint_layer layer, sprint_stringbuilder* builder, sprint_prim_format format);
+sprint_error sprint_layer_output(sprint_layer layer, sprint_output* output, sprint_prim_format format);
 
 typedef signed int sprint_dist;
 extern const sprint_dist SPRINT_DIST_PER_UM;
@@ -76,8 +71,7 @@ extern const sprint_dist SPRINT_DIST_MIN;
 #define sprint_dist_in(d) ((sprint_dist)((d) * SPRINT_DIST_PER_IN))
 bool sprint_dist_valid(sprint_dist dist);
 bool sprint_size_valid(sprint_dist size);
-sprint_error sprint_dist_print(sprint_dist dist, FILE* stream, sprint_prim_format format);
-sprint_error sprint_dist_string(sprint_dist dist, sprint_stringbuilder* builder, sprint_prim_format format);
+sprint_error sprint_dist_output(sprint_dist dist, sprint_output* output, sprint_prim_format format);
 
 typedef signed int sprint_angle;
 extern const sprint_angle SPRINT_ANGLE_WHOLE;
@@ -89,8 +83,7 @@ extern const sprint_angle SPRINT_ANGLE_MIN;
 #define sprint_angle_deg(a) ((sprint_angle)((a) * SPRINT_ANGLE_NATIVE))
 #define sprint_angle_rad(r) sprint_angle_deg((r) * M_PI / 180d)
 bool sprint_angle_valid(sprint_angle angle);
-sprint_error sprint_angle_print(sprint_angle angle, FILE* stream, sprint_prim_format format);
-sprint_error sprint_angle_string(sprint_angle angle, sprint_stringbuilder* builder, sprint_prim_format format);
+sprint_error sprint_angle_output(sprint_angle angle, sprint_output* output, sprint_prim_format format);
 
 typedef struct sprint_tuple {
     sprint_dist x;
@@ -98,7 +91,6 @@ typedef struct sprint_tuple {
 } sprint_tuple;
 sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y);
 bool sprint_tuple_valid(sprint_tuple tuple);
-sprint_error sprint_tuple_print(sprint_tuple tuple, FILE* stream, sprint_prim_format format);
-sprint_error sprint_tuple_string(sprint_tuple tuple, sprint_stringbuilder* builder, sprint_prim_format format);
+sprint_error sprint_tuple_output(sprint_tuple tuple, sprint_output* output, sprint_prim_format format);
 
 #endif //SPRINTPCB_PRIMITIVES_H

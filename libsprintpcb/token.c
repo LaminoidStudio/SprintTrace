@@ -49,11 +49,11 @@ const char SPRINT_STRING_DELIMITER = '|';
 const char* SPRINT_TRUE_VALUE = "true";
 const char* SPRINT_FALSE_VALUE = "false";
 
-void sprint_tokenizer_count_internal(sprint_tokenizer* tokenizer, char chr);
-bool sprint_tokenizer_read_str_internal(sprint_tokenizer* tokenizer);
-bool sprint_tokenizer_read_file_internal(sprint_tokenizer* tokenizer);
-bool sprint_tokenizer_close_str_internal(sprint_tokenizer* tokenizer);
-bool sprint_tokenizer_close_file_internal(sprint_tokenizer* tokenizer);
+static void sprint_tokenizer_count_internal(sprint_tokenizer* tokenizer, char chr);
+static bool sprint_tokenizer_read_str_internal(sprint_tokenizer* tokenizer);
+static bool sprint_tokenizer_read_file_internal(sprint_tokenizer* tokenizer);
+static bool sprint_tokenizer_close_str_internal(sprint_tokenizer* tokenizer);
+static bool sprint_tokenizer_close_file_internal(sprint_tokenizer* tokenizer);
 
 bool sprint_tokenizer_state_valid(sprint_tokenizer_state state)
 {
@@ -404,8 +404,6 @@ sprint_error sprint_tokenizer_destroy(sprint_tokenizer* tokenizer)
 
 void sprint_tokenizer_count_internal(sprint_tokenizer* tokenizer, char chr)
 {
-    if (tokenizer == NULL) return;
-
     // Determine, if there has been a line-ending and update the last state accordingly
     bool current_cr = chr == '\r', current_lf = chr == '\n';
 

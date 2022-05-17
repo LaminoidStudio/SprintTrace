@@ -5,3 +5,13 @@
 //
 
 #include "parser.h"
+#include "primitives.h"
+#include "token.h"
+#include "errors.h"
+
+sprint_parser* sprint_parser_create(sprint_tokenizer* tokenizer)
+{
+    if (tokenizer == NULL || tokenizer->read == NULL) return NULL;
+
+
+}

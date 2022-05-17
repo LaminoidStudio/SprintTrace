@@ -456,43 +456,25 @@ sprint_error sprint_plugin_end(sprint_operation operation)
     exit(operation);
 }
 
-sprint_error sprint_plugin_print(FILE* stream)
+sprint_error sprint_plugin_output(sprint_output* output)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(63);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_plugin_string(builder));
-    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
-        sprint_stringbuilder_destroy(builder);
-
-    return sprint_rethrow(error);
-}
-
-sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
-{
-    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    int initial_count = builder->count;
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, "sprint_plugin{state="));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_PLUGIN_STATE_NAMES[sprint_plugin.state]));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", language="));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", operation="));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_OPERATION_NAMES[sprint_plugin.operation]));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", selection="));
-    sprint_chain(error, sprint_bool_string(sprint_plugin.selection, builder));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", pcb="));
-    sprint_chain(error, sprint_pcb_string(&sprint_plugin.pcb, builder));
-    sprint_chain(error, sprint_stringbuilder_format(builder, ", process=%p", sprint_plugin.process));
-    sprint_chain(error, sprint_stringbuilder_format(builder, ", input=%s", sprint_plugin.input));
-    sprint_chain(error, sprint_stringbuilder_format(builder, ", output=%s", sprint_plugin.output));
-    if (!sprint_chain(error, sprint_stringbuilder_put_chr(builder, '}')))
-        builder->count = initial_count;
+    sprint_chain(error, sprint_output_put_str(output, "sprint_plugin{state="));
+    sprint_chain(error, sprint_output_put_str(output, SPRINT_PLUGIN_STATE_NAMES[sprint_plugin.state]));
+    sprint_chain(error, sprint_output_put_str(output, ", language="));
+    sprint_chain(error, sprint_output_put_str(output, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]));
+    sprint_chain(error, sprint_output_put_str(output, ", operation="));
+    sprint_chain(error, sprint_output_put_str(output, SPRINT_OPERATION_NAMES[sprint_plugin.operation]));
+    sprint_chain(error, sprint_output_put_str(output, ", selection="));
+    sprint_chain(error, sprint_bool_output(sprint_plugin.selection, output));
+    sprint_chain(error, sprint_output_put_str(output, ", pcb="));
+    sprint_chain(error, sprint_pcb_output(&sprint_plugin.pcb, output));
+    sprint_chain(error, sprint_output_format(output, ", process=%p", sprint_plugin.process));
+    sprint_chain(error, sprint_output_format(output, ", input=%s", sprint_plugin.input));
+    sprint_chain(error, sprint_output_format(output, ", output=%s", sprint_plugin.output));
+    sprint_chain(error, sprint_output_put_chr(output, '}'));
 
     return sprint_rethrow(error);
 }

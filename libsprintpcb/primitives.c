@@ -6,53 +6,20 @@
 
 #include "primitives.h"
 #include "errors.h"
-#include "stringbuilder.h"
 #include "token.h"
 
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 
-sprint_error sprint_bool_print(bool val, FILE* stream)
+sprint_error sprint_bool_output(bool val, sprint_output* output)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_bool_string(val, builder));
-    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
-        sprint_stringbuilder_destroy(builder);
-
-    return sprint_rethrow(error);
+    return sprint_output_put_str(output, val ? SPRINT_TRUE_VALUE : SPRINT_FALSE_VALUE);
 }
 
-sprint_error sprint_bool_string(bool val, sprint_stringbuilder* builder)
+sprint_error sprint_int_output(int val, sprint_output* output)
 {
-    return sprint_stringbuilder_put_str(builder, val ? SPRINT_TRUE_VALUE : SPRINT_FALSE_VALUE);
-}
-
-sprint_error sprint_int_print(int val, FILE* stream)
-{
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_int_string(val, builder));
-    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
-        sprint_stringbuilder_destroy(builder);
-
-    return sprint_rethrow(error);
-}
-
-sprint_error sprint_int_string(int val, sprint_stringbuilder* builder)
-{
-    return sprint_stringbuilder_put_int(builder, val);
+    return sprint_output_put_int(output, val);
 }
 
 bool sprint_prim_format_valid(sprint_prim_format format)
@@ -60,33 +27,17 @@ bool sprint_prim_format_valid(sprint_prim_format format)
     return format >= SPRINT_PRIM_FORMAT_RAW && format <= SPRINT_PRIM_FORMAT_DIST_IN;
 }
 
-sprint_error sprint_str_print(const char* str, FILE* stream, sprint_prim_format format)
+sprint_error sprint_str_output(const char* str, sprint_output* output, sprint_prim_format format)
 {
-    if (str == NULL || stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(15);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_str_string(str, builder, format));
-    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
-        sprint_stringbuilder_destroy(builder);
-
-    return sprint_rethrow(error);
-}
-
-sprint_error sprint_str_string(const char* str, sprint_stringbuilder* builder, sprint_prim_format format)
-{
-    if (str == NULL || builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (str == NULL || output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
     if (!sprint_prim_format_valid(format)) return SPRINT_ERROR_ARGUMENT_RANGE;
 
     // Write the string based on the format
     if (format == SPRINT_PRIM_FORMAT_RAW)
-        return sprint_rethrow(sprint_stringbuilder_format(builder, "%c%s%c",
+        return sprint_rethrow(sprint_output_format(output, "%c%s%c",
                                                SPRINT_STRING_DELIMITER, str, SPRINT_STRING_DELIMITER));
     else
-        return sprint_rethrow(sprint_stringbuilder_format(builder, "\"%s\"", str));
+        return sprint_rethrow(sprint_output_format(output, "\"%s\"", str));
 }
 
 
@@ -105,25 +56,9 @@ bool sprint_layer_valid(sprint_layer layer)
     return layer >= SPRINT_LAYER_COPPER_TOP && layer <= SPRINT_LAYER_MECHANICAL;
 }
 
-sprint_error sprint_layer_print(sprint_layer layer, FILE* stream, sprint_prim_format format)
+sprint_error sprint_layer_output(sprint_layer layer, sprint_output* output, sprint_prim_format format)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_layer_string(layer, builder, format));
-    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
-        sprint_stringbuilder_destroy(builder);
-
-    return sprint_rethrow(error);
-}
-
-sprint_error sprint_layer_string(sprint_layer layer, sprint_stringbuilder* builder, sprint_prim_format format)
-{
-    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
     if (!sprint_layer_valid(layer) || !sprint_prim_format_valid(format)) return SPRINT_ERROR_ARGUMENT_RANGE;
 
     // Write the string based on the format
@@ -132,9 +67,9 @@ sprint_error sprint_layer_string(sprint_layer layer, sprint_stringbuilder* build
         layer_name = SPRINT_LAYER_NAMES[layer];
         if (!sprint_assert(false, layer_name != NULL))
             return SPRINT_ERROR_ASSERTION;
-        return sprint_rethrow(sprint_stringbuilder_put_str(builder, layer_name));
+        return sprint_rethrow(sprint_output_put_str(output, layer_name));
     } else
-        return sprint_rethrow(sprint_stringbuilder_put_int(builder, layer));
+        return sprint_rethrow(sprint_output_put_int(output, layer));
 }
 
 const sprint_dist SPRINT_DIST_PER_UM    = 10;
@@ -160,32 +95,16 @@ bool sprint_size_valid(sprint_dist size)
     return size >= 0 && size <= SPRINT_DIST_MAX;
 }
 
-sprint_error sprint_dist_print(sprint_dist dist, FILE* stream, sprint_prim_format format)
+sprint_error sprint_dist_output(sprint_dist dist, sprint_output* output, sprint_prim_format format)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_dist_string(dist, builder, format));
-    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
-        sprint_stringbuilder_destroy(builder);
-
-    return sprint_rethrow(error);
-}
-
-sprint_error sprint_dist_string(sprint_dist dist, sprint_stringbuilder* builder, sprint_prim_format format)
-{
-    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     int dist_per_unit;
     int dist_precision;
     const char* dist_suffix;
     switch (format) {
         case SPRINT_PRIM_FORMAT_RAW:
-            return sprint_rethrow(sprint_stringbuilder_put_int(builder, dist));
+            return sprint_rethrow(sprint_output_put_int(output, dist));
 
         case SPRINT_PRIM_FORMAT_COOKED:
         case SPRINT_PRIM_FORMAT_DIST_MM:
@@ -222,18 +141,13 @@ sprint_error sprint_dist_string(sprint_dist dist, sprint_stringbuilder* builder,
             return SPRINT_ERROR_ARGUMENT_RANGE;
     }
 
-    // Keep track of encountered errors and then restore the initial builder count
-    sprint_error error = SPRINT_ERROR_NONE;
-    int initial_count = builder->count;
-
     // Append the integer part, decimal point and mantissa
-    sprint_chain(error, sprint_stringbuilder_format(builder, "%d.%0*d",
-                                                dist / dist_per_unit, dist_precision, abs(dist % dist_per_unit)));
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_output_format(output, "%d.%0*d", dist / dist_per_unit, dist_precision,
+                                             abs(dist % dist_per_unit)));
 
-    // Append the unit suffix or reset the string builder on error
-    if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, dist_suffix)))
-        builder->count = initial_count;
-
+    // Append the unit suffix
+    sprint_chain(error, sprint_output_put_str(output, dist_suffix));
     return sprint_rethrow(error);
 }
 
@@ -250,44 +164,23 @@ bool sprint_angle_valid(sprint_angle angle)
     return angle >= SPRINT_ANGLE_MIN && angle <= SPRINT_ANGLE_MAX;
 }
 
-sprint_error sprint_angle_print(sprint_angle angle, FILE* stream, sprint_prim_format format)
+sprint_error sprint_angle_output(sprint_angle angle, sprint_output* output, sprint_prim_format format)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_angle_string(angle, builder, format));
-    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
-        sprint_stringbuilder_destroy(builder);
-
-    return sprint_rethrow(error);
-}
-
-sprint_error sprint_angle_string(sprint_angle angle, sprint_stringbuilder* builder, sprint_prim_format format)
-{
-    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
     if (!sprint_prim_format_valid(format)) return SPRINT_ERROR_ARGUMENT_RANGE;
 
-    // Keep track of encountered errors and then restore the initial builder count
-    sprint_error error = SPRINT_ERROR_NONE;
-    int initial_count = builder->count;
-
     // Write the string based on the format
+    sprint_error error = SPRINT_ERROR_NONE;
     if (format != SPRINT_PRIM_FORMAT_RAW) {
         // Append the integer part, decimal point and mantissa part
-        sprint_chain(error, sprint_stringbuilder_format(builder, "%d.%0*d", angle / SPRINT_ANGLE_NATIVE,
+        sprint_chain(error, sprint_output_format(output, "%d.%0*d", angle / SPRINT_ANGLE_NATIVE,
                                                         SPRINT_ANGLE_PRECISION, abs(angle % SPRINT_ANGLE_NATIVE)));
 
-        // Append the unit suffix or reset the string builder on error
-        if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, "deg")))
-            builder->count = initial_count;
-
+        // Append the unit suffix
+        sprint_chain(error, sprint_output_put_str(output, "deg"));
         return sprint_rethrow(error);
     } else
-        return sprint_rethrow(sprint_stringbuilder_put_int(builder, angle));
+        return sprint_rethrow(sprint_output_put_int(output, angle));
 }
 
 sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y)
@@ -304,37 +197,19 @@ bool sprint_tuple_valid(sprint_tuple tuple)
     return sprint_dist_valid(tuple.x) && sprint_dist_valid(tuple.y);
 }
 
-sprint_error sprint_tuple_print(sprint_tuple tuple, FILE* stream, sprint_prim_format format)
+sprint_error sprint_tuple_output(sprint_tuple tuple, sprint_output* output, sprint_prim_format format)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(23);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
+    // Try to append the first distance
     sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_tuple_string(tuple, builder, format));
-    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
-        sprint_stringbuilder_destroy(builder);
-
-    return sprint_rethrow(error);
-}
-
-sprint_error sprint_tuple_string(sprint_tuple tuple, sprint_stringbuilder* builder, sprint_prim_format format)
-{
-    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    // Store the initial builder count to be restored on error and try to append the first distance
-    int initial_count = builder->count;
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_dist_string(tuple.x, builder, format));
+    sprint_chain(error, sprint_dist_output(tuple.x, output, format));
 
     // Try to append the separator
-    sprint_chain(error, sprint_stringbuilder_put_chr(builder, SPRINT_TUPLE_SEPARATOR));
+    sprint_chain(error, sprint_output_put_chr(output, SPRINT_TUPLE_SEPARATOR));
 
-    // Finally, try to append the second tuple or reset the string builder on error
-    if (!sprint_chain(error, sprint_dist_string(tuple.y, builder, format)))
-        builder->count = initial_count;
+    // Finally, try to append the second tuple
+    sprint_chain(error, sprint_dist_output(tuple.y, output, format));
 
     return sprint_rethrow(error);
 }

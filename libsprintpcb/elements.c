@@ -7,6 +7,7 @@
 #include "elements.h"
 #include "primitives.h"
 #include "token.h"
+#include "output.h"
 #include "errors.h"
 
 #include <stdlib.h>
@@ -28,25 +29,9 @@ const char* SPRINT_ELEMENT_TYPE_NAMES[] = {
         [SPRINT_ELEMENT_GROUP] = "group"
 };
 
-sprint_error sprint_element_type_print(sprint_element_type type, FILE* stream)
+sprint_error sprint_element_type_output(sprint_element_type type, sprint_output* output)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_element_type_string(type, builder));
-    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
-        sprint_stringbuilder_destroy(builder);
-
-    return sprint_rethrow(error);
-}
-
-sprint_error sprint_element_type_string(sprint_element_type type, sprint_stringbuilder* builder)
-{
-    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
     if (type >= sizeof(SPRINT_ELEMENT_TYPE_NAMES) / sizeof(const char*)) return SPRINT_ERROR_ARGUMENT_RANGE;
 
     // Write the string based on the format
@@ -54,7 +39,7 @@ sprint_error sprint_element_type_string(sprint_element_type type, sprint_stringb
     if (type_name == NULL)
         return SPRINT_ERROR_ARGUMENT_RANGE;
 
-    return sprint_rethrow(sprint_stringbuilder_put_str(builder, type_name));
+    return sprint_rethrow(sprint_output_put_str(output, type_name));
 }
 
 const char* sprint_element_type_to_tag(sprint_element_type type, bool closing)
@@ -484,128 +469,111 @@ sprint_error sprint_group_create(sprint_element* element, int num_elements, spri
     return sprint_group_valid(&element->group) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
 
-sprint_error sprint_element_print(sprint_element* element, FILE* stream, sprint_prim_format format)
-{
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(31);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_element_string(element, builder, format));
-    if (!sprint_chain(error, sprint_stringbuilder_flush(builder, stream)))
-        sprint_stringbuilder_destroy(builder);
-
-    return sprint_rethrow(error);
-}
-
-static sprint_error sprint_indent_string_internal(sprint_stringbuilder* builder, int depth)
+static sprint_error sprint_indent_output_internal(sprint_output* output, int depth)
 {
     sprint_error error = SPRINT_ERROR_NONE;
     for (depth--; depth >= 0; depth--)
         for (int indent = 0; indent < SPRINT_ELEMENT_INDENT; indent++)
-            sprint_chain(error, sprint_stringbuilder_put_chr(builder, ' '));
+            sprint_chain(error, sprint_output_put_chr(output, ' '));
     return sprint_rethrow(error);
 }
 
 static const int SPRINT_NO_INDEX = -1;
-static sprint_error sprint_tag_string_internal(sprint_stringbuilder* builder, bool raw, int index,
+static sprint_error sprint_tag_output_internal(sprint_output* output, bool raw, int index,
                                                const char* tag_raw, const char* tag_cooked)
 {
     // Put the statement separator
     sprint_error error = SPRINT_ERROR_NONE;
     if (raw)
-        sprint_chain(error, sprint_stringbuilder_put_chr(builder, SPRINT_STATEMENT_SEPARATOR));
+        sprint_chain(error, sprint_output_put_chr(output, SPRINT_STATEMENT_SEPARATOR));
     else
-        sprint_chain(error, sprint_stringbuilder_put_str(builder, ", "));
+        sprint_chain(error, sprint_output_put_str(output, ", "));
 
     // Put the tag
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, raw ? tag_raw : tag_cooked));
+    sprint_chain(error, sprint_output_put_str(output, raw ? tag_raw : tag_cooked));
 
     // Put the optional index
     if (index >= 0)
-        sprint_chain(error, sprint_stringbuilder_put_int(builder, index));
+        sprint_chain(error, sprint_output_put_int(output, index));
 
     // Put the value separator
-    sprint_chain(error, sprint_stringbuilder_put_chr(builder, raw ? SPRINT_VALUE_SEPARATOR : '='));
+    sprint_chain(error, sprint_output_put_chr(output, raw ? SPRINT_VALUE_SEPARATOR : '='));
 
     return sprint_rethrow(error);
 }
 
-static sprint_error sprint_track_string_internal(sprint_track* track, sprint_stringbuilder* builder,
-                                                 sprint_prim_format format)
+static sprint_error sprint_track_output_internal(sprint_track* track, sprint_output* output, sprint_prim_format format)
 {
     bool raw = format == SPRINT_PRIM_FORMAT_RAW;
     sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_tag_string_internal(builder, raw, SPRINT_NO_INDEX, "LAYER", "layer"));
-    sprint_chain(error, sprint_layer_string(track->layer, builder, format));
-    sprint_chain(error, sprint_tag_string_internal(builder, raw, SPRINT_NO_INDEX, "WIDTH", "width"));
-    sprint_chain(error, sprint_dist_string(track->width, builder, format));
+    sprint_chain(error, sprint_tag_output_internal(output, raw, SPRINT_NO_INDEX, "LAYER", "layer"));
+    sprint_chain(error, sprint_layer_output(track->layer, output, format));
+    sprint_chain(error, sprint_tag_output_internal(output, raw, SPRINT_NO_INDEX, "WIDTH", "width"));
+    sprint_chain(error, sprint_dist_output(track->width, output, format));
     if (track->clear != SPRINT_TRACK_DEFAULT.clear) {
-        sprint_chain(error, sprint_tag_string_internal(builder, raw, SPRINT_NO_INDEX, "CLEAR", "clear"));
-        sprint_chain(error, sprint_dist_string(track->width, builder, format));
+        sprint_chain(error, sprint_tag_output_internal(output, raw, SPRINT_NO_INDEX, "CLEAR", "clear"));
+        sprint_chain(error, sprint_dist_output(track->width, output, format));
     }
     if (track->cutout != SPRINT_TRACK_DEFAULT.cutout) {
-        sprint_chain(error, sprint_tag_string_internal(builder, raw, SPRINT_NO_INDEX, "CUTOUT", "cutout"));
-        sprint_chain(error, sprint_bool_string(track->cutout, builder));
+        sprint_chain(error, sprint_tag_output_internal(output, raw, SPRINT_NO_INDEX, "CUTOUT", "cutout"));
+        sprint_chain(error, sprint_bool_output(track->cutout, output));
     }
     if (track->soldermask != SPRINT_TRACK_DEFAULT.soldermask) {
-        sprint_chain(error, sprint_tag_string_internal(builder, raw, SPRINT_NO_INDEX, "SOLDERMASK", "soldermask"));
-        sprint_chain(error, sprint_bool_string(track->soldermask, builder));
+        sprint_chain(error, sprint_tag_output_internal(output, raw, SPRINT_NO_INDEX, "SOLDERMASK", "soldermask"));
+        sprint_chain(error, sprint_bool_output(track->soldermask, output));
     }
     if (track->flat_start != SPRINT_TRACK_DEFAULT.flat_start) {
-        sprint_chain(error, sprint_tag_string_internal(builder, raw, SPRINT_NO_INDEX, "FLATSTART", "flat_start"));
-        sprint_chain(error, sprint_bool_string(track->soldermask, builder));
+        sprint_chain(error, sprint_tag_output_internal(output, raw, SPRINT_NO_INDEX, "FLATSTART", "flat_start"));
+        sprint_chain(error, sprint_bool_output(track->soldermask, output));
     }
     if (track->flat_end != SPRINT_TRACK_DEFAULT.flat_end) {
-        sprint_chain(error, sprint_tag_string_internal(builder, raw, SPRINT_NO_INDEX, "FLATEND", "flat_end"));
-        sprint_chain(error, sprint_bool_string(track->soldermask, builder));
+        sprint_chain(error, sprint_tag_output_internal(output, raw, SPRINT_NO_INDEX, "FLATEND", "flat_end"));
+        sprint_chain(error, sprint_bool_output(track->soldermask, output));
     }
     for (int index = 0; index < track->num_points; index++) {
-        sprint_chain(error, sprint_tag_string_internal(builder, raw, index, "P", "p"));
-        sprint_chain(error, sprint_tuple_string(track->points[index], builder, format));
+        sprint_chain(error, sprint_tag_output_internal(output, raw, index, "P", "p"));
+        sprint_chain(error, sprint_tuple_output(track->points[index], output, format));
     }
     return sprint_rethrow(error);
 }
 
-static sprint_error sprint_pad_tht_string_internal(sprint_pad_tht* pad, sprint_stringbuilder* builder,
+static sprint_error sprint_pad_tht_output_internal(sprint_pad_tht* pad, sprint_output* output,
                                                    sprint_prim_format format)
 {
     sprint_error error = SPRINT_ERROR_NONE;
 }
 
-static sprint_error sprint_pad_smt_string_internal(sprint_pad_smt* pad, sprint_stringbuilder* builder,
+static sprint_error sprint_pad_smt_output_internal(sprint_pad_smt* pad, sprint_output* output,
                                                    sprint_prim_format format)
 {
     sprint_error error = SPRINT_ERROR_NONE;
 }
 
-static sprint_error sprint_zone_string_internal(sprint_zone* zone, sprint_stringbuilder* builder,
+static sprint_error sprint_zone_output_internal(sprint_zone* zone, sprint_output* output,
                                                 sprint_prim_format format)
 {
     sprint_error error = SPRINT_ERROR_NONE;
 }
 
-static sprint_error sprint_text_string_internal(sprint_text* text, sprint_stringbuilder* builder,
+static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output* output,
                                                 sprint_prim_format format)
 {
     sprint_error error = SPRINT_ERROR_NONE;
 }
 
-static sprint_error sprint_circle_string_internal(sprint_circle* circle, sprint_stringbuilder* builder,
+static sprint_error sprint_circle_output_internal(sprint_circle* circle, sprint_output* output,
                                                   sprint_prim_format format)
 {
     sprint_error error = SPRINT_ERROR_NONE;
 }
 
-static sprint_error sprint_component_string_internal(sprint_component* component, sprint_stringbuilder* builder,
+static sprint_error sprint_component_output_internal(sprint_component* component, sprint_output* output,
                                                      sprint_prim_format format, int depth)
 {
     sprint_error error = SPRINT_ERROR_NONE;
 }
 
-static sprint_error sprint_group_string_internal(sprint_group* group, sprint_stringbuilder* builder,
+static sprint_error sprint_group_output_internal(sprint_group* group, sprint_output* output,
                                                  sprint_prim_format format, int depth)
 {
     sprint_error error = SPRINT_ERROR_NONE;
@@ -613,14 +581,11 @@ static sprint_error sprint_group_string_internal(sprint_group* group, sprint_str
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "misc-no-recursion"
-static sprint_error sprint_element_string_internal(sprint_element* element, sprint_stringbuilder* builder,
+static sprint_error sprint_element_output_internal(sprint_element* element, sprint_output* output,
                                                    sprint_prim_format format, int depth) {
-    if (element == NULL || builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (element == NULL || output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
     if (!sprint_prim_format_valid(format)) return SPRINT_ERROR_ARGUMENT_RANGE;
     if (depth < 0 || depth >= SPRINT_ELEMENT_DEPTH) return SPRINT_ERROR_RECURSION;
-
-    // Store the initial builder size
-    int initial_count = builder->count;
 
     // Append the tag or element name
     sprint_error error = SPRINT_ERROR_NONE;
@@ -628,9 +593,9 @@ static sprint_error sprint_element_string_internal(sprint_element* element, spri
         const char *tag = sprint_element_type_to_tag(element->type, false);
         if (tag == NULL)
             return SPRINT_ERROR_ARGUMENT_RANGE;
-        sprint_chain(error, sprint_stringbuilder_put_str(builder, tag));
-    } else if (sprint_chain(error, sprint_stringbuilder_put_str(builder, "sprint_element{type="))) {
-        error = sprint_element_type_string(element->type, builder);
+        sprint_chain(error, sprint_output_put_str(output, tag));
+    } else if (sprint_chain(error, sprint_output_put_str(output, "sprint_element{type="))) {
+        error = sprint_element_type_output(element->type, output);
         if (error == SPRINT_ERROR_ARGUMENT_RANGE || !sprint_check(error))
             return sprint_rethrow(error);
     }
@@ -638,28 +603,28 @@ static sprint_error sprint_element_string_internal(sprint_element* element, spri
     // Append the elements based on type and format
     switch (element->type) {
         case SPRINT_ELEMENT_TRACK:
-            sprint_chain(error, sprint_track_string_internal(&element->track, builder, format));
+            sprint_chain(error, sprint_track_output_internal(&element->track, output, format));
             break;
         case SPRINT_ELEMENT_PAD_THT:
-            sprint_chain(error, sprint_pad_tht_string_internal(&element->pad_tht, builder, format));
+            sprint_chain(error, sprint_pad_tht_output_internal(&element->pad_tht, output, format));
             break;
         case SPRINT_ELEMENT_PAD_SMT:
-            sprint_chain(error, sprint_pad_smt_string_internal(&element->pad_smt, builder, format));
+            sprint_chain(error, sprint_pad_smt_output_internal(&element->pad_smt, output, format));
             break;
         case SPRINT_ELEMENT_ZONE:
-            sprint_chain(error, sprint_zone_string_internal(&element->zone, builder, format));
+            sprint_chain(error, sprint_zone_output_internal(&element->zone, output, format));
             break;
         case SPRINT_ELEMENT_TEXT:
-            sprint_chain(error, sprint_text_string_internal(&element->text, builder, format));
+            sprint_chain(error, sprint_text_output_internal(&element->text, output, format));
             break;
         case SPRINT_ELEMENT_CIRCLE:
-            sprint_chain(error, sprint_circle_string_internal(&element->circle, builder, format));
+            sprint_chain(error, sprint_circle_output_internal(&element->circle, output, format));
             break;
         case SPRINT_ELEMENT_COMPONENT:
-            sprint_chain(error, sprint_component_string_internal(&element->component, builder, format, depth));
+            sprint_chain(error, sprint_component_output_internal(&element->component, output, format, depth));
             break;
         case SPRINT_ELEMENT_GROUP:
-            sprint_chain(error, sprint_group_string_internal(&element->group, builder, format, depth));
+            sprint_chain(error, sprint_group_output_internal(&element->group, output, format, depth));
             break;
         default:
             sprint_throw_format(false, "element type unknown: %d", element->type);
@@ -670,25 +635,21 @@ static sprint_error sprint_element_string_internal(sprint_element* element, spri
     if (format == SPRINT_PRIM_FORMAT_RAW) {
         const char *tag = sprint_element_type_to_tag(element->type, true);
         if (tag != NULL) {
-            sprint_chain(error, sprint_indent_string_internal(builder, depth));
-            sprint_chain(error, sprint_stringbuilder_put_str(builder, tag));
+            sprint_chain(error, sprint_indent_output_internal(output, depth));
+            sprint_chain(error, sprint_output_put_str(output, tag));
         }
-        sprint_chain(error, sprint_stringbuilder_put_chr(builder, SPRINT_STATEMENT_TERMINATOR));
-        sprint_chain(error, sprint_stringbuilder_put_chr(builder, '\n'));
+        sprint_chain(error, sprint_output_put_chr(output, SPRINT_STATEMENT_TERMINATOR));
+        sprint_chain(error, sprint_output_put_chr(output, '\n'));
     } else
-        sprint_chain(error, sprint_stringbuilder_put_str(builder, "}\n"));
-
-    // If something failed, restore the initial builder count
-    if (error != SPRINT_ERROR_NONE)
-        builder->count = initial_count;
+        sprint_chain(error, sprint_output_put_str(output, "}\n"));
 
     return sprint_rethrow(error);
 }
 #pragma clang diagnostic pop
 
-sprint_error sprint_element_string(sprint_element* element, sprint_stringbuilder* builder, sprint_prim_format format)
+sprint_error sprint_element_output(sprint_element* element, sprint_output* output, sprint_prim_format format)
 {
-    return sprint_element_string_internal(element, builder, format, 0);
+    return sprint_element_output_internal(element, output, format, 0);
 }
 
 #pragma clang diagnostic push

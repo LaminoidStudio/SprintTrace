@@ -8,6 +8,7 @@
 #define SPRINTPCB_ELEMENTS_H
 
 #include "primitives.h"
+#include "output.h"
 #include "errors.h"
 
 #include <stdbool.h>
@@ -247,8 +248,7 @@ struct sprint_element {
 
 extern const char* SPRINT_ELEMENT_TYPE_NAMES[];
 
-sprint_error sprint_element_type_print(sprint_element_type type, FILE* stream);
-sprint_error sprint_element_type_string(sprint_element_type type, sprint_stringbuilder* builder);
+sprint_error sprint_element_type_output(sprint_element_type type, sprint_output* output);
 const char* sprint_element_type_to_tag(sprint_element_type type, bool closing);
 sprint_error sprint_element_type_from_tag(sprint_element_type* type, bool* closing, const char* tag);
 
@@ -269,8 +269,7 @@ sprint_error sprint_component_create(sprint_element* element, sprint_text* text_
 sprint_error sprint_group_create(sprint_element* element, int num_elements, sprint_element* elements);
 
 const char* sprint_element_tag(sprint_element* element);
-sprint_error sprint_element_print(sprint_element* element, FILE* stream, sprint_prim_format format);
-sprint_error sprint_element_string(sprint_element* element, sprint_stringbuilder* builder, sprint_prim_format format);
+sprint_error sprint_element_output(sprint_element* element, sprint_output* output, sprint_prim_format format);
 sprint_error sprint_element_destroy(sprint_element* element);
 
 #endif //SPRINTPCB_ELEMENTS_H
