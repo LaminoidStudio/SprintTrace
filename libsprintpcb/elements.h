@@ -74,7 +74,9 @@ typedef enum sprint_pad_tht_form {
     // Rectangular, portrait
     SPRINT_PAD_THT_FORM_HIGH_RECTANGULAR
 } sprint_pad_tht_form;
+extern const char* SPRINT_PAD_THT_FORM_NAMES[];
 bool sprint_pad_tht_form_valid(sprint_pad_tht_form form);
+sprint_error sprint_pad_tht_form_output(sprint_pad_tht_form form, sprint_output* output, sprint_prim_format format);
 
 typedef struct sprint_pad_tht {
     // Required
