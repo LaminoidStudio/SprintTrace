@@ -641,7 +641,7 @@ static sprint_error sprint_element_output_internal(sprint_element* element, spri
         sprint_chain(error, sprint_output_put_chr(output, SPRINT_STATEMENT_TERMINATOR));
         sprint_chain(error, sprint_output_put_chr(output, '\n'));
     } else
-        sprint_chain(error, sprint_output_put_str(output, "}\n"));
+        sprint_chain(error, sprint_output_put_chr(output, '}'));
 
     return sprint_rethrow(error);
 }

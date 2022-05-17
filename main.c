@@ -26,6 +26,7 @@ int main(int argc, const char* argv[]) {
     track.track.flat_start = true;
     sprint_element_output(&track, output, SPRINT_PRIM_FORMAT_RAW);
     sprint_element_output(&track, output, SPRINT_PRIM_FORMAT_DIST_MM);
+    sprint_output_put_chr(output, '\n');
     sprint_element_destroy(&track);
 
     sprint_require(sprint_plugin_begin(argc, argv));
