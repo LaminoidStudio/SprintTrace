@@ -323,22 +323,69 @@ bool sprint_text_type_valid(sprint_text_type type)
     return type >= SPRINT_TEXT_REGULAR && type <= SPRINT_TEXT_VALUE;
 }
 
+const char* SPRINT_TEXT_STYLE_NAMES[] = {
+        [SPRINT_TEXT_STYLE_NARROW] = "narrow",
+        [SPRINT_TEXT_STYLE_REGULAR] = "regular",
+        [SPRINT_TEXT_STYLE_WIDE] = "wide"
+};
+
 bool sprint_text_style_valid(sprint_text_style style)
 {
     return style >= SPRINT_TEXT_STYLE_NARROW && style <= SPRINT_TEXT_STYLE_WIDE;
 }
+
+sprint_error sprint_text_style_output(sprint_text_style style, sprint_output* output, sprint_prim_format format)
+{
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!sprint_text_style_valid(style) || !sprint_prim_format_valid(format)) return SPRINT_ERROR_ARGUMENT_RANGE;
+
+    // Write the string based on the format
+    const char* style_name;
+    if (sprint_prim_format_cooked(format)) {
+        style_name = SPRINT_TEXT_STYLE_NAMES[style];
+        if (!sprint_assert(false, style_name != NULL))
+            return SPRINT_ERROR_ASSERTION;
+        return sprint_rethrow(sprint_output_put_str(output, style_name));
+    } else
+        return sprint_rethrow(sprint_output_put_int(output, style));
+}
+
+const char* SPRINT_TEXT_THICKNESS_NAMES[] = {
+        [SPRINT_TEXT_THICKNESS_THIN] = "thin",
+        [SPRINT_TEXT_THICKNESS_REGULAR] = "regular",
+        [SPRINT_TEXT_THICKNESS_THICK] = "thick"
+};
 
 bool sprint_text_thickness_valid(sprint_text_thickness thickness)
 {
     return thickness >= SPRINT_TEXT_THICKNESS_THIN && thickness <= SPRINT_TEXT_THICKNESS_THICK;
 }
 
+sprint_error sprint_text_thickness_output(sprint_text_thickness thickness, sprint_output* output,
+                                          sprint_prim_format format)
+{
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!sprint_text_thickness_valid(thickness) || !sprint_prim_format_valid(format))
+        return SPRINT_ERROR_ARGUMENT_RANGE;
+
+    // Write the string based on the format
+    const char* form_name;
+    if (sprint_prim_format_cooked(format)) {
+        form_name = SPRINT_TEXT_THICKNESS_NAMES[thickness];
+        if (!sprint_assert(false, form_name != NULL))
+            return SPRINT_ERROR_ASSERTION;
+        return sprint_rethrow(sprint_output_put_str(output, form_name));
+    } else
+        return sprint_rethrow(sprint_output_put_int(output, thickness));
+}
+
 bool sprint_text_valid(sprint_text* text)
 {
-    return text != NULL && sprint_layer_valid(text->layer) && sprint_tuple_valid(text->position) &&
-           sprint_size_valid(text->height) && sprint_size_valid(text->clear) &&
-           sprint_text_style_valid(text->style) && sprint_text_thickness_valid(text->thickness) &&
-           sprint_angle_valid(text->rotation);
+    return text != NULL && sprint_text_type_valid(text->subtype) && sprint_layer_valid(text->layer) &&
+           sprint_tuple_valid(text->position) && sprint_size_valid(text->height) &&
+           sprint_size_valid(text->clear) && sprint_text_style_valid(text->style) &&
+           sprint_text_thickness_valid(text->thickness) && sprint_angle_valid(text->rotation) &&
+           (text->text == NULL || strchr(text->text, SPRINT_STRING_DELIMITER) == NULL);
 }
 
 static const sprint_text SPRINT_TEXT_DEFAULT = {
@@ -363,6 +410,7 @@ sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, 
     element->type = sprint_element_type_text(type);
 
     // Required fields
+    element->text.subtype = type;
     element->text.layer = layer;
     element->text.position = position;
     element->text.height = height;
@@ -632,24 +680,24 @@ static sprint_error sprint_pad_smt_output_internal(sprint_pad_smt* pad, sprint_o
     sprint_chain(error, sprint_dist_output(pad->width, output, format));
     sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SIZE_Y", "height"));
     sprint_chain(error, sprint_dist_output(pad->height, output, format));
-    if (pad->clear != SPRINT_PAD_THT_DEFAULT.clear) {
+    if (pad->clear != SPRINT_PAD_SMT_DEFAULT.clear) {
         sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CLEAR", "clear"));
         sprint_chain(error, sprint_dist_output(pad->clear, output, format));
     }
-    if (pad->soldermask != SPRINT_PAD_THT_DEFAULT.soldermask) {
+    if (pad->soldermask != SPRINT_PAD_SMT_DEFAULT.soldermask) {
         sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SOLDERMASK", "soldermask"));
         sprint_chain(error, sprint_bool_output(pad->soldermask, output));
     }
-    if (pad->rotation != SPRINT_PAD_THT_DEFAULT.rotation) {
+    if (pad->rotation != SPRINT_PAD_SMT_DEFAULT.rotation) {
         sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "ROTATION", "rotation"));
         sprint_chain(error, sprint_angle_output(pad->rotation, output, sprint_prim_format_of(SPRINT_PRIM_FORMAT_ANGLE_COARSE, cooked)));
     }
-    if (pad->thermal != SPRINT_PAD_THT_DEFAULT.thermal) {
+    if (pad->thermal != SPRINT_PAD_SMT_DEFAULT.thermal) {
         sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THERMAL", "thermal"));
         sprint_chain(error, sprint_bool_output(pad->thermal, output));
         sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THERMAL_TRACKS", "tracks"));
         sprint_chain(error, sprint_int_output(pad->thermal_tracks, output));
-        if (pad->thermal_tracks_width != SPRINT_PAD_THT_DEFAULT.thermal_tracks_width) {
+        if (pad->thermal_tracks_width != SPRINT_PAD_SMT_DEFAULT.thermal_tracks_width) {
             sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THERMAL_TRACKS_WIDTH", "tracks width"));
             sprint_chain(error, sprint_int_output(pad->thermal_tracks_width, output));
         }
@@ -708,7 +756,53 @@ static sprint_error sprint_zone_output_internal(sprint_zone* zone, sprint_output
 static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output* output,
                                                 sprint_prim_format format)
 {
+    bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "LAYER", "layer"));
+    sprint_chain(error, sprint_layer_output(text->layer, output, format));
+    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "POS", "position"));
+    sprint_chain(error, sprint_tuple_output(text->position, output, format));
+    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "TEXT", "text"));
+    sprint_chain(error, sprint_str_output(text->text, output, format));
+    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "HEIGHT", "height"));
+    sprint_chain(error, sprint_dist_output(text->height, output, format));
+    if (text->clear != SPRINT_TEXT_DEFAULT.clear) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CLEAR", "clear"));
+        sprint_chain(error, sprint_dist_output(text->clear, output, format));
+    }
+    if (text->cutout != SPRINT_TEXT_DEFAULT.cutout) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CUTOUT", "cutout"));
+        sprint_chain(error, sprint_bool_output(text->cutout, output));
+    }
+    if (text->soldermask != SPRINT_TEXT_DEFAULT.soldermask) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SOLDERMASK", "soldermask"));
+        sprint_chain(error, sprint_bool_output(text->soldermask, output));
+    }
+    if (text->style != SPRINT_TEXT_DEFAULT.style) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "STYLE", "style"));
+        sprint_chain(error, sprint_text_style_output(text->style, output, format));
+    }
+    if (text->thickness != SPRINT_TEXT_DEFAULT.thickness) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THICKNESS", "thickness"));
+        sprint_chain(error, sprint_text_thickness_output(text->thickness, output, format));
+    }
+    if (text->rotation != SPRINT_TEXT_DEFAULT.rotation) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "ROTATION", "rotation"));
+        sprint_chain(error, sprint_angle_output(text->rotation, output, sprint_prim_format_of(SPRINT_PRIM_FORMAT_ANGLE_COARSE, cooked)));
+    }
+    if (text->mirror_horizontal != SPRINT_TEXT_DEFAULT.mirror_horizontal) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "MIRROR_HORZ", "mirror hz"));
+        sprint_chain(error, sprint_bool_output(text->mirror_horizontal, output));
+    }
+    if (text->mirror_vertical != SPRINT_TEXT_DEFAULT.mirror_vertical) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "MIRROR_VERT", "mirror vt"));
+        sprint_chain(error, sprint_bool_output(text->mirror_vertical, output));
+    }
+    if (text->subtype != SPRINT_TEXT_REGULAR && text->visible != SPRINT_TEXT_DEFAULT.visible) {
+        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "VISIBLE", "visible"));
+        sprint_chain(error, sprint_bool_output(text->visible, output));
+    }
+    return sprint_rethrow(error);
 }
 
 static sprint_error sprint_circle_output_internal(sprint_circle* circle, sprint_output* output,

@@ -149,7 +149,9 @@ typedef enum sprint_text_style {
     // Wide width text
     SPRINT_TEXT_STYLE_WIDE
 } sprint_text_style;
+extern const char* SPRINT_TEXT_STYLE_NAMES[];
 bool sprint_text_style_valid(sprint_text_style style);
+sprint_error sprint_text_style_output(sprint_text_style style, sprint_output* output, sprint_prim_format format);
 
 typedef enum sprint_text_thickness {
     // Thin stroke text
@@ -161,9 +163,13 @@ typedef enum sprint_text_thickness {
     // Thick stroke text
     SPRINT_TEXT_THICKNESS_THICK
 } sprint_text_thickness;
+extern const char* SPRINT_TEXT_THICKNESS_NAMES[];
 bool sprint_text_thickness_valid(sprint_text_thickness thickness);
+sprint_error sprint_text_thickness_output(sprint_text_thickness thickness, sprint_output* output,
+                                          sprint_prim_format format);
 
 typedef struct sprint_text {
+    sprint_text_type subtype;
     sprint_layer layer;
     sprint_tuple position;
     sprint_dist height;
