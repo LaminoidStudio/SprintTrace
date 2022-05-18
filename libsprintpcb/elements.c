@@ -381,11 +381,11 @@ sprint_error sprint_text_thickness_output(sprint_text_thickness thickness, sprin
 
 bool sprint_text_valid(sprint_text* text)
 {
-    return text != NULL && sprint_text_type_valid(text->subtype) && sprint_layer_valid(text->layer) &&
-           sprint_tuple_valid(text->position) && sprint_size_valid(text->height) &&
-           sprint_size_valid(text->clear) && sprint_text_style_valid(text->style) &&
-           sprint_text_thickness_valid(text->thickness) && sprint_angle_valid(text->rotation) &&
-           (text->text == NULL || strchr(text->text, SPRINT_STRING_DELIMITER) == NULL);
+    return text != NULL && sprint_layer_valid(text->layer) && sprint_tuple_valid(text->position) &&
+           (text->text == NULL || strchr(text->text, SPRINT_STRING_DELIMITER) == NULL) &&
+           sprint_size_valid(text->height) && sprint_size_valid(text->clear) &&
+           sprint_text_style_valid(text->style) && sprint_text_thickness_valid(text->thickness) &&
+           sprint_angle_valid(text->rotation);
 }
 
 static const sprint_text SPRINT_TEXT_DEFAULT = {
@@ -407,10 +407,9 @@ sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, 
     if (!sprint_text_type_valid(type)) return SPRINT_ERROR_ARGUMENT_RANGE;
 
     memset(element, 0, sizeof(*element));
-    element->type = sprint_element_type_text(type);
+    element->type = sprint_element_type_from_text(type);
 
     // Required fields
-    element->text.subtype = type;
     element->text.layer = layer;
     element->text.position = position;
     element->text.height = height;
@@ -479,7 +478,27 @@ bool sprint_component_valid(sprint_component* component)
            sprint_angle_valid(component->rotation);
 }
 
-sprint_element_type sprint_element_type_text(sprint_text_type type)
+bool sprint_element_type_valid(sprint_element_type type)
+{
+    return type >= SPRINT_ELEMENT_TRACK && type <= SPRINT_ELEMENT_GROUP;
+}
+
+sprint_text_type sprint_element_type_to_text(sprint_element_type type)
+{
+    switch (type) {
+        case SPRINT_ELEMENT_TEXT:
+            return SPRINT_TEXT_REGULAR;
+        case SPRINT_ELEMENT_TEXT_ID:
+            return SPRINT_TEXT_ID;
+        case SPRINT_ELEMENT_TEXT_VALUE:
+            return SPRINT_TEXT_VALUE;
+        default:
+            sprint_throw_format(false, "unsupported element type: %d", type);
+            return SPRINT_TEXT_REGULAR;
+    }
+}
+
+sprint_element_type sprint_element_type_from_text(sprint_text_type type)
 {
     switch (type) {
         case SPRINT_TEXT_REGULAR:
@@ -753,8 +772,8 @@ static sprint_error sprint_zone_output_internal(sprint_zone* zone, sprint_output
     return sprint_rethrow(error);
 }
 
-static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output* output,
-                                                sprint_prim_format format)
+static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output* output, sprint_prim_format format,
+                                                sprint_text_type type)
 {
     bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
@@ -798,7 +817,7 @@ static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output
         sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "MIRROR_VERT", "mirror vt"));
         sprint_chain(error, sprint_bool_output(text->mirror_vertical, output));
     }
-    if (text->subtype != SPRINT_TEXT_REGULAR && text->visible != SPRINT_TEXT_DEFAULT.visible) {
+    if ((type == SPRINT_TEXT_ID || type == SPRINT_TEXT_VALUE) && text->visible != SPRINT_TEXT_DEFAULT.visible) {
         sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "VISIBLE", "visible"));
         sprint_chain(error, sprint_bool_output(text->visible, output));
     }
@@ -828,8 +847,14 @@ static sprint_error sprint_group_output_internal(sprint_group* group, sprint_out
 static sprint_error sprint_element_output_internal(sprint_element* element, sprint_output* output,
                                                    sprint_prim_format format, int depth) {
     if (element == NULL || output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    if (!sprint_prim_format_valid(format)) return SPRINT_ERROR_ARGUMENT_RANGE;
+    if (!sprint_element_type_valid(element->type) || !sprint_prim_format_valid(format))
+        return SPRINT_ERROR_ARGUMENT_RANGE;
     if (depth < 0 || depth >= SPRINT_ELEMENT_DEPTH) return SPRINT_ERROR_RECURSION;
+
+    // Don't print empty components or groups
+    if (element->type == SPRINT_ELEMENT_GROUP && element->group.num_elements < 1 ||
+        element->type == SPRINT_ELEMENT_COMPONENT && element->component.num_elements < 1)
+        return SPRINT_ERROR_NONE;
 
     // Append the tag or element name
     sprint_error error = SPRINT_ERROR_NONE;
@@ -837,6 +862,7 @@ static sprint_error sprint_element_output_internal(sprint_element* element, spri
         const char *tag = sprint_element_type_to_tag(element->type, false);
         if (tag == NULL)
             return SPRINT_ERROR_ARGUMENT_RANGE;
+        sprint_chain(error, sprint_indent_output_internal(output, depth));
         sprint_chain(error, sprint_output_put_str(output, tag));
     } else if (sprint_chain(error, sprint_output_put_str(output, "sprint_element{type="))) {
         error = sprint_element_type_output(element->type, output);
@@ -859,7 +885,10 @@ static sprint_error sprint_element_output_internal(sprint_element* element, spri
             sprint_chain(error, sprint_zone_output_internal(&element->zone, output, format));
             break;
         case SPRINT_ELEMENT_TEXT:
-            sprint_chain(error, sprint_text_output_internal(&element->text, output, format));
+        case SPRINT_ELEMENT_TEXT_ID:
+        case SPRINT_ELEMENT_TEXT_VALUE:
+            sprint_chain(error, sprint_text_output_internal(&element->text, output, format,
+                                                            sprint_element_type_to_text(element->type)));
             break;
         case SPRINT_ELEMENT_CIRCLE:
             sprint_chain(error, sprint_circle_output_internal(&element->circle, output, format));

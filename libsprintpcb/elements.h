@@ -169,7 +169,6 @@ sprint_error sprint_text_thickness_output(sprint_text_thickness thickness, sprin
                                           sprint_prim_format format);
 
 typedef struct sprint_text {
-    sprint_text_type subtype;
     sprint_layer layer;
     sprint_tuple position;
     sprint_dist height;
@@ -233,7 +232,9 @@ typedef enum sprint_element_type {
     SPRINT_ELEMENT_COMPONENT,
     SPRINT_ELEMENT_GROUP
 } sprint_element_type;
-sprint_element_type sprint_element_type_text(sprint_text_type type);
+bool sprint_element_type_valid(sprint_element_type type);
+sprint_text_type sprint_element_type_to_text(sprint_element_type type);
+sprint_element_type sprint_element_type_from_text(sprint_text_type type);
 
 struct sprint_element {
     // The type of this element
