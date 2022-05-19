@@ -890,7 +890,44 @@ static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output
 static sprint_error sprint_circle_output_internal(sprint_circle* circle, sprint_output* output,
                                                   sprint_prim_format format, int depth)
 {
+    bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
+    sprint_chain(error, sprint_element_type_output(SPRINT_ELEMENT_CIRCLE, output, false, format));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "LAYER", "layer"));
+    sprint_chain(error, sprint_layer_output(circle->layer, output, format));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "WIDTH", "width"));
+    sprint_chain(error, sprint_dist_output(circle->width, output, format));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "CENTER", "center"));
+    sprint_chain(error, sprint_tuple_output(circle->center, output, format));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "RADIUS", "radius"));
+    sprint_chain(error, sprint_dist_output(circle->radius, output, format));
+    if (circle->clear != SPRINT_CIRCLE_DEFAULT.clear) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "CLEAR", "clear"));
+        sprint_chain(error, sprint_dist_output(circle->clear, output, format));
+    }
+    if (circle->cutout != SPRINT_CIRCLE_DEFAULT.cutout) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "CUTOUT", "cutout"));
+        sprint_chain(error, sprint_bool_output(circle->cutout, output));
+    }
+    if (circle->soldermask != SPRINT_CIRCLE_DEFAULT.soldermask) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "SOLDERMASK", "soldermask"));
+        sprint_chain(error, sprint_bool_output(circle->soldermask, output));
+    }
+    if (circle->start != SPRINT_CIRCLE_DEFAULT.start) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "START", "start"));
+        sprint_chain(error, sprint_angle_output(circle->start, output, format));
+    }
+    if (circle->stop != SPRINT_CIRCLE_DEFAULT.stop) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "STOP", "stop"));
+        sprint_chain(error, sprint_angle_output(circle->stop, output, format));
+    }
+    if (circle->fill != SPRINT_CIRCLE_DEFAULT.fill) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "FILL", "fill"));
+        sprint_chain(error, sprint_bool_output(circle->fill, output));
+    }
+    sprint_chain(error, sprint_element_suffix_output_internal(output, cooked));
+    return sprint_rethrow(error);
 }
 
 static sprint_error sprint_component_output_internal(sprint_component* component, sprint_output* output,
