@@ -642,6 +642,9 @@ static sprint_error sprint_param_output_internal(sprint_output* output, bool coo
     return sprint_array_output_internal(output, cooked, -1, tag_raw, tag_cooked);
 }
 
+static sprint_error sprint_element_output_internal(sprint_element* element, sprint_output* output,
+                                                   sprint_prim_format format, int depth);
+
 static sprint_error sprint_track_output_internal(sprint_track* track, sprint_output* output,
                                                  sprint_prim_format format, int depth)
 {
@@ -933,7 +936,52 @@ static sprint_error sprint_circle_output_internal(sprint_circle* circle, sprint_
 static sprint_error sprint_component_output_internal(sprint_component* component, sprint_output* output,
                                                      sprint_prim_format format, int depth)
 {
+    // Make sure that there is at least one child element
+    if (component->num_elements < 1) return SPRINT_ERROR_NONE;
+
+    // Check, if the format is cooked
+    bool cooked = sprint_prim_format_cooked(format);
+
+    // Write the component header
     sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
+    sprint_chain(error, sprint_element_type_output(SPRINT_ELEMENT_COMPONENT, output, false, format));
+    if (component->comment != NULL) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "COMMENT", "comment"));
+        sprint_chain(error, sprint_str_output(component->comment, output, format));
+    }
+    if (component->use_pickplace != SPRINT_COMPONENT_DEFAULT.use_pickplace) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "USE_PICKPLACE", "pickplace"));
+        sprint_chain(error, sprint_bool_output(component->use_pickplace, output));
+    }
+    if (component->use_pickplace) {
+        if (component->package != NULL) {
+            sprint_chain(error, sprint_param_output_internal(output, cooked, "PACKAGE", "package"));
+            sprint_chain(error, sprint_str_output(component->comment, output, format));
+        }
+        if (component->rotation != SPRINT_COMPONENT_DEFAULT.rotation) {
+            sprint_chain(error, sprint_param_output_internal(output, cooked, "ROTATION", "rotation"));
+            sprint_chain(error, sprint_angle_output(component->rotation, output, sprint_prim_format_of(SPRINT_PRIM_FORMAT_ANGLE_WHOLE, cooked)));
+        }
+    }
+    if (!sprint_chain(error, sprint_element_suffix_output_internal(output, cooked)))
+        return sprint_rethrow(error);
+
+    // Write the contained elements
+    for (int index = 0; index < component->num_elements; index++) {
+        sprint_element* element = &component->elements[index];
+        if (element == NULL)
+            return SPRINT_ERROR_STATE_INVALID;
+        if (!sprint_chain(error, sprint_element_output_internal(element, output, format, depth + 1)))
+            return sprint_rethrow(error);
+    }
+
+    // Write the component footer
+    sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
+    sprint_chain(error, sprint_element_type_output(SPRINT_ELEMENT_COMPONENT, output, true, format));
+    sprint_chain(error, sprint_element_suffix_output_internal(output, cooked));
+
+    return sprint_rethrow(error);
 }
 
 static sprint_error sprint_group_output_internal(sprint_group* group, sprint_output* output,
