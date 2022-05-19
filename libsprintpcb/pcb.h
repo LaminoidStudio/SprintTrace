@@ -38,7 +38,8 @@ typedef struct sprint_pcb {
     sprint_dist height;
     sprint_grid grid;
     sprint_pcb_flags flags;
-    sprint_group elements;
+    int num_elements;
+    sprint_element* elements;
 } sprint_pcb;
 
 sprint_error sprint_pcb_flags_output(sprint_pcb_flags flags, sprint_output* output);
