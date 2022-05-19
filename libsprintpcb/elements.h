@@ -202,8 +202,8 @@ typedef struct sprint_circle {
 } sprint_circle;
 
 typedef struct sprint_component {
-    sprint_text* text_id;
-    sprint_text* text_value;
+    sprint_element* text_id;
+    sprint_element* text_value;
 
     int num_elements;
     sprint_element* elements;
@@ -226,15 +226,11 @@ typedef enum sprint_element_type {
     SPRINT_ELEMENT_PAD_SMT,
     SPRINT_ELEMENT_ZONE,
     SPRINT_ELEMENT_TEXT,
-    SPRINT_ELEMENT_TEXT_ID,
-    SPRINT_ELEMENT_TEXT_VALUE,
     SPRINT_ELEMENT_CIRCLE,
     SPRINT_ELEMENT_COMPONENT,
     SPRINT_ELEMENT_GROUP
 } sprint_element_type;
 bool sprint_element_type_valid(sprint_element_type type);
-sprint_text_type sprint_element_type_to_text(sprint_element_type type);
-sprint_element_type sprint_element_type_from_text(sprint_text_type type);
 
 struct sprint_element {
     // The type of this element
@@ -273,7 +269,7 @@ sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, 
                                 sprint_tuple position, sprint_dist height, char* text);
 sprint_error sprint_circle_create(sprint_element* element, sprint_layer layer, sprint_dist width,
                                   sprint_tuple center, sprint_dist radius);
-sprint_error sprint_component_create(sprint_element* element, sprint_text* text_id, sprint_text* text_value,
+sprint_error sprint_component_create(sprint_element* element, sprint_element* text_id, sprint_element* text_value,
                                      int num_elements, sprint_element* elements);
 sprint_error sprint_group_create(sprint_element* element, int num_elements, sprint_element* elements);
 

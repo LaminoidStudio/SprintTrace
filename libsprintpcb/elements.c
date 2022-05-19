@@ -22,8 +22,6 @@ const char* SPRINT_ELEMENT_TYPE_NAMES[] = {
         [SPRINT_ELEMENT_PAD_SMT] = "SMT pad",
         [SPRINT_ELEMENT_ZONE] = "zone",
         [SPRINT_ELEMENT_TEXT] = "text",
-        [SPRINT_ELEMENT_TEXT_ID] = "ID text",
-        [SPRINT_ELEMENT_TEXT_VALUE] = "value text",
         [SPRINT_ELEMENT_CIRCLE] = "circle",
         [SPRINT_ELEMENT_COMPONENT] = "component",
         [SPRINT_ELEMENT_GROUP] = "group"
@@ -55,10 +53,6 @@ const char* sprint_element_type_to_tag(sprint_element_type type, bool closing)
             return closing ? NULL : "ZONE";
         case SPRINT_ELEMENT_TEXT:
             return closing ? NULL : "TEXT";
-        case SPRINT_ELEMENT_TEXT_ID:
-            return closing ? NULL : "ID_TEXT";
-        case SPRINT_ELEMENT_TEXT_VALUE:
-            return closing ? NULL : "VALUE_TEXT";
         case SPRINT_ELEMENT_CIRCLE:
             return closing ? NULL : "CIRCLE";
         case SPRINT_ELEMENT_COMPONENT:
@@ -89,10 +83,6 @@ sprint_error sprint_element_type_from_tag(sprint_element_type* type, bool* closi
         *type = SPRINT_ELEMENT_ZONE;
     else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_TEXT, false)) == 0)
         *type = SPRINT_ELEMENT_TEXT;
-    else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_TEXT_ID, false)) == 0)
-        *type = SPRINT_ELEMENT_TEXT_ID;
-    else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_TEXT_VALUE, false)) == 0)
-        *type = SPRINT_ELEMENT_TEXT_VALUE;
     else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_CIRCLE, false)) == 0)
         *type = SPRINT_ELEMENT_CIRCLE;
     else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_COMPONENT, false)) == 0)
@@ -407,7 +397,7 @@ sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, 
     if (!sprint_text_type_valid(type)) return SPRINT_ERROR_ARGUMENT_RANGE;
 
     memset(element, 0, sizeof(*element));
-    element->type = sprint_element_type_from_text(type);
+    element->type = SPRINT_ELEMENT_TEXT;
 
     // Required fields
     element->text.layer = layer;
@@ -473,7 +463,8 @@ sprint_error sprint_circle_create(sprint_element* element, sprint_layer layer, s
 
 bool sprint_component_valid(sprint_component* component)
 {
-    return component != NULL && sprint_text_valid(component->text_id) && sprint_text_valid(component->text_value) &&
+    return component != NULL && component->text_id->type == SPRINT_ELEMENT_TEXT && component->text_value->type == SPRINT_ELEMENT_TEXT &&
+           sprint_text_valid(&component->text_id->text) && sprint_text_valid(&component->text_value->text) &&
            component->num_elements >= 0 && (component->num_elements == 0) == (component->elements == NULL) &&
            sprint_angle_valid(component->rotation);
 }
@@ -483,36 +474,6 @@ bool sprint_element_type_valid(sprint_element_type type)
     return type >= SPRINT_ELEMENT_TRACK && type <= SPRINT_ELEMENT_GROUP;
 }
 
-sprint_text_type sprint_element_type_to_text(sprint_element_type type)
-{
-    switch (type) {
-        case SPRINT_ELEMENT_TEXT:
-            return SPRINT_TEXT_REGULAR;
-        case SPRINT_ELEMENT_TEXT_ID:
-            return SPRINT_TEXT_ID;
-        case SPRINT_ELEMENT_TEXT_VALUE:
-            return SPRINT_TEXT_VALUE;
-        default:
-            sprint_throw_format(false, "unsupported element type: %d", type);
-            return SPRINT_TEXT_REGULAR;
-    }
-}
-
-sprint_element_type sprint_element_type_from_text(sprint_text_type type)
-{
-    switch (type) {
-        case SPRINT_TEXT_REGULAR:
-            return SPRINT_ELEMENT_TEXT;
-        case SPRINT_TEXT_ID:
-            return SPRINT_ELEMENT_TEXT_ID;
-        case SPRINT_TEXT_VALUE:
-            return SPRINT_ELEMENT_TEXT_VALUE;
-        default:
-            sprint_throw_format(false, "unknown text type: %d", type);
-            return SPRINT_ELEMENT_TEXT;
-    }
-}
-
 static const sprint_component SPRINT_COMPONENT_DEFAULT = {
         .comment = NULL,
         .use_pickplace = false,
@@ -520,10 +481,12 @@ static const sprint_component SPRINT_COMPONENT_DEFAULT = {
         .rotation = 0
 };
 
-sprint_error sprint_component_create(sprint_element* element, sprint_text* text_id, sprint_text* text_value,
+sprint_error sprint_component_create(sprint_element* element, sprint_element* text_id, sprint_element* text_value,
                                        int num_elements, sprint_element* elements)
 {
-    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (element == NULL || text_id == NULL || text_value == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (text_id->type != SPRINT_ELEMENT_TEXT || text_value->type != SPRINT_ELEMENT_TEXT)
+        return SPRINT_ERROR_ARGUMENT_FORMAT;
 
     memset(element, 0, sizeof(*element));
     element->type = SPRINT_ELEMENT_COMPONENT;
@@ -571,9 +534,20 @@ static sprint_error sprint_indent_output_internal(sprint_output* output, int dep
     return sprint_rethrow(error);
 }
 
-static const int SPRINT_NO_INDEX = -1;
-static sprint_error sprint_tag_output_internal(sprint_output* output, bool cooked, int index,
-                                               const char* tag_raw, const char* tag_cooked)
+static sprint_error sprint_keyword_output_internal(sprint_output* output, bool cooked, int depth,
+                                                   const char* keyword_raw, const char* keyword_cooked)
+{
+    // Put the indentation
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_indent_output_internal(output, depth));
+
+    // Put the keyword
+    sprint_chain(error, sprint_output_put_str(output, cooked ? keyword_cooked : keyword_raw));
+    return sprint_rethrow(error);
+}
+
+static sprint_error sprint_array_output_internal(sprint_output* output, bool cooked, int index,
+                                                 const char* keyword_raw, const char* keyword_cooked)
 {
     // Put the statement separator
     sprint_error error = SPRINT_ERROR_NONE;
@@ -582,8 +556,8 @@ static sprint_error sprint_tag_output_internal(sprint_output* output, bool cooke
     else
         sprint_chain(error, sprint_output_put_chr(output, SPRINT_STATEMENT_SEPARATOR));
 
-    // Put the tag
-    sprint_chain(error, sprint_output_put_str(output, cooked ? tag_cooked : tag_raw));
+    // Put the keyword
+    sprint_chain(error, sprint_output_put_str(output, cooked ? keyword_cooked : keyword_raw));
 
     // Put the optional index
     if (index >= 0)
@@ -591,40 +565,45 @@ static sprint_error sprint_tag_output_internal(sprint_output* output, bool cooke
 
     // Put the value separator
     sprint_chain(error, sprint_output_put_chr(output, cooked ? '=' : SPRINT_VALUE_SEPARATOR));
-
     return sprint_rethrow(error);
+}
+
+static sprint_error sprint_param_output_internal(sprint_output* output, bool cooked,
+                                                 const char* tag_raw, const char* tag_cooked)
+{
+    return sprint_array_output_internal(output, cooked, -1, tag_raw, tag_cooked);
 }
 
 static sprint_error sprint_track_output_internal(sprint_track* track, sprint_output* output, sprint_prim_format format)
 {
     bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "LAYER", "layer"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "LAYER", "layer"));
     sprint_chain(error, sprint_layer_output(track->layer, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "WIDTH", "width"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "WIDTH", "width"));
     sprint_chain(error, sprint_dist_output(track->width, output, format));
     if (track->clear != SPRINT_TRACK_DEFAULT.clear) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CLEAR", "clear"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "CLEAR", "clear"));
         sprint_chain(error, sprint_dist_output(track->clear, output, format));
     }
     if (track->cutout != SPRINT_TRACK_DEFAULT.cutout) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CUTOUT", "cutout"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "CUTOUT", "cutout"));
         sprint_chain(error, sprint_bool_output(track->cutout, output));
     }
     if (track->soldermask != SPRINT_TRACK_DEFAULT.soldermask) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SOLDERMASK", "soldermask"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "SOLDERMASK", "soldermask"));
         sprint_chain(error, sprint_bool_output(track->soldermask, output));
     }
     if (track->flat_start != SPRINT_TRACK_DEFAULT.flat_start) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "FLATSTART", "flat start"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "FLATSTART", "flat start"));
         sprint_chain(error, sprint_bool_output(track->flat_start, output));
     }
     if (track->flat_end != SPRINT_TRACK_DEFAULT.flat_end) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "FLATEND", "flat end"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "FLATEND", "flat end"));
         sprint_chain(error, sprint_bool_output(track->flat_end, output));
     }
     for (int index = 0; index < track->num_points; index++) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, index, "P", "p"));
+        sprint_chain(error, sprint_array_output_internal(output, cooked, index, "P", "p"));
         sprint_chain(error, sprint_tuple_output(track->points[index], output, format));
     }
     return sprint_rethrow(error);
@@ -635,52 +614,52 @@ static sprint_error sprint_pad_tht_output_internal(sprint_pad_tht* pad, sprint_o
 {
     bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "LAYER", "layer"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "LAYER", "layer"));
     sprint_chain(error, sprint_layer_output(pad->layer, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "POS", "position"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "POS", "position"));
     sprint_chain(error, sprint_tuple_output(pad->position, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SIZE", "size"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "SIZE", "size"));
     sprint_chain(error, sprint_dist_output(pad->size, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "DRILL", "drill"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "DRILL", "drill"));
     sprint_chain(error, sprint_dist_output(pad->drill, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "FORM", "form"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "FORM", "form"));
     sprint_chain(error, sprint_pad_tht_form_output(pad->form, output, format));
     if (pad->clear != SPRINT_PAD_THT_DEFAULT.clear) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CLEAR", "clear"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "CLEAR", "clear"));
         sprint_chain(error, sprint_dist_output(pad->clear, output, format));
     }
     if (pad->soldermask != SPRINT_PAD_THT_DEFAULT.soldermask) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SOLDERMASK", "soldermask"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "SOLDERMASK", "soldermask"));
         sprint_chain(error, sprint_bool_output(pad->soldermask, output));
     }
     if (pad->rotation != SPRINT_PAD_THT_DEFAULT.rotation) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "ROTATION", "rotation"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "ROTATION", "rotation"));
         sprint_chain(error, sprint_angle_output(pad->rotation, output, sprint_prim_format_of(SPRINT_PRIM_FORMAT_ANGLE_COARSE, cooked)));
     }
     if (pad->via != SPRINT_PAD_THT_DEFAULT.via) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "VIA", "via"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "VIA", "via"));
         sprint_chain(error, sprint_bool_output(pad->via, output));
     }
     if (pad->thermal != SPRINT_PAD_THT_DEFAULT.thermal) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THERMAL", "thermal"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "THERMAL", "thermal"));
         sprint_chain(error, sprint_bool_output(pad->thermal, output));
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THERMAL_TRACKS", "tracks"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "THERMAL_TRACKS", "tracks"));
         sprint_chain(error, sprint_int_output(pad->thermal_tracks, output));
         if (pad->thermal_tracks_width != SPRINT_PAD_THT_DEFAULT.thermal_tracks_width) {
-            sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THERMAL_TRACKS_WIDTH", "tracks width"));
+            sprint_chain(error, sprint_param_output_internal(output, cooked, "THERMAL_TRACKS_WIDTH", "tracks width"));
             sprint_chain(error, sprint_int_output(pad->thermal_tracks_width, output));
         }
         if (pad->thermal_tracks_individual != SPRINT_PAD_THT_DEFAULT.thermal_tracks_individual) {
-            sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THERMAL_TRACKS_INDIVIDUAL", "tracks individual"));
+            sprint_chain(error, sprint_param_output_internal(output, cooked, "THERMAL_TRACKS_INDIVIDUAL", "tracks individual"));
             sprint_chain(error, sprint_bool_output(pad->thermal_tracks_individual, output));
         }
     }
     if (pad->link.has_id) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "PAD_ID", "pad ID"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "PAD_ID", "pad ID"));
         sprint_chain(error, sprint_int_output(pad->link.id, output));
     }
     for (int index = 0; index < pad->link.num_connections; index++) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, index, "CON", "c"));
+        sprint_chain(error, sprint_array_output_internal(output, cooked, index, "CON", "c"));
         sprint_chain(error, sprint_int_output(pad->link.connections[index], output));
     }
     return sprint_rethrow(error);
@@ -691,42 +670,42 @@ static sprint_error sprint_pad_smt_output_internal(sprint_pad_smt* pad, sprint_o
 {
     bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "LAYER", "layer"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "LAYER", "layer"));
     sprint_chain(error, sprint_layer_output(pad->layer, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "POS", "position"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "POS", "position"));
     sprint_chain(error, sprint_tuple_output(pad->position, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SIZE_X", "width"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "SIZE_X", "width"));
     sprint_chain(error, sprint_dist_output(pad->width, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SIZE_Y", "height"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "SIZE_Y", "height"));
     sprint_chain(error, sprint_dist_output(pad->height, output, format));
     if (pad->clear != SPRINT_PAD_SMT_DEFAULT.clear) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CLEAR", "clear"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "CLEAR", "clear"));
         sprint_chain(error, sprint_dist_output(pad->clear, output, format));
     }
     if (pad->soldermask != SPRINT_PAD_SMT_DEFAULT.soldermask) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SOLDERMASK", "soldermask"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "SOLDERMASK", "soldermask"));
         sprint_chain(error, sprint_bool_output(pad->soldermask, output));
     }
     if (pad->rotation != SPRINT_PAD_SMT_DEFAULT.rotation) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "ROTATION", "rotation"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "ROTATION", "rotation"));
         sprint_chain(error, sprint_angle_output(pad->rotation, output, sprint_prim_format_of(SPRINT_PRIM_FORMAT_ANGLE_COARSE, cooked)));
     }
     if (pad->thermal != SPRINT_PAD_SMT_DEFAULT.thermal) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THERMAL", "thermal"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "THERMAL", "thermal"));
         sprint_chain(error, sprint_bool_output(pad->thermal, output));
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THERMAL_TRACKS", "tracks"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "THERMAL_TRACKS", "tracks"));
         sprint_chain(error, sprint_int_output(pad->thermal_tracks, output));
         if (pad->thermal_tracks_width != SPRINT_PAD_SMT_DEFAULT.thermal_tracks_width) {
-            sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THERMAL_TRACKS_WIDTH", "tracks width"));
+            sprint_chain(error, sprint_param_output_internal(output, cooked, "THERMAL_TRACKS_WIDTH", "tracks width"));
             sprint_chain(error, sprint_int_output(pad->thermal_tracks_width, output));
         }
     }
     if (pad->link.has_id) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "PAD_ID", "pad ID"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "PAD_ID", "pad ID"));
         sprint_chain(error, sprint_int_output(pad->link.id, output));
     }
     for (int index = 0; index < pad->link.num_connections; index++) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, index, "CON", "c"));
+        sprint_chain(error, sprint_array_output_internal(output, cooked, index, "CON", "c"));
         sprint_chain(error, sprint_int_output(pad->link.connections[index], output));
     }
     return sprint_rethrow(error);
@@ -737,36 +716,36 @@ static sprint_error sprint_zone_output_internal(sprint_zone* zone, sprint_output
 {
     bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "LAYER", "layer"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "LAYER", "layer"));
     sprint_chain(error, sprint_layer_output(zone->layer, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "WIDTH", "width"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "WIDTH", "width"));
     sprint_chain(error, sprint_dist_output(zone->width, output, format));
     if (zone->clear != SPRINT_ZONE_DEFAULT.clear) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CLEAR", "clear"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "CLEAR", "clear"));
         sprint_chain(error, sprint_dist_output(zone->clear, output, format));
     }
     if (zone->cutout != SPRINT_ZONE_DEFAULT.cutout) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CUTOUT", "cutout"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "CUTOUT", "cutout"));
         sprint_chain(error, sprint_bool_output(zone->cutout, output));
     }
     if (zone->soldermask != SPRINT_ZONE_DEFAULT.soldermask) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SOLDERMASK", "soldermask"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "SOLDERMASK", "soldermask"));
         sprint_chain(error, sprint_bool_output(zone->soldermask, output));
     }
     if (zone->hatch != SPRINT_ZONE_DEFAULT.hatch) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "HATCH", "hatch"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "HATCH", "hatch"));
         sprint_chain(error, sprint_bool_output(zone->hatch, output));
         if (zone->hatch_auto != SPRINT_ZONE_DEFAULT.hatch_auto) {
-            sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "HATCH_AUTO", "hatch auto"));
+            sprint_chain(error, sprint_param_output_internal(output, cooked, "HATCH_AUTO", "hatch auto"));
             sprint_chain(error, sprint_bool_output(zone->hatch_auto, output));
         }
         if (!zone->hatch_auto) {
-            sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "HATCH_WIDTH", "hatch width"));
+            sprint_chain(error, sprint_param_output_internal(output, cooked, "HATCH_WIDTH", "hatch width"));
             sprint_chain(error, sprint_dist_output(zone->hatch_width, output, format));
         }
     }
     for (int index = 0; index < zone->num_points; index++) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, index, "P", "p"));
+        sprint_chain(error, sprint_array_output_internal(output, cooked, index, "P", "p"));
         sprint_chain(error, sprint_tuple_output(zone->points[index], output, format));
     }
     return sprint_rethrow(error);
@@ -777,48 +756,48 @@ static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output
 {
     bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "LAYER", "layer"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "LAYER", "layer"));
     sprint_chain(error, sprint_layer_output(text->layer, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "POS", "position"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "POS", "position"));
     sprint_chain(error, sprint_tuple_output(text->position, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "TEXT", "text"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "TEXT", "text"));
     sprint_chain(error, sprint_str_output(text->text, output, format));
-    sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "HEIGHT", "height"));
+    sprint_chain(error, sprint_param_output_internal(output, cooked, "HEIGHT", "height"));
     sprint_chain(error, sprint_dist_output(text->height, output, format));
     if (text->clear != SPRINT_TEXT_DEFAULT.clear) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CLEAR", "clear"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "CLEAR", "clear"));
         sprint_chain(error, sprint_dist_output(text->clear, output, format));
     }
     if (text->cutout != SPRINT_TEXT_DEFAULT.cutout) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "CUTOUT", "cutout"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "CUTOUT", "cutout"));
         sprint_chain(error, sprint_bool_output(text->cutout, output));
     }
     if (text->soldermask != SPRINT_TEXT_DEFAULT.soldermask) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "SOLDERMASK", "soldermask"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "SOLDERMASK", "soldermask"));
         sprint_chain(error, sprint_bool_output(text->soldermask, output));
     }
     if (text->style != SPRINT_TEXT_DEFAULT.style) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "STYLE", "style"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "STYLE", "style"));
         sprint_chain(error, sprint_text_style_output(text->style, output, format));
     }
     if (text->thickness != SPRINT_TEXT_DEFAULT.thickness) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "THICKNESS", "thickness"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "THICKNESS", "thickness"));
         sprint_chain(error, sprint_text_thickness_output(text->thickness, output, format));
     }
     if (text->rotation != SPRINT_TEXT_DEFAULT.rotation) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "ROTATION", "rotation"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "ROTATION", "rotation"));
         sprint_chain(error, sprint_angle_output(text->rotation, output, sprint_prim_format_of(SPRINT_PRIM_FORMAT_ANGLE_COARSE, cooked)));
     }
     if (text->mirror_horizontal != SPRINT_TEXT_DEFAULT.mirror_horizontal) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "MIRROR_HORZ", "mirror hz"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "MIRROR_HORZ", "mirror hz"));
         sprint_chain(error, sprint_bool_output(text->mirror_horizontal, output));
     }
     if (text->mirror_vertical != SPRINT_TEXT_DEFAULT.mirror_vertical) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "MIRROR_VERT", "mirror vt"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "MIRROR_VERT", "mirror vt"));
         sprint_chain(error, sprint_bool_output(text->mirror_vertical, output));
     }
     if ((type == SPRINT_TEXT_ID || type == SPRINT_TEXT_VALUE) && text->visible != SPRINT_TEXT_DEFAULT.visible) {
-        sprint_chain(error, sprint_tag_output_internal(output, cooked, SPRINT_NO_INDEX, "VISIBLE", "visible"));
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "VISIBLE", "visible"));
         sprint_chain(error, sprint_bool_output(text->visible, output));
     }
     return sprint_rethrow(error);
@@ -885,10 +864,7 @@ static sprint_error sprint_element_output_internal(sprint_element* element, spri
             sprint_chain(error, sprint_zone_output_internal(&element->zone, output, format));
             break;
         case SPRINT_ELEMENT_TEXT:
-        case SPRINT_ELEMENT_TEXT_ID:
-        case SPRINT_ELEMENT_TEXT_VALUE:
-            sprint_chain(error, sprint_text_output_internal(&element->text, output, format,
-                                                            sprint_element_type_to_text(element->type)));
+            sprint_chain(error, sprint_text_output_internal(&element->text, output, format, SPRINT_TEXT_REGULAR));
             break;
         case SPRINT_ELEMENT_CIRCLE:
             sprint_chain(error, sprint_circle_output_internal(&element->circle, output, format));
@@ -938,7 +914,7 @@ static sprint_error sprint_element_destroy_internal(sprint_element* element, int
         return SPRINT_ERROR_NONE;
 
     // Free allocated memory based on the type
-    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_error first_error = SPRINT_ERROR_NONE, last_error = SPRINT_ERROR_NONE;
     switch (element->type) {
         case SPRINT_ELEMENT_TRACK:
             // Free the points
@@ -977,8 +953,6 @@ static sprint_error sprint_element_destroy_internal(sprint_element* element, int
             break;
 
         case SPRINT_ELEMENT_TEXT:
-        case SPRINT_ELEMENT_TEXT_ID:
-        case SPRINT_ELEMENT_TEXT_VALUE:
             // Free the text
             if (element->text.text != NULL) {
                 free(element->text.text);
@@ -993,28 +967,24 @@ static sprint_error sprint_element_destroy_internal(sprint_element* element, int
         case SPRINT_ELEMENT_COMPONENT:
             // Free the ID text
             if (element->component.text_id != NULL) {
-                if (element->component.text_id->text != NULL) {
-                    free(element->component.text_id->text);
-                    element->component.text_id->text = NULL;
-                }
-                free(element->component.text_id);
+                sprint_check(last_error = sprint_element_destroy_internal(element->component.text_id, depth + 1));
+                first_error = last_error;
                 element->component.text_id = NULL;
             }
 
             // Free the value text
             if (element->component.text_value != NULL) {
-                if (element->component.text_value->text != NULL) {
-                    free(element->component.text_value->text);
-                    element->component.text_value->text = NULL;
-                }
-                free(element->component.text_value);
+                sprint_check(last_error = sprint_element_destroy_internal(element->component.text_value, depth + 1));
+                first_error = first_error == SPRINT_ERROR_NONE ? last_error : first_error;
                 element->component.text_value = NULL;
             }
 
             // Free the elements recursively
             if (element->component.elements != NULL) {
-                for (int index = 0; index < element->component.num_elements; index++)
-                    sprint_check(sprint_element_destroy_internal(&element->component.elements[index], depth + 1));
+                for (int index = 0; index < element->component.num_elements; index++) {
+                    sprint_check(last_error = sprint_element_destroy_internal(&element->component.elements[index], depth + 1));
+                    first_error = first_error == SPRINT_ERROR_NONE ? last_error : first_error;
+                }
                 free(element->component.elements);
                 element->component.elements = NULL;
             }
@@ -1036,8 +1006,10 @@ static sprint_error sprint_element_destroy_internal(sprint_element* element, int
         case SPRINT_ELEMENT_GROUP:
             // Free the elements recursively
             if (element->group.elements != NULL) {
-                for (int index = 0; index < element->group.num_elements; index++)
-                    sprint_check(sprint_element_destroy_internal(&element->group.elements[index], depth + 1));
+                for (int index = 0; index < element->group.num_elements; index++) {
+                    sprint_check(last_error = sprint_element_destroy_internal(&element->group.elements[index], depth + 1));
+                    first_error = first_error == SPRINT_ERROR_NONE ? last_error : first_error;
+                }
                 free(element->group.elements);
                 element->group.elements = NULL;
             }
@@ -1052,7 +1024,7 @@ static sprint_error sprint_element_destroy_internal(sprint_element* element, int
 
     // Finally, free the parsed element
     free(element);
-    return SPRINT_ERROR_NONE;
+    return sprint_rethrow(first_error);
 }
 #pragma clang diagnostic pop
 
