@@ -18,6 +18,7 @@
 int main(int argc, const char* argv[]) {
     sprint_output* output = sprint_output_create_file(stdout, false);
     sprint_tuple points[2] = {sprint_tuple_of(300, 400), sprint_tuple_of(500, 600)};
+
     sprint_element track;
     sprint_require(sprint_track_create(&track,
                                        SPRINT_LAYER_COPPER_BOTTOM,
@@ -28,6 +29,21 @@ int main(int argc, const char* argv[]) {
     sprint_element_output(&track, output, SPRINT_PRIM_FORMAT_DIST_MM);
     sprint_output_put_chr(output, '\n');
     sprint_element_destroy(&track);
+
+    sprint_element text;
+    sprint_require(sprint_text_create(&text,
+                                      SPRINT_TEXT_VALUE,
+                                      SPRINT_LAYER_COPPER_TOP,
+                                      sprint_tuple_of(sprint_dist_mm(10), sprint_dist_mm(20)),
+                                      sprint_dist_mm(10),
+                                      "Hello, world!"));
+    text.text.style = SPRINT_TEXT_STYLE_NARROW;
+    text.text.rotation = sprint_angle_deg(90);
+    text.text.visible = false;
+    sprint_element_output(&text, output, SPRINT_PRIM_FORMAT_RAW);
+    sprint_element_output(&text, output, SPRINT_PRIM_FORMAT_DIST_MM);
+    sprint_output_put_chr(output, '\n');
+    sprint_element_destroy(&text);
 
     sprint_require(sprint_plugin_begin(argc, argv));
 

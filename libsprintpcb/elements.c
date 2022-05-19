@@ -27,45 +27,42 @@ const char* SPRINT_ELEMENT_TYPE_NAMES[] = {
         [SPRINT_ELEMENT_GROUP] = "group"
 };
 
-sprint_error sprint_element_type_output(sprint_element_type type, sprint_output* output)
+const char* SPRINT_ELEMENT_TYPE_KEYWORDS_OPENING[] = {
+        [SPRINT_ELEMENT_TRACK] = "TRACK",
+        [SPRINT_ELEMENT_PAD_THT] = "PAD",
+        [SPRINT_ELEMENT_PAD_SMT] = "SMDPAD",
+        [SPRINT_ELEMENT_ZONE] = "ZONE",
+        [SPRINT_ELEMENT_TEXT] = "TEXT",
+        [SPRINT_ELEMENT_CIRCLE] = "CIRCLE",
+        [SPRINT_ELEMENT_COMPONENT] = "BEGIN_COMPONENT",
+        [SPRINT_ELEMENT_GROUP] = "GROUP"
+};
+
+const char* SPRINT_ELEMENT_TYPE_KEYWORDS_CLOSING[] = {
+        [SPRINT_ELEMENT_TRACK] = NULL,
+        [SPRINT_ELEMENT_PAD_THT] = NULL,
+        [SPRINT_ELEMENT_PAD_SMT] = NULL,
+        [SPRINT_ELEMENT_ZONE] = NULL,
+        [SPRINT_ELEMENT_TEXT] = NULL,
+        [SPRINT_ELEMENT_CIRCLE] = NULL,
+        [SPRINT_ELEMENT_COMPONENT] = "END_COMPONENT",
+        [SPRINT_ELEMENT_GROUP] = "END_GROUP"
+};
+
+const char* sprint_element_type_to_keyword(sprint_element_type type, bool closing)
 {
-    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    if (type >= sizeof(SPRINT_ELEMENT_TYPE_NAMES) / sizeof(const char*)) return SPRINT_ERROR_ARGUMENT_RANGE;
+    if (type < 0) return NULL;
 
-    // Write the string based on the format
-    const char* type_name = SPRINT_ELEMENT_TYPE_NAMES[type];
-    if (type_name == NULL)
-        return SPRINT_ERROR_ARGUMENT_RANGE;
+    if (!closing && type < sizeof(SPRINT_ELEMENT_TYPE_KEYWORDS_OPENING) / sizeof(const char *))
+        return SPRINT_ELEMENT_TYPE_KEYWORDS_OPENING[type];
+    else if (closing && type < sizeof(SPRINT_ELEMENT_TYPE_KEYWORDS_CLOSING) / sizeof(const char *))
+        return SPRINT_ELEMENT_TYPE_KEYWORDS_CLOSING[type];
 
-    return sprint_rethrow(sprint_output_put_str(output, type_name));
+    sprint_throw_format(false, "element type unknown: %d", type);
+    return NULL;
 }
 
-const char* sprint_element_type_to_tag(sprint_element_type type, bool closing)
-{
-    switch (type) {
-        case SPRINT_ELEMENT_TRACK:
-            return closing ? NULL : "TRACK";
-        case SPRINT_ELEMENT_PAD_THT:
-            return closing ? NULL : "PAD";
-        case SPRINT_ELEMENT_PAD_SMT:
-            return closing ? NULL : "SMDPAD";
-        case SPRINT_ELEMENT_ZONE:
-            return closing ? NULL : "ZONE";
-        case SPRINT_ELEMENT_TEXT:
-            return closing ? NULL : "TEXT";
-        case SPRINT_ELEMENT_CIRCLE:
-            return closing ? NULL : "CIRCLE";
-        case SPRINT_ELEMENT_COMPONENT:
-            return closing ? "END_COMPONENT" : "BEGIN_COMPONENT";
-        case SPRINT_ELEMENT_GROUP:
-            return closing ? "END_GROUP" : "GROUP";
-        default:
-            sprint_throw_format(false, "element type unknown: %d", type);
-            return NULL;
-    }
-}
-
-sprint_error sprint_element_type_from_tag(sprint_element_type* type, bool* closing, const char* tag)
+sprint_error sprint_element_type_from_keyword(sprint_element_type* type, bool* closing, const char* tag)
 {
     if (type == NULL || closing == NULL || tag == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
@@ -73,33 +70,66 @@ sprint_error sprint_element_type_from_tag(sprint_element_type* type, bool* closi
     *closing = false;
 
     // Determine the type
-    if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_TRACK, false)) == 0)
+    if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_TRACK, false)) == 0)
         *type = SPRINT_ELEMENT_TRACK;
-    else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_PAD_THT, false)) == 0)
+    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_PAD_THT, false)) == 0)
         *type = SPRINT_ELEMENT_PAD_THT;
-    else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_PAD_SMT, false)) == 0)
+    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_PAD_SMT, false)) == 0)
         *type = SPRINT_ELEMENT_PAD_SMT;
-    else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_ZONE, false)) == 0)
+    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_ZONE, false)) == 0)
         *type = SPRINT_ELEMENT_ZONE;
-    else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_TEXT, false)) == 0)
+    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_TEXT, false)) == 0)
         *type = SPRINT_ELEMENT_TEXT;
-    else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_CIRCLE, false)) == 0)
+    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_CIRCLE, false)) == 0)
         *type = SPRINT_ELEMENT_CIRCLE;
-    else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_COMPONENT, false)) == 0)
+    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_COMPONENT, false)) == 0)
         *type = SPRINT_ELEMENT_COMPONENT;
-    else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_GROUP, false)) == 0)
+    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_GROUP, false)) == 0)
         *type = SPRINT_ELEMENT_GROUP;
-    else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_COMPONENT, true)) == 0) {
+    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_COMPONENT, true)) == 0) {
         *closing = true;
         *type = SPRINT_ELEMENT_COMPONENT;
     }
-    else if (strcasecmp(tag, sprint_element_type_to_tag(SPRINT_ELEMENT_GROUP, true)) == 0) {
+    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_GROUP, true)) == 0) {
         *closing = true;
         *type = SPRINT_ELEMENT_GROUP;
     } else
         return SPRINT_ERROR_ARGUMENT_FORMAT;
 
     return SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_element_type_output(sprint_element_type type, sprint_output* output, bool closing,
+                                        sprint_prim_format format)
+{
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!sprint_element_type_valid(type) || !sprint_prim_format_valid(format))
+        return SPRINT_ERROR_ARGUMENT_RANGE;
+
+    // Determine, if the output format is cooked
+    bool cooked = sprint_prim_format_cooked(format);
+
+    // Don't output anything for cooked and closing
+    if (cooked && closing)
+        return SPRINT_ERROR_NONE;
+
+    // Determine the correct name
+    const char* type_name = NULL;
+    if (!cooked)
+        type_name = sprint_element_type_to_keyword(type, closing);
+    else if (type < sizeof(SPRINT_ELEMENT_TYPE_NAMES) / sizeof(const char*))
+        type_name = SPRINT_ELEMENT_TYPE_NAMES[type];
+    else {
+        sprint_throw_format(false, "type without name: %d", type);
+        return SPRINT_ERROR_INTERNAL;
+    }
+
+    // If there is no name, return a format error
+    if (!sprint_assert(false, type_name != NULL))
+        return SPRINT_ERROR_ARGUMENT_FORMAT;
+
+    // Otherwise, just print the name
+    return sprint_rethrow(sprint_output_put_str(output, type_name));
 }
 
 bool sprint_track_valid(sprint_track* track)
@@ -308,9 +338,39 @@ sprint_error sprint_zone_create(sprint_element* element, sprint_layer layer, spr
     return sprint_zone_valid(&element->zone) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
 
+const char* SPRINT_TEXT_TYPE_NAMES[] = {
+        [SPRINT_TEXT_REGULAR] = "text",
+        [SPRINT_TEXT_ID] = "ID text",
+        [SPRINT_TEXT_VALUE] = "value text"
+};
+
+const char* SPRINT_TEXT_TYPE_KEYWORDS[] = {
+        [SPRINT_TEXT_REGULAR] = "TEXT",
+        [SPRINT_TEXT_ID] = "ID_TEXT",
+        [SPRINT_TEXT_VALUE] = "VALUE_TEXT"
+};
+
 bool sprint_text_type_valid(sprint_text_type type)
 {
     return type >= SPRINT_TEXT_REGULAR && type <= SPRINT_TEXT_VALUE;
+}
+
+sprint_error sprint_text_type_output(sprint_text_type type, sprint_output* output, sprint_prim_format format)
+{
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!sprint_text_type_valid(type) || !sprint_prim_format_valid(format)) return SPRINT_ERROR_ARGUMENT_RANGE;
+
+    // Determine the name based on the format
+    const char* type_name;
+    if (sprint_prim_format_cooked(format))
+        type_name = SPRINT_TEXT_TYPE_NAMES[type];
+    else
+        type_name = SPRINT_TEXT_TYPE_KEYWORDS[type];
+
+    // Validate and output the string
+    if (!sprint_assert(false, type_name != NULL))
+        return SPRINT_ERROR_ASSERTION;
+    return sprint_rethrow(sprint_output_put_str(output, type_name));
 }
 
 const char* SPRINT_TEXT_STYLE_NAMES[] = {
@@ -330,9 +390,8 @@ sprint_error sprint_text_style_output(sprint_text_style style, sprint_output* ou
     if (!sprint_text_style_valid(style) || !sprint_prim_format_valid(format)) return SPRINT_ERROR_ARGUMENT_RANGE;
 
     // Write the string based on the format
-    const char* style_name;
     if (sprint_prim_format_cooked(format)) {
-        style_name = SPRINT_TEXT_STYLE_NAMES[style];
+        const char* style_name = SPRINT_TEXT_STYLE_NAMES[style];
         if (!sprint_assert(false, style_name != NULL))
             return SPRINT_ERROR_ASSERTION;
         return sprint_rethrow(sprint_output_put_str(output, style_name));
@@ -359,12 +418,11 @@ sprint_error sprint_text_thickness_output(sprint_text_thickness thickness, sprin
         return SPRINT_ERROR_ARGUMENT_RANGE;
 
     // Write the string based on the format
-    const char* form_name;
     if (sprint_prim_format_cooked(format)) {
-        form_name = SPRINT_TEXT_THICKNESS_NAMES[thickness];
-        if (!sprint_assert(false, form_name != NULL))
+        const char* thickness_name = SPRINT_TEXT_THICKNESS_NAMES[thickness];
+        if (!sprint_assert(false, thickness_name != NULL))
             return SPRINT_ERROR_ASSERTION;
-        return sprint_rethrow(sprint_output_put_str(output, form_name));
+        return sprint_rethrow(sprint_output_put_str(output, thickness_name));
     } else
         return sprint_rethrow(sprint_output_put_int(output, thickness));
 }
@@ -534,15 +592,25 @@ static sprint_error sprint_indent_output_internal(sprint_output* output, int dep
     return sprint_rethrow(error);
 }
 
-static sprint_error sprint_keyword_output_internal(sprint_output* output, bool cooked, int depth,
-                                                   const char* keyword_raw, const char* keyword_cooked)
+static sprint_error sprint_element_prefix_output_internal(sprint_output* output, bool cooked, int depth)
 {
-    // Put the indentation
     sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_indent_output_internal(output, depth));
+    if (cooked)
+        sprint_chain(error, sprint_output_put_str(output, "sprint_element{type="));
+    else
+        sprint_chain(error, sprint_indent_output_internal(output, depth));
+    return sprint_rethrow(error);
+}
 
-    // Put the keyword
-    sprint_chain(error, sprint_output_put_str(output, cooked ? keyword_cooked : keyword_raw));
+static sprint_error sprint_element_suffix_output_internal(sprint_output* output, bool cooked)
+{
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (cooked)
+        sprint_chain(error, sprint_output_put_chr(output, '}'));
+    else {
+        sprint_chain(error, sprint_output_put_chr(output, SPRINT_STATEMENT_TERMINATOR));
+        sprint_chain(error, sprint_output_put_chr(output, '\n'));
+    }
     return sprint_rethrow(error);
 }
 
@@ -574,10 +642,13 @@ static sprint_error sprint_param_output_internal(sprint_output* output, bool coo
     return sprint_array_output_internal(output, cooked, -1, tag_raw, tag_cooked);
 }
 
-static sprint_error sprint_track_output_internal(sprint_track* track, sprint_output* output, sprint_prim_format format)
+static sprint_error sprint_track_output_internal(sprint_track* track, sprint_output* output,
+                                                 sprint_prim_format format, int depth)
 {
     bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
+    sprint_chain(error, sprint_element_type_output(SPRINT_ELEMENT_TRACK, output, false, format));
     sprint_chain(error, sprint_param_output_internal(output, cooked, "LAYER", "layer"));
     sprint_chain(error, sprint_layer_output(track->layer, output, format));
     sprint_chain(error, sprint_param_output_internal(output, cooked, "WIDTH", "width"));
@@ -606,14 +677,17 @@ static sprint_error sprint_track_output_internal(sprint_track* track, sprint_out
         sprint_chain(error, sprint_array_output_internal(output, cooked, index, "P", "p"));
         sprint_chain(error, sprint_tuple_output(track->points[index], output, format));
     }
+    sprint_chain(error, sprint_element_suffix_output_internal(output, cooked));
     return sprint_rethrow(error);
 }
 
 static sprint_error sprint_pad_tht_output_internal(sprint_pad_tht* pad, sprint_output* output,
-                                                   sprint_prim_format format)
+                                                   sprint_prim_format format, int depth)
 {
     bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
+    sprint_chain(error, sprint_element_type_output(SPRINT_ELEMENT_PAD_THT, output, false, format));
     sprint_chain(error, sprint_param_output_internal(output, cooked, "LAYER", "layer"));
     sprint_chain(error, sprint_layer_output(pad->layer, output, format));
     sprint_chain(error, sprint_param_output_internal(output, cooked, "POS", "position"));
@@ -662,14 +736,17 @@ static sprint_error sprint_pad_tht_output_internal(sprint_pad_tht* pad, sprint_o
         sprint_chain(error, sprint_array_output_internal(output, cooked, index, "CON", "c"));
         sprint_chain(error, sprint_int_output(pad->link.connections[index], output));
     }
+    sprint_chain(error, sprint_element_suffix_output_internal(output, cooked));
     return sprint_rethrow(error);
 }
 
 static sprint_error sprint_pad_smt_output_internal(sprint_pad_smt* pad, sprint_output* output,
-                                                   sprint_prim_format format)
+                                                   sprint_prim_format format, int depth)
 {
     bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
+    sprint_chain(error, sprint_element_type_output(SPRINT_ELEMENT_PAD_SMT, output, false, format));
     sprint_chain(error, sprint_param_output_internal(output, cooked, "LAYER", "layer"));
     sprint_chain(error, sprint_layer_output(pad->layer, output, format));
     sprint_chain(error, sprint_param_output_internal(output, cooked, "POS", "position"));
@@ -708,14 +785,17 @@ static sprint_error sprint_pad_smt_output_internal(sprint_pad_smt* pad, sprint_o
         sprint_chain(error, sprint_array_output_internal(output, cooked, index, "CON", "c"));
         sprint_chain(error, sprint_int_output(pad->link.connections[index], output));
     }
+    sprint_chain(error, sprint_element_suffix_output_internal(output, cooked));
     return sprint_rethrow(error);
 }
 
 static sprint_error sprint_zone_output_internal(sprint_zone* zone, sprint_output* output,
-                                                sprint_prim_format format)
+                                                sprint_prim_format format, int depth)
 {
     bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
+    sprint_chain(error, sprint_element_type_output(SPRINT_ELEMENT_ZONE, output, false, format));
     sprint_chain(error, sprint_param_output_internal(output, cooked, "LAYER", "layer"));
     sprint_chain(error, sprint_layer_output(zone->layer, output, format));
     sprint_chain(error, sprint_param_output_internal(output, cooked, "WIDTH", "width"));
@@ -748,14 +828,17 @@ static sprint_error sprint_zone_output_internal(sprint_zone* zone, sprint_output
         sprint_chain(error, sprint_array_output_internal(output, cooked, index, "P", "p"));
         sprint_chain(error, sprint_tuple_output(zone->points[index], output, format));
     }
+    sprint_chain(error, sprint_element_suffix_output_internal(output, cooked));
     return sprint_rethrow(error);
 }
 
 static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output* output, sprint_prim_format format,
-                                                sprint_text_type type)
+                                                sprint_text_type type, int depth)
 {
     bool cooked = sprint_prim_format_cooked(format);
     sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
+    sprint_chain(error, sprint_text_type_output(type, output, format));
     sprint_chain(error, sprint_param_output_internal(output, cooked, "LAYER", "layer"));
     sprint_chain(error, sprint_layer_output(text->layer, output, format));
     sprint_chain(error, sprint_param_output_internal(output, cooked, "POS", "position"));
@@ -786,7 +869,7 @@ static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output
     }
     if (text->rotation != SPRINT_TEXT_DEFAULT.rotation) {
         sprint_chain(error, sprint_param_output_internal(output, cooked, "ROTATION", "rotation"));
-        sprint_chain(error, sprint_angle_output(text->rotation, output, sprint_prim_format_of(SPRINT_PRIM_FORMAT_ANGLE_COARSE, cooked)));
+        sprint_chain(error, sprint_angle_output(text->rotation, output, sprint_prim_format_of(SPRINT_PRIM_FORMAT_ANGLE_WHOLE, cooked)));
     }
     if (text->mirror_horizontal != SPRINT_TEXT_DEFAULT.mirror_horizontal) {
         sprint_chain(error, sprint_param_output_internal(output, cooked, "MIRROR_HORZ", "mirror hz"));
@@ -800,11 +883,12 @@ static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output
         sprint_chain(error, sprint_param_output_internal(output, cooked, "VISIBLE", "visible"));
         sprint_chain(error, sprint_bool_output(text->visible, output));
     }
+    sprint_chain(error, sprint_element_suffix_output_internal(output, cooked));
     return sprint_rethrow(error);
 }
 
 static sprint_error sprint_circle_output_internal(sprint_circle* circle, sprint_output* output,
-                                                  sprint_prim_format format)
+                                                  sprint_prim_format format, int depth)
 {
     sprint_error error = SPRINT_ERROR_NONE;
 }
@@ -830,44 +914,26 @@ static sprint_error sprint_element_output_internal(sprint_element* element, spri
         return SPRINT_ERROR_ARGUMENT_RANGE;
     if (depth < 0 || depth >= SPRINT_ELEMENT_DEPTH) return SPRINT_ERROR_RECURSION;
 
-    // Don't print empty components or groups
-    if (element->type == SPRINT_ELEMENT_GROUP && element->group.num_elements < 1 ||
-        element->type == SPRINT_ELEMENT_COMPONENT && element->component.num_elements < 1)
-        return SPRINT_ERROR_NONE;
-
-    // Append the tag or element name
-    sprint_error error = SPRINT_ERROR_NONE;
-    if (!sprint_prim_format_cooked(format)) {
-        const char *tag = sprint_element_type_to_tag(element->type, false);
-        if (tag == NULL)
-            return SPRINT_ERROR_ARGUMENT_RANGE;
-        sprint_chain(error, sprint_indent_output_internal(output, depth));
-        sprint_chain(error, sprint_output_put_str(output, tag));
-    } else if (sprint_chain(error, sprint_output_put_str(output, "sprint_element{type="))) {
-        error = sprint_element_type_output(element->type, output);
-        if (error == SPRINT_ERROR_ARGUMENT_RANGE || !sprint_check(error))
-            return sprint_rethrow(error);
-    }
-
     // Append the elements based on type and format
+    sprint_error error = SPRINT_ERROR_NONE;
     switch (element->type) {
         case SPRINT_ELEMENT_TRACK:
-            sprint_chain(error, sprint_track_output_internal(&element->track, output, format));
+            sprint_chain(error, sprint_track_output_internal(&element->track, output, format, depth));
             break;
         case SPRINT_ELEMENT_PAD_THT:
-            sprint_chain(error, sprint_pad_tht_output_internal(&element->pad_tht, output, format));
+            sprint_chain(error, sprint_pad_tht_output_internal(&element->pad_tht, output, format, depth));
             break;
         case SPRINT_ELEMENT_PAD_SMT:
-            sprint_chain(error, sprint_pad_smt_output_internal(&element->pad_smt, output, format));
+            sprint_chain(error, sprint_pad_smt_output_internal(&element->pad_smt, output, format, depth));
             break;
         case SPRINT_ELEMENT_ZONE:
-            sprint_chain(error, sprint_zone_output_internal(&element->zone, output, format));
+            sprint_chain(error, sprint_zone_output_internal(&element->zone, output, format, depth));
             break;
         case SPRINT_ELEMENT_TEXT:
-            sprint_chain(error, sprint_text_output_internal(&element->text, output, format, SPRINT_TEXT_REGULAR));
+            sprint_chain(error, sprint_text_output_internal(&element->text, output, format, SPRINT_TEXT_REGULAR, depth));
             break;
         case SPRINT_ELEMENT_CIRCLE:
-            sprint_chain(error, sprint_circle_output_internal(&element->circle, output, format));
+            sprint_chain(error, sprint_circle_output_internal(&element->circle, output, format, depth));
             break;
         case SPRINT_ELEMENT_COMPONENT:
             sprint_chain(error, sprint_component_output_internal(&element->component, output, format, depth));
@@ -879,18 +945,6 @@ static sprint_error sprint_element_output_internal(sprint_element* element, spri
             sprint_throw_format(false, "element type unknown: %d", element->type);
             return SPRINT_ERROR_ARGUMENT_RANGE;
     }
-
-    // Put the closing part
-    if (!sprint_prim_format_cooked(format)) {
-        const char *tag = sprint_element_type_to_tag(element->type, true);
-        if (tag != NULL) {
-            sprint_chain(error, sprint_indent_output_internal(output, depth));
-            sprint_chain(error, sprint_output_put_str(output, tag));
-        }
-        sprint_chain(error, sprint_output_put_chr(output, SPRINT_STATEMENT_TERMINATOR));
-        sprint_chain(error, sprint_output_put_chr(output, '\n'));
-    } else
-        sprint_chain(error, sprint_output_put_chr(output, '}'));
 
     return sprint_rethrow(error);
 }

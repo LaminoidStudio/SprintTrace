@@ -137,7 +137,10 @@ typedef enum sprint_text_type {
     SPRINT_TEXT_ID,
     SPRINT_TEXT_VALUE
 } sprint_text_type;
+extern const char* SPRINT_TEXT_TYPE_NAMES[];
+extern const char* SPRINT_TEXT_TYPE_KEYWORDS[];
 bool sprint_text_type_valid(sprint_text_type type);
+sprint_error sprint_text_type_output(sprint_text_type type, sprint_output* output, sprint_prim_format format);
 
 typedef enum sprint_text_style {
     // Narrow width text
@@ -252,10 +255,12 @@ struct sprint_element {
 };
 
 extern const char* SPRINT_ELEMENT_TYPE_NAMES[];
-
-sprint_error sprint_element_type_output(sprint_element_type type, sprint_output* output);
-const char* sprint_element_type_to_tag(sprint_element_type type, bool closing);
-sprint_error sprint_element_type_from_tag(sprint_element_type* type, bool* closing, const char* tag);
+extern const char* SPRINT_ELEMENT_TYPE_KEYWORDS_OPENING[];
+extern const char* SPRINT_ELEMENT_TYPE_KEYWORDS_CLOSING[];
+const char* sprint_element_type_to_keyword(sprint_element_type type, bool closing);
+sprint_error sprint_element_type_from_keyword(sprint_element_type* type, bool* closing, const char* tag);
+sprint_error sprint_element_type_output(sprint_element_type type, sprint_output* output, bool closing,
+                                        sprint_prim_format format);
 
 sprint_error sprint_track_create(sprint_element* element, sprint_layer layer, sprint_dist width,
                                  int num_points, sprint_tuple* points);
