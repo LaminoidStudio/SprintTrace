@@ -71,10 +71,10 @@ typedef struct sprint_token {
     sprint_source_origin origin;
 } sprint_token;
 
-sprint_error sprint_token_tag(sprint_token* token, sprint_stringbuilder* builder, char** output);
-sprint_error sprint_token_bool(sprint_token* token, sprint_stringbuilder* builder, bool* output);
-sprint_error sprint_token_int(sprint_token* token, sprint_stringbuilder* builder, int* output);
-sprint_error sprint_token_str(sprint_token* token, sprint_stringbuilder* builder, char** output);
+sprint_error sprint_token_word(sprint_token* token, sprint_stringbuilder* builder, char** word);
+sprint_error sprint_token_bool(sprint_token* token, sprint_stringbuilder* builder, bool* val);
+sprint_error sprint_token_int(sprint_token* token, sprint_stringbuilder* builder, int* val);
+sprint_error sprint_token_str(sprint_token* token, sprint_stringbuilder* builder, char** str);
 
 typedef struct sprint_tokenizer sprint_tokenizer;
 
@@ -96,7 +96,7 @@ struct sprint_tokenizer {
 
 sprint_tokenizer* sprint_tokenizer_from_str(const char* str, bool free);
 sprint_tokenizer* sprint_tokenizer_from_file(const char* path);
-sprint_error sprint_tokenizer_next(sprint_tokenizer* tokenizer, sprint_token* output, sprint_stringbuilder* builder);
+sprint_error sprint_tokenizer_next(sprint_tokenizer* tokenizer, sprint_token* token, sprint_stringbuilder* builder);
 sprint_error sprint_tokenizer_destroy(sprint_tokenizer* tokenizer);
 
 #endif //SPRINTPCB_TOKEN_H
