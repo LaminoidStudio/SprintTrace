@@ -258,7 +258,7 @@ extern const char* SPRINT_ELEMENT_TYPE_NAMES[];
 extern const char* SPRINT_ELEMENT_TYPE_KEYWORDS_OPENING[];
 extern const char* SPRINT_ELEMENT_TYPE_KEYWORDS_CLOSING[];
 const char* sprint_element_type_to_keyword(sprint_element_type type, bool closing);
-sprint_error sprint_element_type_from_keyword(sprint_element_type* type, bool* closing, const char* tag);
+bool sprint_element_type_from_keyword(sprint_element_type* type, bool* closing, const char* keyword);
 sprint_error sprint_element_type_output(sprint_element_type type, sprint_output* output, bool closing,
                                         sprint_prim_format format);
 

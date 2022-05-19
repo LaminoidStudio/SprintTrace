@@ -62,41 +62,41 @@ const char* sprint_element_type_to_keyword(sprint_element_type type, bool closin
     return NULL;
 }
 
-sprint_error sprint_element_type_from_keyword(sprint_element_type* type, bool* closing, const char* tag)
+bool sprint_element_type_from_keyword(sprint_element_type* type, bool* closing, const char* keyword)
 {
-    if (type == NULL || closing == NULL || tag == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (type == NULL || closing == NULL || keyword == NULL) return false;
 
     // Preset closing to false
     *closing = false;
 
     // Determine the type
-    if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_TRACK, false)) == 0)
+    if (strcasecmp(keyword, sprint_element_type_to_keyword(SPRINT_ELEMENT_TRACK, false)) == 0)
         *type = SPRINT_ELEMENT_TRACK;
-    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_PAD_THT, false)) == 0)
+    else if (strcasecmp(keyword, sprint_element_type_to_keyword(SPRINT_ELEMENT_PAD_THT, false)) == 0)
         *type = SPRINT_ELEMENT_PAD_THT;
-    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_PAD_SMT, false)) == 0)
+    else if (strcasecmp(keyword, sprint_element_type_to_keyword(SPRINT_ELEMENT_PAD_SMT, false)) == 0)
         *type = SPRINT_ELEMENT_PAD_SMT;
-    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_ZONE, false)) == 0)
+    else if (strcasecmp(keyword, sprint_element_type_to_keyword(SPRINT_ELEMENT_ZONE, false)) == 0)
         *type = SPRINT_ELEMENT_ZONE;
-    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_TEXT, false)) == 0)
+    else if (strcasecmp(keyword, sprint_element_type_to_keyword(SPRINT_ELEMENT_TEXT, false)) == 0)
         *type = SPRINT_ELEMENT_TEXT;
-    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_CIRCLE, false)) == 0)
+    else if (strcasecmp(keyword, sprint_element_type_to_keyword(SPRINT_ELEMENT_CIRCLE, false)) == 0)
         *type = SPRINT_ELEMENT_CIRCLE;
-    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_COMPONENT, false)) == 0)
+    else if (strcasecmp(keyword, sprint_element_type_to_keyword(SPRINT_ELEMENT_COMPONENT, false)) == 0)
         *type = SPRINT_ELEMENT_COMPONENT;
-    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_GROUP, false)) == 0)
+    else if (strcasecmp(keyword, sprint_element_type_to_keyword(SPRINT_ELEMENT_GROUP, false)) == 0)
         *type = SPRINT_ELEMENT_GROUP;
-    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_COMPONENT, true)) == 0) {
+    else if (strcasecmp(keyword, sprint_element_type_to_keyword(SPRINT_ELEMENT_COMPONENT, true)) == 0) {
         *closing = true;
         *type = SPRINT_ELEMENT_COMPONENT;
     }
-    else if (strcasecmp(tag, sprint_element_type_to_keyword(SPRINT_ELEMENT_GROUP, true)) == 0) {
+    else if (strcasecmp(keyword, sprint_element_type_to_keyword(SPRINT_ELEMENT_GROUP, true)) == 0) {
         *closing = true;
         *type = SPRINT_ELEMENT_GROUP;
     } else
-        return SPRINT_ERROR_ARGUMENT_FORMAT;
+        return false;
 
-    return SPRINT_ERROR_NONE;
+    return true;
 }
 
 sprint_error sprint_element_type_output(sprint_element_type type, sprint_output* output, bool closing,
