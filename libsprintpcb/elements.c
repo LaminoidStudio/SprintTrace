@@ -933,6 +933,8 @@ static sprint_error sprint_circle_output_internal(sprint_circle* circle, sprint_
     return sprint_rethrow(error);
 }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "misc-no-recursion"
 static sprint_error sprint_component_output_internal(sprint_component* component, sprint_output* output,
                                                      sprint_prim_format format, int depth)
 {
@@ -980,18 +982,41 @@ static sprint_error sprint_component_output_internal(sprint_component* component
     sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
     sprint_chain(error, sprint_element_type_output(SPRINT_ELEMENT_COMPONENT, output, true, format));
     sprint_chain(error, sprint_element_suffix_output_internal(output, cooked));
-
     return sprint_rethrow(error);
 }
 
 static sprint_error sprint_group_output_internal(sprint_group* group, sprint_output* output,
                                                  sprint_prim_format format, int depth)
 {
+    // Make sure that there is at least one child element
+    if (group->num_elements < 1) return SPRINT_ERROR_NONE;
+
+    // Check, if the format is cooked
+    bool cooked = sprint_prim_format_cooked(format);
+
+    // Write the component header
     sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
+    sprint_chain(error, sprint_element_type_output(SPRINT_ELEMENT_GROUP, output, false, format));
+    if (!sprint_chain(error, sprint_element_suffix_output_internal(output, cooked)))
+        return sprint_rethrow(error);
+
+    // Write the contained elements
+    for (int index = 0; index < group->num_elements; index++) {
+        sprint_element* element = &group->elements[index];
+        if (element == NULL)
+            return SPRINT_ERROR_STATE_INVALID;
+        if (!sprint_chain(error, sprint_element_output_internal(element, output, format, depth + 1)))
+            return sprint_rethrow(error);
+    }
+
+    // Write the component footer
+    sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
+    sprint_chain(error, sprint_element_type_output(SPRINT_ELEMENT_GROUP, output, true, format));
+    sprint_chain(error, sprint_element_suffix_output_internal(output, cooked));
+    return sprint_rethrow(error);
 }
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "misc-no-recursion"
 static sprint_error sprint_element_output_internal(sprint_element* element, sprint_output* output,
                                                    sprint_prim_format format, int depth) {
     if (element == NULL || output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
