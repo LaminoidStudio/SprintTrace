@@ -938,8 +938,13 @@ static sprint_error sprint_circle_output_internal(sprint_circle* circle, sprint_
 static sprint_error sprint_component_output_internal(sprint_component* component, sprint_output* output,
                                                      sprint_prim_format format, int depth)
 {
+    // Make sure that there is a valid ID and value text
+    if (component->text_id->type != SPRINT_ELEMENT_TEXT || component->text_value->type != SPRINT_ELEMENT_TEXT)
+        return SPRINT_ERROR_STATE_INVALID;
+
     // Make sure that there is at least one child element
-    if (component->num_elements < 1) return SPRINT_ERROR_NONE;
+    if (component->num_elements < 1)
+        return SPRINT_ERROR_NONE;
 
     // Check, if the format is cooked
     bool cooked = sprint_prim_format_cooked(format);
@@ -977,6 +982,12 @@ static sprint_error sprint_component_output_internal(sprint_component* component
         if (!sprint_chain(error, sprint_element_output_internal(element, output, format, depth + 1)))
             return sprint_rethrow(error);
     }
+
+    // Write the ID and value texts
+    sprint_chain(error, sprint_text_output_internal(&component->text_id->text,
+                                                    output, format, SPRINT_TEXT_ID, depth + 1));
+    sprint_chain(error, sprint_text_output_internal(&component->text_value->text,
+                                                    output, format, SPRINT_TEXT_VALUE, depth + 1));
 
     // Write the component footer
     sprint_chain(error, sprint_element_prefix_output_internal(output, cooked, depth));
