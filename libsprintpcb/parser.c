@@ -247,19 +247,68 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
     }
 }
 
+static sprint_error sprint_parser_next_internal(sprint_parser* parser, sprint_token_type type)
+{
+    // Get the next token and reset the subsequent flag
+    sprint_token* token = &parser->token;
+    sprint_error error = sprint_tokenizer_next(parser->tokenizer, token, parser->builder);
+    if (error == SPRINT_ERROR_EOF || !sprint_check(error))
+        return sprint_rethrow(error);
+    parser->subsequent = true;
+
+    // Handle the special conditions
+    switch (token->type) {
+        case SPRINT_TOKEN_TYPE_VALUE_SEPARATOR:
+            // Set the value flag
+            parser->value = true;
+            break;
+        case SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR:
+            // Clear the subsequent flag for the next word
+            parser->subsequent = false;
+            // fallthrough
+        case SPRINT_TOKEN_TYPE_STATEMENT_SEPARATOR:
+            // Clear the value flag
+            parser->value = false;
+            break;
+        default:
+            // If the token type matches, it succeeded
+            if (token->type == type)
+                return SPRINT_ERROR_NONE;
+
+            // Otherwise, fall through to a syntax error
+            break;
+    }
+
+    // Throw the syntax error
+    sprint_token_unexpected_internal(parser, false);
+    return SPRINT_ERROR_SYNTAX;
+}
+
 sprint_error sprint_parser_next_bool(sprint_parser* parser, bool* val)
 {
+    if (parser == NULL || val == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_parser_next_internal(parser, SPRINT_TOKEN_TYPE_WORD));
+    sprint_chain(error, sprint_token_bool(&parser->token, parser->builder, val));
+    return sprint_rethrow(error);
 }
 
 sprint_error sprint_parser_next_int(sprint_parser* parser, int* val)
 {
+    if (parser == NULL || val == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_parser_next_internal(parser, SPRINT_TOKEN_TYPE_NUMBER));
+    sprint_chain(error, sprint_token_int(&parser->token, parser->builder, val));
+    return sprint_rethrow(error);
 }
 
 sprint_error sprint_parser_next_dist(sprint_parser* parser, sprint_dist* dist)
 {
     sprint_error error = SPRINT_ERROR_NONE;
     if (sprint_chain(error, sprint_parser_next_int(parser, dist)) && !sprint_dist_valid(*dist))
-        return SPRINT_ERROR_ARGUMENT_FORMAT;
+        return SPRINT_ERROR_SYNTAX;
     return error;
 }
 
@@ -267,7 +316,7 @@ sprint_error sprint_parser_next_size(sprint_parser* parser, sprint_dist* size)
 {
     sprint_error error = SPRINT_ERROR_NONE;
     if (sprint_chain(error, sprint_parser_next_int(parser, size)) && !sprint_size_valid(*size))
-        return SPRINT_ERROR_ARGUMENT_FORMAT;
+        return SPRINT_ERROR_SYNTAX;
     return error;
 }
 
@@ -286,18 +335,41 @@ sprint_error sprint_parser_next_angle(sprint_parser* parser, sprint_angle* angle
     *angle *= factor;
 
     // And make sure that it is valid
-    return sprint_angle_valid(*angle) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_FORMAT;
+    return sprint_angle_valid(*angle) ? SPRINT_ERROR_NONE : SPRINT_ERROR_SYNTAX;
 }
 
 sprint_error sprint_parser_next_tuple(sprint_parser* parser, sprint_tuple* tuple)
 {
+    if (parser == NULL || tuple == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Read the x-component
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_dist dist_x = 0;
+    sprint_chain(error, sprint_parser_next_dist(parser, &dist_x));
+
+    // Match the tuple separator
+    sprint_chain(error, sprint_parser_next_internal(parser, SPRINT_TOKEN_TYPE_TUPLE_SEPARATOR));
+
+    // Read the y-component
+    sprint_dist dist_y = 0;
+    sprint_chain(error, sprint_parser_next_dist(parser, &dist_y));
+
+    // Create the tuple and return
+    *tuple = sprint_tuple_of(dist_x, dist_y);
+    return sprint_rethrow(error);
 }
 
-sprint_error sprint_parser_next_str(sprint_parser* parser, char* str)
+sprint_error sprint_parser_next_str(sprint_parser* parser, char** str)
 {
+    if (parser == NULL || str == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_parser_next_internal(parser, SPRINT_TOKEN_TYPE_STRING));
+    sprint_chain(error, sprint_token_str(&parser->token, parser->builder, str));
+    return sprint_rethrow(error);
 }
 
-sprint_error sprint_parser_run(sprint_parser* parser, sprint_list* elements)
+sprint_error sprint_parser_next_element(sprint_parser* parser, sprint_element* element)
 {
 }
 
