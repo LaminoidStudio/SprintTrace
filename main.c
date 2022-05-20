@@ -13,6 +13,7 @@
 #include "libsprintpcb/stringbuilder.h"
 #include "libsprintpcb/plugin.h"
 #include "libsprintpcb/token.h"
+#include "libsprintpcb/parser.h"
 #include "libsprintpcb/errors.h"
 
 int main(int argc, const char* argv[]) {
@@ -50,15 +51,33 @@ int main(int argc, const char* argv[]) {
     const char* test_text_io = "ZONE,LAYER=1,SOLDERMASK=true,WIDTH=0,P0=332158/408480,P1=332158/409045,P2=332158/409610;\n"
                                "TRACK;# This is a comment that will be ignored\n"
                                "TRACK,LAYER=7,WIDTH=2000,P0=928537/606471,P1=78537/606471,P2=78537/56471,P3=928537/56471,P4=928537/606471;";
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     sprint_tokenizer* tokenizer = sprint_tokenizer_from_str(test_text_io, false);
+    sprint_parser* parser = sprint_parser_create(tokenizer);
+    sprint_assert(true, parser != NULL);
+    while (true) {
+        sprint_statement statement;
+        sprint_error error = sprint_parser_next_statement(parser, &statement, true);
+        if (error == SPRINT_ERROR_EOF) break;
+        sprint_require(error);
+
+        printf("%s -> ", statement.name);
+        if (sprint_parser_statement_flags(&statement, SPRINT_STATEMENT_FLAG_FIRST))
+            putchar('f');
+        if (sprint_parser_statement_flags(&statement, SPRINT_STATEMENT_FLAG_VALUE))
+            putchar('v');
+        if (sprint_parser_statement_flags(&statement, SPRINT_STATEMENT_FLAG_INDEX))
+            printf(", i:%d", statement.index);
+        putchar('\n');
+    }
+
+    /*sprint_stringbuilder* builder = sprint_stringbuilder_create(7);
     sprint_token token = {0};
     while (true) {
         sprint_error error = sprint_tokenizer_next(tokenizer, &token, builder);
-        if (error == SPRINT_ERROR_EOF) {
-            sprint_assert(true, token.type != SPRINT_TOKEN_TYPE_INVALID);
+        if (error == SPRINT_ERROR_EOF)
             break;
-        }
+        else if (error == SPRINT_ERROR_TRUNCATED)
+            sprint_throw(true, "unexpected end of input");
 
         size_t value_size = builder->count + 1;
         char value[value_size];
@@ -66,7 +85,7 @@ int main(int argc, const char* argv[]) {
         sprint_assert(true, value != NULL);
         printf("%s at %d:%d: %s\n", SPRINT_TOKEN_TYPE_NAMES[token.type], token.origin.line, token.origin.pos, value);
     }
-    sprint_tokenizer_destroy(tokenizer);
+    sprint_tokenizer_destroy(tokenizer);*/
 
     sprint_element circle;
     sprint_require(sprint_circle_create(&circle,
