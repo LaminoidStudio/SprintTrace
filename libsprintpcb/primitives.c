@@ -219,6 +219,22 @@ bool sprint_angle_valid(sprint_angle angle)
     return angle >= SPRINT_ANGLE_MIN && angle <= SPRINT_ANGLE_MAX;
 }
 
+sprint_angle sprint_angle_factor(sprint_prim_format format)
+{
+    switch (format) {
+        case SPRINT_PRIM_FORMAT_RAW:
+            return 1;
+        case SPRINT_PRIM_FORMAT_ANGLE_FINE:
+            return SPRINT_ANGLE_NATIVE / SPRINT_ANGLE_FINE;
+        case SPRINT_PRIM_FORMAT_ANGLE_COARSE:
+            return SPRINT_ANGLE_NATIVE / SPRINT_ANGLE_COARSE;
+        case SPRINT_PRIM_FORMAT_ANGLE_WHOLE:
+            return SPRINT_ANGLE_NATIVE / SPRINT_ANGLE_WHOLE;
+        default:
+            return 0;
+    }
+}
+
 sprint_error sprint_angle_output(sprint_angle angle, sprint_output* output, sprint_prim_format format)
 {
     if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
@@ -237,27 +253,9 @@ sprint_error sprint_angle_output(sprint_angle angle, sprint_output* output, spri
     }
 
     // Handle the different raw precisions
-    sprint_angle factor;
-    switch (format) {
-        case SPRINT_PRIM_FORMAT_RAW:
-            factor = 1;
-            break;
-        case SPRINT_PRIM_FORMAT_ANGLE_FINE:
-            factor = SPRINT_ANGLE_NATIVE / SPRINT_ANGLE_FINE;
-            break;
-        case SPRINT_PRIM_FORMAT_ANGLE_COARSE:
-            factor = SPRINT_ANGLE_NATIVE / SPRINT_ANGLE_COARSE;
-            break;
-        case SPRINT_PRIM_FORMAT_ANGLE_WHOLE:
-            factor = SPRINT_ANGLE_NATIVE / SPRINT_ANGLE_WHOLE;
-            break;
-        default:
-            return SPRINT_ERROR_ARGUMENT_RANGE;
-    }
-
-    // Never divide by zero
-    if (!sprint_assert(false, factor > 0))
-        return SPRINT_ERROR_ASSERTION;
+    sprint_angle factor = sprint_angle_factor(format);
+    if (factor < 1)
+        return SPRINT_ERROR_ARGUMENT_RANGE;
 
     // And output the raw scaled value
     return sprint_rethrow(sprint_output_put_int(output, angle / factor));

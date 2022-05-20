@@ -88,6 +88,7 @@ extern const sprint_angle SPRINT_ANGLE_MIN;
 #define sprint_angle_deg(a) ((sprint_angle)((a) * SPRINT_ANGLE_NATIVE))
 #define sprint_angle_rad(r) sprint_angle_deg((r) * M_PI / 180d)
 bool sprint_angle_valid(sprint_angle angle);
+sprint_angle sprint_angle_factor(sprint_prim_format format);
 sprint_error sprint_angle_output(sprint_angle angle, sprint_output* output, sprint_prim_format format);
 
 typedef struct sprint_tuple {
