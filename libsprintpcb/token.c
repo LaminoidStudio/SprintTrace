@@ -203,22 +203,29 @@ sprint_token_type sprint_tokenizer_state_type(sprint_tokenizer_state state)
     }
 }
 
+sprint_error sprint_token_contents(sprint_token* token, sprint_stringbuilder* builder, char** contents)
+{
+    if (token == NULL || builder == NULL || contents == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Allocate a dynamic buffer
+    size_t size = sprint_stringbuilder_count(builder) + 1;
+    *contents = malloc(size);
+    if (*contents == NULL)
+        return SPRINT_ERROR_MEMORY;
+
+    // Copy the value
+    sprint_error error = SPRINT_ERROR_NONE;
+    sprint_chain(error, sprint_stringbuilder_output(builder, *contents, size));
+    return sprint_rethrow(error);
+}
+
 sprint_error sprint_token_word(sprint_token* token, sprint_stringbuilder* builder, char** word)
 {
     if (token == NULL || builder == NULL || word == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
     if (token->type != SPRINT_TOKEN_TYPE_WORD) return SPRINT_ERROR_ARGUMENT_FORMAT;
     if (sprint_stringbuilder_count(builder) < 1) return SPRINT_ERROR_ARGUMENT_INCOMPLETE;
 
-    // Allocate a dynamic buffer
-    size_t size = sprint_stringbuilder_count(builder) + 1;
-    *word = malloc(size);
-    if (*word == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    // Copy the value
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_stringbuilder_output(builder, *word, size));
-    return sprint_rethrow(error);
+    return sprint_rethrow(sprint_token_contents(token, builder, word));
 }
 
 sprint_error sprint_token_bool(sprint_token* token, sprint_stringbuilder* builder, bool* val)
@@ -275,16 +282,7 @@ sprint_error sprint_token_str(sprint_token* token, sprint_stringbuilder* builder
     if (token == NULL || builder == NULL || str == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
     if (token->type != SPRINT_TOKEN_TYPE_STRING) return SPRINT_ERROR_ARGUMENT_FORMAT;
 
-    // Allocate a dynamic buffer
-    size_t size = sprint_stringbuilder_count(builder) + 1;
-    *str = malloc(size);
-    if (*str == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    // Copy the value
-    sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_stringbuilder_output(builder, *str, size));
-    return sprint_rethrow(error);
+    return sprint_rethrow(sprint_token_contents(token, builder, str));
 }
 
 sprint_tokenizer* sprint_tokenizer_from_str(const char* str, bool free)
@@ -319,13 +317,6 @@ sprint_tokenizer* sprint_tokenizer_from_file(const char* path)
     return tokenizer;
 }
 
-/**
- * Reads the next token from the tokenizer.
- * @param tokenizer The tokenizer instance.
- * @param token The target reference to write the read token to.
- * @param builder The builder to write the contents of the token to.
- * @return No error returned on success. At the end of input, returns EOF in combination with an empty or invalid token.
- */
 sprint_error sprint_tokenizer_next(sprint_tokenizer* tokenizer, sprint_token* token, sprint_stringbuilder* builder)
 {
     if (tokenizer == NULL || token == NULL || builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
@@ -378,11 +369,11 @@ sprint_error sprint_tokenizer_next(sprint_tokenizer* tokenizer, sprint_token* to
     if (scanning) {
         token->type = SPRINT_TOKEN_TYPE_NONE;
         token->origin = tokenizer->origin;
-    } else
+        return SPRINT_ERROR_EOF;
+    } else {
         token->type = SPRINT_TOKEN_TYPE_INVALID;
-
-    // And return an EOF error
-    return SPRINT_ERROR_EOF;
+        return SPRINT_ERROR_TRUNCATED;
+    }
 }
 
 sprint_error sprint_tokenizer_destroy(sprint_tokenizer* tokenizer)

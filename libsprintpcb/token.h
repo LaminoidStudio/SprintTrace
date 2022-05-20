@@ -71,6 +71,7 @@ typedef struct sprint_token {
     sprint_source_origin origin;
 } sprint_token;
 
+sprint_error sprint_token_contents(sprint_token* token, sprint_stringbuilder* builder, char** contents);
 sprint_error sprint_token_word(sprint_token* token, sprint_stringbuilder* builder, char** word);
 sprint_error sprint_token_bool(sprint_token* token, sprint_stringbuilder* builder, bool* val);
 sprint_error sprint_token_int(sprint_token* token, sprint_stringbuilder* builder, int* val);
@@ -96,6 +97,13 @@ struct sprint_tokenizer {
 
 sprint_tokenizer* sprint_tokenizer_from_str(const char* str, bool free);
 sprint_tokenizer* sprint_tokenizer_from_file(const char* path);
+/**
+ * Reads the next token from the tokenizer.
+ * @param tokenizer The tokenizer instance.
+ * @param token The target reference to write the read token to.
+ * @param builder The builder to write the contents of the token to.
+ * @return No error returned on success. At the end of input, returns EOF or truncated.
+ */
 sprint_error sprint_tokenizer_next(sprint_tokenizer* tokenizer, sprint_token* token, sprint_stringbuilder* builder);
 sprint_error sprint_tokenizer_destroy(sprint_tokenizer* tokenizer);
 
