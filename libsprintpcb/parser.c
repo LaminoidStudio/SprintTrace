@@ -115,7 +115,9 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
     while (true) {
         // Get the first or next token
         sprint_token* token = &parser->token;
-        if (!sprint_chain(error, sprint_tokenizer_next(parser->tokenizer, token, parser->builder)))
+        if (error == SPRINT_ERROR_NONE)
+            error = sprint_tokenizer_next(parser->tokenizer, token, parser->builder);
+        if (error == SPRINT_ERROR_EOF || !sprint_check(error))
             return sprint_rethrow(error);
 
         // Raise the subsequent flag, if not a word
@@ -128,7 +130,7 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
         // Check the token type
         switch (token->type) {
             case SPRINT_TOKEN_TYPE_WORD:
-                // If the word is part of a value, it is not valid
+                // If the word is part of a value, it is not valid, so decide whether to throw or skip
                 if (last_value)
                     break;
 
@@ -142,7 +144,9 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                     return sprint_rethrow(error);
 
                 // Get the next token, determine its type and reset the subsequent flag
-                if (!sprint_chain(error, sprint_tokenizer_next(parser->tokenizer, token, parser->builder)))
+                if (error == SPRINT_ERROR_NONE)
+                    error = sprint_tokenizer_next(parser->tokenizer, token, parser->builder);
+                if (error == SPRINT_ERROR_EOF || !sprint_check(error))
                     return sprint_rethrow(error);
                 parser->subsequent = true;
                 switch (token->type) {
@@ -175,7 +179,9 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                 }
 
                 // Get the next token, make sure it is a value separator and reset the subsequent flag
-                if (!sprint_chain(error, sprint_tokenizer_next(parser->tokenizer, token, parser->builder)))
+                if (error == SPRINT_ERROR_NONE)
+                    error = sprint_tokenizer_next(parser->tokenizer, token, parser->builder);
+                if (error == SPRINT_ERROR_EOF || !sprint_check(error))
                     return sprint_rethrow(error);
                 parser->subsequent = true;
                 switch (token->type) {
@@ -199,6 +205,7 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                             continue;
                         return SPRINT_ERROR_SYNTAX;
                 }
+
             case SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR:
                 // Clear the subsequent flag for the next word
                 parser->subsequent = false;
@@ -213,20 +220,29 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
             case SPRINT_TOKEN_TYPE_STRING:
             case SPRINT_TOKEN_TYPE_VALUE_SEPARATOR:
             case SPRINT_TOKEN_TYPE_TUPLE_SEPARATOR:
-                if (sync)
-                    continue;
-                // fallthrough
+                // Go to the end of the switch block and decide whether to throw or just skip
+                break;
+
             case SPRINT_TOKEN_TYPE_NONE:
             case SPRINT_TOKEN_TYPE_INVALID:
             default:
-                // Fall out of the switch block
-                break;
+                // The token is unexpected or invalid, so throw a syntax error
+                sprint_check(sprint_token_unexpected_internal(parser, sync));
+
+                // If syncing, skip over the error
+                if (sync)
+                    continue;
+
+                // Otherwise, return with a syntax error
+                return SPRINT_ERROR_SYNTAX;
         }
 
-        // The token is unexpected or invalid
-        sprint_check(sprint_token_unexpected_internal(parser, sync));
+        // If syncing, just skip silently
         if (sync)
             continue;
+
+        // Otherwise, throw and return a syntax error
+        sprint_check(sprint_token_unexpected_internal(parser, false));
         return SPRINT_ERROR_SYNTAX;
     }
 }
