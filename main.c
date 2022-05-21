@@ -61,11 +61,11 @@ int main(int argc, const char* argv[]) {
         sprint_require(error);
 
         printf("%s -> ", statement.name);
-        if (sprint_parser_statement_flags(&statement, SPRINT_STATEMENT_FLAG_FIRST))
+        if (sprint_parser_statement_flags(&statement, false, SPRINT_STATEMENT_FLAG_FIRST))
             putchar('f');
-        if (sprint_parser_statement_flags(&statement, SPRINT_STATEMENT_FLAG_VALUE))
+        if (sprint_parser_statement_flags(&statement, false, SPRINT_STATEMENT_FLAG_VALUE))
             putchar('v');
-        if (sprint_parser_statement_flags(&statement, SPRINT_STATEMENT_FLAG_INDEX))
+        if (sprint_parser_statement_flags(&statement, false, SPRINT_STATEMENT_FLAG_INDEX))
             printf(", i:%d", statement.index);
         putchar('\n');
     }

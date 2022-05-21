@@ -19,14 +19,27 @@ char* sprint_parser_statement_name(sprint_statement* statement)
     return statement != NULL ? statement->name : NULL;
 }
 
-bool sprint_parser_statement_flags(sprint_statement* statement, sprint_statement_flags flags)
+bool sprint_parser_statement_flags(sprint_statement* statement, bool equal, sprint_statement_flags flags)
 {
-    return statement != NULL && (statement->flags & flags) > 0;
+    return statement != NULL && equal ? statement->flags == flags : (statement->flags & flags) > 0;
 }
 
 int sprint_parser_statement_index(sprint_statement* statement)
 {
     return statement != NULL ? statement->index : 0;
+}
+
+sprint_error sprint_parser_statement_destroy(sprint_statement* statement)
+{
+    if (statement == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Free the name
+    if (statement->name != NULL) {
+        free(statement->name);
+        statement->name = NULL;
+    }
+
+    return SPRINT_ERROR_NONE;
 }
 
 sprint_parser* sprint_parser_create(sprint_tokenizer* tokenizer)
@@ -146,8 +159,10 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                 // Get the next token, determine its type and reset the subsequent flag
                 if (error == SPRINT_ERROR_NONE)
                     error = sprint_tokenizer_next(parser->tokenizer, token, parser->builder);
-                if (error == SPRINT_ERROR_EOF || !sprint_check(error))
+                if (error == SPRINT_ERROR_EOF || !sprint_check(error)) {
+                    sprint_check(sprint_parser_statement_destroy(statement));
                     return sprint_rethrow(error);
+                }
                 parser->subsequent = true;
                 switch (token->type) {
                     case SPRINT_TOKEN_TYPE_VALUE_SEPARATOR:
@@ -166,12 +181,15 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                         return SPRINT_ERROR_NONE;
                     case SPRINT_TOKEN_TYPE_NUMBER:
                         // Store the index, set the flag and continue reading
-                        if (!sprint_chain(error, sprint_token_int(token, parser->builder, &statement->index)))
+                        if (!sprint_chain(error, sprint_token_int(token, parser->builder, &statement->index))) {
+                            sprint_check(sprint_parser_statement_destroy(statement));
                             return sprint_rethrow(error);
+                        }
                         statement->flags |= SPRINT_STATEMENT_FLAG_INDEX;
                         break;
                     default:
                         // The token is unexpected or invalid
+                        sprint_check(sprint_parser_statement_destroy(statement));
                         sprint_check(sprint_token_unexpected_internal(parser, sync));
                         if (sync)
                             continue;
@@ -181,8 +199,10 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                 // Get the next token, make sure it is a value separator and reset the subsequent flag
                 if (error == SPRINT_ERROR_NONE)
                     error = sprint_tokenizer_next(parser->tokenizer, token, parser->builder);
-                if (error == SPRINT_ERROR_EOF || !sprint_check(error))
+                if (error == SPRINT_ERROR_EOF || !sprint_check(error)) {
+                    sprint_check(sprint_parser_statement_destroy(statement));
                     return sprint_rethrow(error);
+                }
                 parser->subsequent = true;
                 switch (token->type) {
                     case SPRINT_TOKEN_TYPE_VALUE_SEPARATOR:
@@ -200,11 +220,15 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                         // fallthrough
                     default:
                         // The token is unexpected or invalid
+                        sprint_check(sprint_parser_statement_destroy(statement));
                         sprint_check(sprint_token_unexpected_internal(parser, sync));
                         if (sync)
                             continue;
-                        return SPRINT_ERROR_SYNTAX;
+
+                        // Fall through and return a syntax error
+                        break;
                 }
+                return SPRINT_ERROR_SYNTAX;
 
             case SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR:
                 // Clear the subsequent flag for the next word
@@ -369,8 +393,112 @@ sprint_error sprint_parser_next_str(sprint_parser* parser, char** str)
     return sprint_rethrow(error);
 }
 
-sprint_error sprint_parser_next_element(sprint_parser* parser, sprint_element* element)
+static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
 {
+}
+
+static sprint_error sprint_parser_next_pad_tht_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
+{
+}
+
+static sprint_error sprint_parser_next_pad_smt_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
+{
+}
+
+static sprint_error sprint_parser_next_zone_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
+{
+}
+
+static sprint_error sprint_parser_next_text_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
+{
+}
+
+static sprint_error sprint_parser_next_circle_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
+{
+}
+
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "misc-no-recursion"
+static sprint_error sprint_parser_next_component_internal(sprint_parser* parser, sprint_element* element,
+                                                          bool* salvaged, int depth)
+{
+}
+
+static sprint_error sprint_parser_next_group_internal(sprint_parser* parser, sprint_element* element,
+                                                      bool* salvaged, int depth)
+{
+}
+
+static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, sprint_element* element,
+                                                        bool* salvaged, int depth)
+{
+    if (parser == NULL || element == NULL || salvaged == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Clear the salvaged flag
+    *salvaged = false;
+
+    // Keep reading statements until there is one that can be read
+    sprint_statement statement;
+    sprint_error error;
+    while (true) {
+        // Read the next statement
+        error = sprint_parser_next_statement(parser, &statement, *salvaged);
+        if (error == SPRINT_ERROR_EOF || !sprint_check(error))
+            return sprint_rethrow(error);
+
+        // Check, if the flags are valid for a keyword
+        if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_FIRST))
+        {
+            // If they aren't, destroy the statement
+            sprint_check(sprint_parser_statement_destroy(&statement));
+
+            // Emit a warning, turn on salvaged mode and move on to the next element
+            *salvaged = true;
+            sprint_check(sprint_token_unexpected_internal(parser, true));
+            continue;
+        }
+
+        // Otherwise, determine the type of the element and destroy the statement
+        sprint_element_type type = 0;
+        bool closing = false;
+        bool success = sprint_element_type_from_keyword(&type, &closing, statement.name);
+        sprint_check(sprint_parser_statement_destroy(&statement));
+        if (!success) {
+            // Emit a warning, turn on salvaged mode and move on to the next element
+            *salvaged = true;
+            sprint_token_unexpected_internal(parser, true);
+            continue;
+        }
+
+        // Clear the element
+        memset(element, 0, sizeof(*element));
+
+        // And dispatch to the correct parser
+        switch (type) {
+            case SPRINT_ELEMENT_TRACK:
+                break;
+            case SPRINT_ELEMENT_PAD_THT:
+                break;
+            case SPRINT_ELEMENT_PAD_SMT:
+                break;
+            case SPRINT_ELEMENT_ZONE:
+                break;
+            case SPRINT_ELEMENT_TEXT:
+                break;
+            case SPRINT_ELEMENT_CIRCLE:
+                break;
+            case SPRINT_ELEMENT_COMPONENT:
+                break;
+            case SPRINT_ELEMENT_GROUP:
+                break;
+        }
+    }
+}
+#pragma clang diagnostic pop
+
+sprint_error sprint_parser_next_element(sprint_parser* parser, sprint_element* element, bool* salvaged)
+{
+    return sprint_parser_next_element_internal(parser, element, salvaged, 0);
 }
 
 sprint_error sprint_parser_destroy(sprint_parser* parser, bool tokenizer, char** contents)
