@@ -430,7 +430,7 @@ static sprint_error sprint_parser_next_group_internal(sprint_parser* parser, spr
 }
 
 static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, sprint_element* element,
-                                                        bool* salvaged, int depth)
+                                                        bool* salvaged, sprint_element_type parent, int depth)
 {
     if (parser == NULL || element == NULL || salvaged == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
     if (depth < 0 || depth > SPRINT_ELEMENT_DEPTH) return SPRINT_ERROR_RECURSION;
@@ -456,6 +456,25 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
             // Emit a warning, turn on salvaged mode and move on to the next element
             *salvaged = true;
             sprint_check(sprint_token_unexpected_internal(parser, true));
+            continue;
+        }
+
+        // If the depth is at least one and the parent a component, try to match the other text types first
+        sprint_text_type text_type = 0;
+        if (depth > 0 && parent == SPRINT_ELEMENT_COMPONENT &&
+            sprint_text_type_from_keyword(&text_type, statement.name)) {
+            // Destroy the statement, read the text and update the subtype
+            sprint_check(sprint_parser_statement_destroy(&statement));
+            if (sprint_chain(error, sprint_parser_next_text_internal(parser, element, salvaged)))
+                element->text.subtype = text_type;
+
+            // For any status other than a syntax error, stop the loop
+            if (error != SPRINT_ERROR_SYNTAX)
+                break;
+
+            // Emit a warning, turn on salvaged mode and move on to the next element, if there was a syntax error
+            *salvaged = true;
+            sprint_token_unexpected_internal(parser, true);
             continue;
         }
 
@@ -521,7 +540,7 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
 
 sprint_error sprint_parser_next_element(sprint_parser* parser, sprint_element* element, bool* salvaged)
 {
-    return sprint_parser_next_element_internal(parser, element, salvaged, 0);
+    return sprint_parser_next_element_internal(parser, element, salvaged, 0, 0);
 }
 
 sprint_error sprint_parser_destroy(sprint_parser* parser, bool tokenizer, char** contents)
