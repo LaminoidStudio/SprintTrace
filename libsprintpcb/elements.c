@@ -355,6 +355,34 @@ bool sprint_text_type_valid(sprint_text_type type)
     return type >= SPRINT_TEXT_REGULAR && type <= SPRINT_TEXT_VALUE;
 }
 
+const char* sprint_text_type_to_keyword(sprint_text_type type)
+{
+    if (type < 0) return NULL;
+
+    if (type < sizeof(SPRINT_TEXT_TYPE_KEYWORDS) / sizeof(const char *))
+        return SPRINT_TEXT_TYPE_KEYWORDS[type];
+
+    sprint_throw_format(false, "element type unknown: %d", type);
+    return NULL;
+}
+
+bool sprint_text_type_from_keyword(sprint_text_type* type, const char* keyword)
+{
+    if (type == NULL || keyword == NULL) return false;
+
+    // Determine the type
+    if (strcasecmp(keyword, sprint_text_type_to_keyword(SPRINT_TEXT_REGULAR)) == 0)
+        *type = SPRINT_TEXT_REGULAR;
+    else if (strcasecmp(keyword, sprint_text_type_to_keyword(SPRINT_TEXT_ID)) == 0)
+        *type = SPRINT_TEXT_ID;
+    else if (strcasecmp(keyword, sprint_text_type_to_keyword(SPRINT_TEXT_VALUE)) == 0)
+        *type = SPRINT_TEXT_VALUE;
+    else
+        return false;
+
+    return true;
+}
+
 sprint_error sprint_text_type_output(sprint_text_type type, sprint_output* output, sprint_prim_format format)
 {
     if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
@@ -365,7 +393,7 @@ sprint_error sprint_text_type_output(sprint_text_type type, sprint_output* outpu
     if (sprint_prim_format_cooked(format))
         type_name = SPRINT_TEXT_TYPE_NAMES[type];
     else
-        type_name = SPRINT_TEXT_TYPE_KEYWORDS[type];
+        type_name = sprint_text_type_to_keyword(type);
 
     // Validate and output the string
     if (!sprint_assert(false, type_name != NULL))

@@ -140,6 +140,8 @@ typedef enum sprint_text_type {
 extern const char* SPRINT_TEXT_TYPE_NAMES[];
 extern const char* SPRINT_TEXT_TYPE_KEYWORDS[];
 bool sprint_text_type_valid(sprint_text_type type);
+const char* sprint_text_type_to_keyword(sprint_text_type type);
+bool sprint_text_type_from_keyword(sprint_text_type* type, const char* keyword);
 sprint_error sprint_text_type_output(sprint_text_type type, sprint_output* output, sprint_prim_format format);
 
 typedef enum sprint_text_style {
