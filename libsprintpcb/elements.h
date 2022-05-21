@@ -179,6 +179,7 @@ typedef struct sprint_text {
     sprint_dist height;
     char* text;
 
+    sprint_text_type subtype;
     sprint_dist clear;
     bool cutout;
     bool soldermask;
@@ -282,6 +283,7 @@ sprint_error sprint_group_create(sprint_element* element, int num_elements, spri
 
 const char* sprint_element_tag(sprint_element* element);
 sprint_error sprint_element_output(sprint_element* element, sprint_output* output, sprint_prim_format format);
+bool sprint_element_valid(sprint_element* element);
 sprint_error sprint_element_destroy(sprint_element* element);
 
 #endif //SPRINTPCB_ELEMENTS_H
