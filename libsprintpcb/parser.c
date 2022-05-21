@@ -433,6 +433,7 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
                                                         bool* salvaged, int depth)
 {
     if (parser == NULL || element == NULL || salvaged == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (depth < 0 || depth > SPRINT_ELEMENT_DEPTH) return SPRINT_ERROR_RECURSION;
 
     // Clear the salvaged flag
     *salvaged = false;
@@ -463,7 +464,7 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
         bool closing = false;
         bool success = sprint_element_type_from_keyword(&type, &closing, statement.name);
         sprint_check(sprint_parser_statement_destroy(&statement));
-        if (!success) {
+        if (!success || closing) {
             // Emit a warning, turn on salvaged mode and move on to the next element
             *salvaged = true;
             sprint_token_unexpected_internal(parser, true);
@@ -476,23 +477,45 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
         // And dispatch to the correct parser
         switch (type) {
             case SPRINT_ELEMENT_TRACK:
+                sprint_chain(error, sprint_parser_next_track_internal(parser, element, salvaged));
                 break;
             case SPRINT_ELEMENT_PAD_THT:
+                sprint_chain(error, sprint_parser_next_pad_tht_internal(parser, element, salvaged));
                 break;
             case SPRINT_ELEMENT_PAD_SMT:
+                sprint_chain(error, sprint_parser_next_pad_smt_internal(parser, element, salvaged));
                 break;
             case SPRINT_ELEMENT_ZONE:
+                sprint_chain(error, sprint_parser_next_zone_internal(parser, element, salvaged));
                 break;
             case SPRINT_ELEMENT_TEXT:
+                sprint_chain(error, sprint_parser_next_text_internal(parser, element, salvaged));
                 break;
             case SPRINT_ELEMENT_CIRCLE:
+                sprint_chain(error, sprint_parser_next_circle_internal(parser, element, salvaged));
                 break;
             case SPRINT_ELEMENT_COMPONENT:
+                sprint_chain(error, sprint_parser_next_component_internal(parser, element, salvaged, depth));
                 break;
             case SPRINT_ELEMENT_GROUP:
+                sprint_chain(error, sprint_parser_next_group_internal(parser, element, salvaged, depth));
                 break;
+            default:
+                sprint_throw_format(false, "element type unknown: %d", type);
+                return SPRINT_ERROR_INTERNAL;
         }
+
+        // For any status other than a syntax error, stop the loop
+        if (error != SPRINT_ERROR_SYNTAX)
+            break;
+
+        // Emit a warning, turn on salvaged mode and move on to the next element, if there was a syntax error
+        *salvaged = true;
+        sprint_token_unexpected_internal(parser, true);
     }
+
+    // And just return
+    return sprint_rethrow(error);
 }
 #pragma clang diagnostic pop
 
