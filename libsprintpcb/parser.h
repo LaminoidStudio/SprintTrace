@@ -19,10 +19,12 @@
 typedef enum sprint_statement_flags {
     // The statement is the first one after a terminator
     SPRINT_STATEMENT_FLAG_FIRST = 1 << 0,
+    // The statement is the last one before a terminator
+    SPRINT_STATEMENT_FLAG_LAST  = 1 << 1,
     // The statement has a value
-    SPRINT_STATEMENT_FLAG_VALUE = 1 << 1,
+    SPRINT_STATEMENT_FLAG_VALUE = 1 << 2,
     // The statement has an index
-    SPRINT_STATEMENT_FLAG_INDEX = 1 << 2
+    SPRINT_STATEMENT_FLAG_INDEX = 1 << 3
 } sprint_statement_flags;
 
 typedef struct sprint_statement {

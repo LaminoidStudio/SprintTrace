@@ -395,6 +395,21 @@ sprint_error sprint_parser_next_str(sprint_parser* parser, char** str)
 
 static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
 {
+    bool found_layer = false, found_width = false, found_clear = false, found_cutout = false, found_soldermask = false,
+        found_flat_start = false, found_flat_end = false;
+
+
+
+    sprint_layer layer;
+    sprint_dist width;
+    int num_points;
+    sprint_tuple* points;
+
+    sprint_dist clear;
+    bool cutout;
+    bool soldermask;
+    bool flat_start;
+    bool flat_end;
 }
 
 static sprint_error sprint_parser_next_pad_tht_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
