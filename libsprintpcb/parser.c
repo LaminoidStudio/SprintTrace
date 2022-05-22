@@ -459,6 +459,9 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
             continue;
         }
 
+        // Clear the element
+        memset(element, 0, sizeof(*element));
+
         // If the depth is at least one and the parent a component, try to match the other text types first
         sprint_text_type text_type = 0;
         if (depth > 0 && parent == SPRINT_ELEMENT_COMPONENT &&
@@ -489,9 +492,6 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
             sprint_token_unexpected_internal(parser, true);
             continue;
         }
-
-        // Clear the element
-        memset(element, 0, sizeof(*element));
 
         // And dispatch to the correct parser
         switch (type) {
