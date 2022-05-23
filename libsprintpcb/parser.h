@@ -57,7 +57,7 @@ sprint_error sprint_parser_next_size(sprint_parser* parser, sprint_dist* size);
 sprint_error sprint_parser_next_angle(sprint_parser* parser, sprint_angle* angle, sprint_prim_format format);
 sprint_error sprint_parser_next_tuple(sprint_parser* parser, sprint_tuple* tuple);
 sprint_error sprint_parser_next_str(sprint_parser* parser, char** str);
-sprint_error sprint_parser_next_element(sprint_parser* parser, sprint_element* element, bool* salvaged);
+sprint_error sprint_parser_next_element(sprint_parser* parser, sprint_element** element, bool* salvaged);
 /**
  * Destroys the parser and releases its memory and resources.
  * @param parser The parser instance.

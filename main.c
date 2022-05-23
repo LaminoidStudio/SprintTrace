@@ -17,7 +17,25 @@
 #include "libsprintpcb/errors.h"
 
 int main(int argc, const char* argv[]) {
+    const char* track_io = "TRACK,LAYER=7,WIDTH=2000,P0=928537/606471,P1=78537/606471,P2=78537/56471,P3=928537/56471,P4=928537/606471;";
     sprint_output* output = sprint_output_create_file(stdout, false);
+    sprint_tokenizer* track_tokenizer = sprint_tokenizer_from_str(track_io, false);
+    sprint_parser* track_parser = sprint_parser_create(track_tokenizer);
+    sprint_assert(true, track_parser != NULL);
+    while (true) {
+        sprint_element* element = NULL;
+        bool salvaged = false;
+        sprint_error error = sprint_parser_next_element(track_parser, &element, &salvaged);
+        if (error == SPRINT_ERROR_EOF)
+            break;
+        sprint_require(error);
+        sprint_require(sprint_element_output(element, output, SPRINT_PRIM_FORMAT_RAW));
+        sprint_element_destroy(element);
+    }
+    sprint_parser_destroy(track_parser, true, NULL);
+
+    exit(0);
+
     sprint_tuple points[2] = {sprint_tuple_of(300, 400), sprint_tuple_of(500, 600)};
 
     sprint_element track;

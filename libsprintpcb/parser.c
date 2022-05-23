@@ -158,6 +158,9 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                 if (!sprint_chain(error, sprint_token_word(token, parser->builder, &statement->name)))
                     return sprint_rethrow(error);
 
+                // Set the name flag
+                statement->flags |= SPRINT_STATEMENT_FLAG_NAME;
+
                 // Get the next token, determine its type and reset the subsequent flag
                 if (error == SPRINT_ERROR_NONE)
                     error = sprint_tokenizer_next(parser->tokenizer, token, parser->builder);
@@ -518,8 +521,10 @@ static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, spr
     while (parser->subsequent) {
         // Read the next value statement
         error = sprint_parser_value_internal(parser, &statement, salvaged);
-        if (error == SPRINT_ERROR_EOS)
+        if (error == SPRINT_ERROR_EOS) {
+            error = SPRINT_ERROR_NONE;
             break;
+        }
         if (!sprint_check(error)) {
             sprint_check(sprint_list_destroy(list));
             return sprint_rethrow(error);
@@ -604,9 +609,6 @@ static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, spr
         !sprint_assert(false, sprint_track_valid(&element->track)))
         error = SPRINT_ERROR_ASSERTION;
 
-    // Check, if everything went well
-    if (error != SPRINT_ERROR_NONE)
-        sprint_check(sprint_element_destroy(element));
     return sprint_rethrow(error);
 }
 
@@ -642,7 +644,7 @@ static sprint_error sprint_parser_next_group_internal(sprint_parser* parser, spr
 {
 }
 
-static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, sprint_element* element,
+static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, sprint_element** element,
                                                         bool* salvaged, sprint_element_type parent, int depth)
 {
     if (parser == NULL || element == NULL || salvaged == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
@@ -651,6 +653,11 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
     // Clear the salvaged flag
     *salvaged = false;
 
+    // Allocate the element
+    *element = malloc(sizeof(**element));
+    if (*element == NULL)
+        return SPRINT_ERROR_MEMORY;
+
     // Keep reading statements until there is one that can be read
     sprint_statement statement;
     sprint_error error;
@@ -658,7 +665,7 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
         // Read the next statement
         error = sprint_parser_next_statement(parser, &statement, *salvaged);
         if (error == SPRINT_ERROR_EOF || !sprint_check(error))
-            return sprint_rethrow(error);
+            break;
 
         const sprint_statement_flags bad_flags = SPRINT_STATEMENT_FLAG_VALUE,
             required_flags = SPRINT_STATEMENT_FLAG_FIRST | SPRINT_STATEMENT_FLAG_NAME;
@@ -677,7 +684,7 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
         }
 
         // Clear the element
-        memset(element, 0, sizeof(*element));
+        memset(*element, 0, sizeof(**element));
 
         // If the depth is at least one and the parent a component, try to match the other text types first
         bool element_salvaged = false;
@@ -686,8 +693,8 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
             sprint_text_type_from_keyword(&text_type, statement.name)) {
             // Destroy the statement, read the text and update the subtype
             sprint_check(sprint_parser_statement_destroy(&statement));
-            if (sprint_chain(error, sprint_parser_next_text_internal(parser, element, &element_salvaged)))
-                element->text.subtype = text_type;
+            if (sprint_chain(error, sprint_parser_next_text_internal(parser, *element, &element_salvaged)))
+                (*element)->text.subtype = text_type;
 
             // Update the salvaged flag
             *salvaged |= element_salvaged;
@@ -717,30 +724,31 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
         // And dispatch to the correct parser
         switch (type) {
             case SPRINT_ELEMENT_TRACK:
-                sprint_chain(error, sprint_parser_next_track_internal(parser, element, &element_salvaged));
+                sprint_chain(error, sprint_parser_next_track_internal(parser, *element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_PAD_THT:
-                sprint_chain(error, sprint_parser_next_pad_tht_internal(parser, element, &element_salvaged));
+                sprint_chain(error, sprint_parser_next_pad_tht_internal(parser, *element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_PAD_SMT:
-                sprint_chain(error, sprint_parser_next_pad_smt_internal(parser, element, &element_salvaged));
+                sprint_chain(error, sprint_parser_next_pad_smt_internal(parser, *element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_ZONE:
-                sprint_chain(error, sprint_parser_next_zone_internal(parser, element, &element_salvaged));
+                sprint_chain(error, sprint_parser_next_zone_internal(parser, *element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_TEXT:
-                sprint_chain(error, sprint_parser_next_text_internal(parser, element, &element_salvaged));
+                sprint_chain(error, sprint_parser_next_text_internal(parser, *element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_CIRCLE:
-                sprint_chain(error, sprint_parser_next_circle_internal(parser, element, &element_salvaged));
+                sprint_chain(error, sprint_parser_next_circle_internal(parser, *element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_COMPONENT:
-                sprint_chain(error, sprint_parser_next_component_internal(parser, element, &element_salvaged, depth));
+                sprint_chain(error, sprint_parser_next_component_internal(parser, *element, &element_salvaged, depth));
                 break;
             case SPRINT_ELEMENT_GROUP:
-                sprint_chain(error, sprint_parser_next_group_internal(parser, element, &element_salvaged, depth));
+                sprint_chain(error, sprint_parser_next_group_internal(parser, *element, &element_salvaged, depth));
                 break;
             default:
+                sprint_check(sprint_element_destroy(*element));
                 sprint_throw_format(false, "element type unknown: %d", type);
                 return SPRINT_ERROR_INTERNAL;
         }
@@ -757,12 +765,16 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
         sprint_token_unexpected_internal(parser, true);
     }
 
+    // Destroy the element, if there was an error
+    if (error != SPRINT_ERROR_NONE)
+        sprint_check(sprint_element_destroy(*element));
+
     // And just return
     return sprint_rethrow(error);
 }
 #pragma clang diagnostic pop
 
-sprint_error sprint_parser_next_element(sprint_parser* parser, sprint_element* element, bool* salvaged)
+sprint_error sprint_parser_next_element(sprint_parser* parser, sprint_element** element, bool* salvaged)
 {
     return sprint_parser_next_element_internal(parser, element, salvaged, 0, 0);
 }
