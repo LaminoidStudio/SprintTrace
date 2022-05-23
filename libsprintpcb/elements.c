@@ -146,26 +146,42 @@ static const sprint_track SPRINT_TRACK_DEFAULT = {
         .flat_end = false
 };
 
-sprint_error sprint_track_create(sprint_element* element, sprint_layer layer, sprint_dist width,
-                                   int num_points, sprint_tuple* points)
+sprint_error sprint_track_default(sprint_element* element, bool clear)
 {
-    if (element == NULL || num_points > 0 && points == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!clear && element->type != SPRINT_ELEMENT_TRACK) return SPRINT_ERROR_STATE_INVALID;
 
-    memset(element, 0, sizeof(*element));
-    element->type = SPRINT_ELEMENT_TRACK;
+    // Clear the memory, if desired
+    if (clear) {
+        memset(element, 0, sizeof(*element));
+        element->type = SPRINT_ELEMENT_TRACK;
+    }
 
-    // Required fields
-    element->track.layer = layer;
-    element->track.width = width;
-    element->track.num_points = num_points;
-    element->track.points = points;
-
-    // Optional fields
+    // Initialize the optional fields
     element->track.clear = SPRINT_TRACK_DEFAULT.clear;
     element->track.cutout = SPRINT_TRACK_DEFAULT.cutout;
     element->track.soldermask = SPRINT_TRACK_DEFAULT.soldermask;
     element->track.flat_start = SPRINT_TRACK_DEFAULT.flat_start;
     element->track.flat_end = SPRINT_TRACK_DEFAULT.flat_end;
+
+    return SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_track_create(sprint_element* element, sprint_layer layer, sprint_dist width,
+                                   int num_points, sprint_tuple* points)
+{
+    if (element == NULL || num_points > 0 && points == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Initialize optional fields
+    sprint_error error = sprint_track_default(element, true);
+    if (!sprint_check(error))
+        return sprint_rethrow(error);
+
+    // Copy required fields
+    element->track.layer = layer;
+    element->track.width = width;
+    element->track.num_points = num_points;
+    element->track.points = points;
 
     return sprint_track_valid(&element->track) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
@@ -225,22 +241,18 @@ bool sprint_pad_tht_valid(sprint_pad_tht* pad)
         pad->thermal_tracks_width >= 50 && pad->thermal_tracks_width <= 300;
 }
 
-sprint_error sprint_pad_tht_create(sprint_element* element, sprint_layer layer, sprint_tuple position,
-                                   sprint_dist size, sprint_dist drill, sprint_pad_tht_form form)
+sprint_error sprint_pad_tht_default(sprint_element* element, bool clear)
 {
     if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!clear && element->type != SPRINT_ELEMENT_PAD_THT) return SPRINT_ERROR_STATE_INVALID;
 
-    memset(element, 0, sizeof(*element));
-    element->type = SPRINT_ELEMENT_PAD_THT;
+    // Clear the memory, if desired
+    if (clear) {
+        memset(element, 0, sizeof(*element));
+        element->type = SPRINT_ELEMENT_PAD_THT;
+    }
 
-    // Required fields
-    element->pad_tht.layer = layer;
-    element->pad_tht.position = position;
-    element->pad_tht.size = size;
-    element->pad_tht.drill = drill;
-    element->pad_tht.form = form;
-
-    // Optional fields
+    // Initialize the optional fields
     element->pad_tht.link = SPRINT_PAD_THT_DEFAULT.link;
     element->pad_tht.clear = SPRINT_PAD_THT_DEFAULT.clear;
     element->pad_tht.soldermask = SPRINT_PAD_THT_DEFAULT.soldermask;
@@ -250,6 +262,26 @@ sprint_error sprint_pad_tht_create(sprint_element* element, sprint_layer layer, 
     element->pad_tht.thermal_tracks = SPRINT_PAD_THT_DEFAULT.thermal_tracks;
     element->pad_tht.thermal_tracks_width = SPRINT_PAD_THT_DEFAULT.thermal_tracks_width;
     element->pad_tht.thermal_tracks_individual = SPRINT_PAD_THT_DEFAULT.thermal_tracks_individual;
+
+    return SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_pad_tht_create(sprint_element* element, sprint_layer layer, sprint_tuple position,
+                                   sprint_dist size, sprint_dist drill, sprint_pad_tht_form form)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Initialize optional fields
+    sprint_error error = sprint_pad_tht_default(element, true);
+    if (!sprint_check(error))
+        return sprint_rethrow(error);
+
+    // Copy required fields
+    element->pad_tht.layer = layer;
+    element->pad_tht.position = position;
+    element->pad_tht.size = size;
+    element->pad_tht.drill = drill;
+    element->pad_tht.form = form;
 
     return sprint_pad_tht_valid(&element->pad_tht) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
@@ -274,21 +306,18 @@ static const sprint_pad_smt SPRINT_PAD_SMT_DEFAULT = {
         .thermal_tracks_width = 100
 };
 
-sprint_error sprint_pad_smt_create(sprint_element* element, sprint_layer layer, sprint_tuple position,
-                                     sprint_dist width, sprint_dist height)
+sprint_error sprint_pad_smt_default(sprint_element* element, bool clear)
 {
     if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!clear && element->type != SPRINT_ELEMENT_PAD_SMT) return SPRINT_ERROR_STATE_INVALID;
 
-    memset(element, 0, sizeof(*element));
-    element->type = SPRINT_ELEMENT_PAD_SMT;
+    // Clear the memory, if desired
+    if (clear) {
+        memset(element, 0, sizeof(*element));
+        element->type = SPRINT_ELEMENT_PAD_SMT;
+    }
 
-    // Required fields
-    element->pad_smt.layer = layer;
-    element->pad_smt.position = position;
-    element->pad_smt.width = width;
-    element->pad_smt.height = height;
-
-    // Optional fields
+    // Initialize the optional fields
     element->pad_smt.link = SPRINT_PAD_SMT_DEFAULT.link;
     element->pad_smt.clear = SPRINT_PAD_SMT_DEFAULT.clear;
     element->pad_smt.soldermask = SPRINT_PAD_SMT_DEFAULT.soldermask;
@@ -296,6 +325,25 @@ sprint_error sprint_pad_smt_create(sprint_element* element, sprint_layer layer, 
     element->pad_smt.thermal = SPRINT_PAD_SMT_DEFAULT.thermal;
     element->pad_smt.thermal_tracks = SPRINT_PAD_SMT_DEFAULT.thermal_tracks;
     element->pad_smt.thermal_tracks_width = SPRINT_PAD_SMT_DEFAULT.thermal_tracks_width;
+
+    return SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_pad_smt_create(sprint_element* element, sprint_layer layer, sprint_tuple position,
+                                     sprint_dist width, sprint_dist height)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Initialize optional fields
+    sprint_error error = sprint_pad_smt_default(element, true);
+    if (!sprint_check(error))
+        return sprint_rethrow(error);
+
+    // Copy required fields
+    element->pad_smt.layer = layer;
+    element->pad_smt.position = position;
+    element->pad_smt.width = width;
+    element->pad_smt.height = height;
 
     return sprint_pad_smt_valid(&element->pad_smt) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
@@ -314,26 +362,42 @@ static const sprint_zone SPRINT_ZONE_DEFAULT = {
         .hatch_auto = true
 };
 
-sprint_error sprint_zone_create(sprint_element* element, sprint_layer layer, sprint_dist width,
-                                int num_points, sprint_tuple* points)
+sprint_error sprint_zone_default(sprint_element* element, bool clear)
 {
     if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!clear && element->type != SPRINT_ELEMENT_ZONE) return SPRINT_ERROR_STATE_INVALID;
 
-    memset(element, 0, sizeof(*element));
-    element->type = SPRINT_ELEMENT_ZONE;
+    // Clear the memory, if desired
+    if (clear) {
+        memset(element, 0, sizeof(*element));
+        element->type = SPRINT_ELEMENT_ZONE;
+    }
 
-    // Required fields
-    element->zone.layer = layer;
-    element->zone.width = width;
-    element->zone.num_points = num_points;
-    element->zone.points = points;
-
-    // Optional fields
+    // Initialize the optional fields
     element->zone.clear = SPRINT_ZONE_DEFAULT.clear;
     element->zone.cutout = SPRINT_ZONE_DEFAULT.cutout;
     element->zone.soldermask = SPRINT_ZONE_DEFAULT.soldermask;
     element->zone.hatch = SPRINT_ZONE_DEFAULT.hatch;
     element->zone.hatch_auto = SPRINT_ZONE_DEFAULT.hatch_auto;
+
+    return SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_zone_create(sprint_element* element, sprint_layer layer, sprint_dist width,
+                                int num_points, sprint_tuple* points)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Initialize optional fields
+    sprint_error error = sprint_zone_default(element, true);
+    if (!sprint_check(error))
+        return sprint_rethrow(error);
+
+    // Copy required fields
+    element->zone.layer = layer;
+    element->zone.width = width;
+    element->zone.num_points = num_points;
+    element->zone.points = points;
 
     return sprint_zone_valid(&element->zone) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
@@ -477,22 +541,18 @@ static const sprint_text SPRINT_TEXT_DEFAULT = {
         .visible = true
 };
 
-sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, sprint_layer layer,
-                                sprint_tuple position, sprint_dist height, char* text)
+sprint_error sprint_text_default(sprint_element* element, bool clear)
 {
     if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    if (!sprint_text_type_valid(type)) return SPRINT_ERROR_ARGUMENT_RANGE;
+    if (!clear && element->type != SPRINT_ELEMENT_TEXT) return SPRINT_ERROR_STATE_INVALID;
 
-    memset(element, 0, sizeof(*element));
-    element->type = SPRINT_ELEMENT_TEXT;
+    // Clear the memory, if desired
+    if (clear) {
+        memset(element, 0, sizeof(*element));
+        element->type = SPRINT_ELEMENT_TEXT;
+    }
 
-    // Required fields
-    element->text.layer = layer;
-    element->text.position = position;
-    element->text.height = height;
-    element->text.text = text;
-
-    // Optional fields
+    // Initialize the optional fields
     element->text.subtype = SPRINT_TEXT_DEFAULT.subtype;
     element->text.clear = SPRINT_TEXT_DEFAULT.clear;
     element->text.cutout = SPRINT_TEXT_DEFAULT.cutout;
@@ -503,6 +563,26 @@ sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, 
     element->text.mirror_horizontal = SPRINT_TEXT_DEFAULT.mirror_horizontal;
     element->text.mirror_vertical = SPRINT_TEXT_DEFAULT.mirror_vertical;
     element->text.visible = SPRINT_TEXT_DEFAULT.visible;
+
+    return SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, sprint_layer layer,
+                                sprint_tuple position, sprint_dist height, char* text)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!sprint_text_type_valid(type)) return SPRINT_ERROR_ARGUMENT_RANGE;
+
+    // Initialize optional fields
+    sprint_error error = sprint_text_default(element, true);
+    if (!sprint_check(error))
+        return sprint_rethrow(error);
+
+    // Copy required fields
+    element->text.layer = layer;
+    element->text.position = position;
+    element->text.height = height;
+    element->text.text = text;
 
     return sprint_text_valid(&element->text) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
@@ -524,27 +604,43 @@ static const sprint_circle SPRINT_CIRCLE_DEFAULT = {
         .fill = false
 };
 
-sprint_error sprint_circle_create(sprint_element* element, sprint_layer layer, sprint_dist width,
-                                  sprint_tuple center, sprint_dist radius)
+sprint_error sprint_circle_default(sprint_element* element, bool clear)
 {
     if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!clear && element->type != SPRINT_ELEMENT_CIRCLE) return SPRINT_ERROR_STATE_INVALID;
 
-    memset(element, 0, sizeof(*element));
-    element->type = SPRINT_ELEMENT_CIRCLE;
+    // Clear the memory, if desired
+    if (clear) {
+        memset(element, 0, sizeof(*element));
+        element->type = SPRINT_ELEMENT_CIRCLE;
+    }
 
-    // Required fields
-    element->circle.layer = layer;
-    element->circle.width = width;
-    element->circle.center = center;
-    element->circle.radius = radius;
-
-    // Optional fields
+    // Initialize the optional fields
     element->circle.clear = SPRINT_CIRCLE_DEFAULT.clear;
     element->circle.cutout = SPRINT_CIRCLE_DEFAULT.cutout;
     element->circle.soldermask = SPRINT_CIRCLE_DEFAULT.soldermask;
     element->circle.start = SPRINT_CIRCLE_DEFAULT.start;
     element->circle.stop = SPRINT_CIRCLE_DEFAULT.stop;
     element->circle.fill = SPRINT_CIRCLE_DEFAULT.fill;
+
+    return SPRINT_ERROR_NONE;
+}
+
+sprint_error sprint_circle_create(sprint_element* element, sprint_layer layer, sprint_dist width,
+                                  sprint_tuple center, sprint_dist radius)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Initialize optional fields
+    sprint_error error = sprint_circle_default(element, true);
+    if (!sprint_check(error))
+        return sprint_rethrow(error);
+
+    // Copy required fields
+    element->circle.layer = layer;
+    element->circle.width = width;
+    element->circle.center = center;
+    element->circle.radius = radius;
 
     return sprint_circle_valid(&element->circle) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
@@ -570,6 +666,26 @@ static const sprint_component SPRINT_COMPONENT_DEFAULT = {
         .rotation = 0
 };
 
+sprint_error sprint_component_default(sprint_element* element, bool clear)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!clear && element->type != SPRINT_ELEMENT_COMPONENT) return SPRINT_ERROR_STATE_INVALID;
+
+    // Clear the memory, if desired
+    if (clear) {
+        memset(element, 0, sizeof(*element));
+        element->type = SPRINT_ELEMENT_COMPONENT;
+    }
+
+    // Initialize the optional fields
+    element->component.comment = SPRINT_COMPONENT_DEFAULT.comment;
+    element->component.use_pickplace = SPRINT_COMPONENT_DEFAULT.use_pickplace;
+    element->component.package = SPRINT_COMPONENT_DEFAULT.package;
+    element->component.rotation = SPRINT_COMPONENT_DEFAULT.rotation;
+
+    return SPRINT_ERROR_NONE;
+}
+
 sprint_error sprint_component_create(sprint_element* element, sprint_element* text_id, sprint_element* text_value,
                                        int num_elements, sprint_element* elements)
 {
@@ -577,20 +693,16 @@ sprint_error sprint_component_create(sprint_element* element, sprint_element* te
     if (text_id->type != SPRINT_ELEMENT_TEXT || text_value->type != SPRINT_ELEMENT_TEXT)
         return SPRINT_ERROR_ARGUMENT_FORMAT;
 
-    memset(element, 0, sizeof(*element));
-    element->type = SPRINT_ELEMENT_COMPONENT;
+    // Initialize optional fields
+    sprint_error error = sprint_component_default(element, true);
+    if (!sprint_check(error))
+        return sprint_rethrow(error);
 
-    // Required fields
+    // Copy required fields
     element->component.text_id = text_id;
     element->component.text_value = text_value;
     element->component.num_elements = num_elements;
     element->component.elements = elements;
-
-    // Optional fields
-    element->component.comment = SPRINT_COMPONENT_DEFAULT.comment;
-    element->component.use_pickplace = SPRINT_COMPONENT_DEFAULT.use_pickplace;
-    element->component.package = SPRINT_COMPONENT_DEFAULT.package;
-    element->component.rotation = SPRINT_COMPONENT_DEFAULT.rotation;
 
     return sprint_component_valid(&element->component) ? SPRINT_ERROR_NONE : SPRINT_ERROR_ARGUMENT_RANGE;
 }
@@ -600,14 +712,30 @@ bool sprint_group_valid(sprint_group* group)
     return group != NULL && group->num_elements >= 0 && (group->num_elements == 0) == (group->elements == NULL);
 }
 
+sprint_error sprint_group_default(sprint_element* element, bool clear)
+{
+    if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (!clear && element->type != SPRINT_ELEMENT_TEXT) return SPRINT_ERROR_STATE_INVALID;
+
+    // Clear the memory, if desired
+    if (clear) {
+        memset(element, 0, sizeof(*element));
+        element->type = SPRINT_ELEMENT_TEXT;
+    }
+
+    return SPRINT_ERROR_NONE;
+}
+
 sprint_error sprint_group_create(sprint_element* element, int num_elements, sprint_element* elements)
 {
     if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
-    memset(element, 0, sizeof(*element));
-    element->type = SPRINT_ELEMENT_GROUP;
+    // Initialize optional fields
+    sprint_error error = sprint_group_default(element, true);
+    if (!sprint_check(error))
+        return sprint_rethrow(error);
 
-    // Required fields
+    // Copy required fields
     element->group.num_elements = num_elements;
     element->group.elements = elements;
 

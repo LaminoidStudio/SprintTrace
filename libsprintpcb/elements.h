@@ -265,20 +265,28 @@ bool sprint_element_type_from_keyword(sprint_element_type* type, bool* closing, 
 sprint_error sprint_element_type_output(sprint_element_type type, sprint_output* output, bool closing,
                                         sprint_prim_format format);
 
+sprint_error sprint_track_default(sprint_element* element, bool clear);
 sprint_error sprint_track_create(sprint_element* element, sprint_layer layer, sprint_dist width,
                                  int num_points, sprint_tuple* points);
+sprint_error sprint_pad_tht_default(sprint_element* element, bool clear);
 sprint_error sprint_pad_tht_create(sprint_element* element, sprint_layer layer, sprint_tuple position,
                                    sprint_dist size, sprint_dist drill, sprint_pad_tht_form form);
+sprint_error sprint_pad_smt_default(sprint_element* element, bool clear);
 sprint_error sprint_pad_smt_create(sprint_element* element, sprint_layer layer, sprint_tuple position,
                                      sprint_dist width, sprint_dist height);
+sprint_error sprint_zone_default(sprint_element* element, bool clear);
 sprint_error sprint_zone_create(sprint_element* element, sprint_layer layer, sprint_dist width,
                                 int num_points, sprint_tuple* points);
+sprint_error sprint_text_default(sprint_element* element, bool clear);
 sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, sprint_layer layer,
                                 sprint_tuple position, sprint_dist height, char* text);
+sprint_error sprint_circle_default(sprint_element* element, bool clear);
 sprint_error sprint_circle_create(sprint_element* element, sprint_layer layer, sprint_dist width,
                                   sprint_tuple center, sprint_dist radius);
+sprint_error sprint_component_default(sprint_element* element, bool clear);
 sprint_error sprint_component_create(sprint_element* element, sprint_element* text_id, sprint_element* text_value,
                                      int num_elements, sprint_element* elements);
+sprint_error sprint_group_default(sprint_element* element, bool clear);
 sprint_error sprint_group_create(sprint_element* element, int num_elements, sprint_element* elements);
 
 const char* sprint_element_tag(sprint_element* element);
