@@ -64,17 +64,17 @@ sprint_error sprint_stringbuilder_destroy(sprint_stringbuilder* builder)
 
 char* sprint_stringbuilder_complete(sprint_stringbuilder* builder)
 {
-    if (sprint_stringbuilder_trim(builder) != SPRINT_ERROR_NONE) {
-        if (builder != NULL)
-            free(builder);
+    if (!sprint_check(sprint_stringbuilder_trim(builder))) {
+        free(builder);
         return NULL;
     }
 
+    // Store the count and zero the state
     int count = builder->count;
     builder->count = 0;
     builder->capacity = 0;
 
-    // If required, free the content
+    // Append a null terminator
     char* result = builder->content;
     if (builder->content != NULL)
         builder->content[count] = 0;
