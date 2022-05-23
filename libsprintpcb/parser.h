@@ -21,10 +21,12 @@ typedef enum sprint_statement_flags {
     SPRINT_STATEMENT_FLAG_FIRST = 1 << 0,
     // The statement is the last one before a terminator
     SPRINT_STATEMENT_FLAG_LAST  = 1 << 1,
+    // The statement has a name
+    SPRINT_STATEMENT_FLAG_NAME  = 1 << 2,
     // The statement has a value
-    SPRINT_STATEMENT_FLAG_VALUE = 1 << 2,
+    SPRINT_STATEMENT_FLAG_VALUE = 1 << 3,
     // The statement has an index
-    SPRINT_STATEMENT_FLAG_INDEX = 1 << 3
+    SPRINT_STATEMENT_FLAG_INDEX = 1 << 4
 } sprint_statement_flags;
 
 typedef struct sprint_statement {
@@ -33,7 +35,7 @@ typedef struct sprint_statement {
     int index;
 } sprint_statement;
 char* sprint_parser_statement_name(sprint_statement* statement);
-bool sprint_parser_statement_flags(sprint_statement* statement, bool equal, sprint_statement_flags flags);
+bool sprint_parser_statement_flags(sprint_statement* statement, bool any, sprint_statement_flags flags);
 int sprint_parser_statement_index(sprint_statement* statement);
 sprint_error sprint_parser_statement_destroy(sprint_statement* statement);
 

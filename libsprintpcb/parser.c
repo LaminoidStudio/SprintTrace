@@ -7,6 +7,7 @@
 #include "parser.h"
 #include "primitives.h"
 #include "elements.h"
+#include "list.h"
 #include "stringbuilder.h"
 #include "token.h"
 #include "errors.h"
@@ -19,9 +20,10 @@ char* sprint_parser_statement_name(sprint_statement* statement)
     return statement != NULL ? statement->name : NULL;
 }
 
-bool sprint_parser_statement_flags(sprint_statement* statement, bool equal, sprint_statement_flags flags)
+bool sprint_parser_statement_flags(sprint_statement* statement, bool any, sprint_statement_flags flags)
 {
-    return statement != NULL && equal ? statement->flags == flags : (statement->flags & flags) > 0;
+    if (statement == NULL || flags < 1) return false;
+    return any ? (statement->flags & flags) > 0 : (statement->flags & flags) == flags;
 }
 
 int sprint_parser_statement_index(sprint_statement* statement)
@@ -171,8 +173,9 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                         statement->flags |= SPRINT_STATEMENT_FLAG_VALUE;
                         return SPRINT_ERROR_NONE;
                     case SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR:
-                        // Clear the subsequent flag for the next word
+                        // Clear the subsequent flag for the next word and set the last flag
                         parser->subsequent = false;
+                        statement->flags |= SPRINT_STATEMENT_FLAG_LAST;
                         // fallthrough
                     case SPRINT_TOKEN_TYPE_STATEMENT_SEPARATOR:
                         // Clear the value flag
@@ -206,12 +209,16 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                 parser->subsequent = true;
                 switch (token->type) {
                     case SPRINT_TOKEN_TYPE_VALUE_SEPARATOR:
+                        // If there was a value separator already, fail
+                        if (sprint_parser_statement_flags(statement, false, SPRINT_STATEMENT_FLAG_VALUE))
+                            break;
                         // Set the value flags and return that a valid statement was found
                         parser->value = true;
                         statement->flags |= SPRINT_STATEMENT_FLAG_VALUE;
                         return SPRINT_ERROR_NONE;
                     case SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR:
-                        // Clear the subsequent flag for the next word
+                        // Clear the subsequent flag for the next word and set the last flag
+                        statement->flags |= SPRINT_STATEMENT_FLAG_LAST;
                         parser->subsequent = false;
                         // fallthrough
                     case SPRINT_TOKEN_TYPE_STATEMENT_SEPARATOR:
@@ -219,20 +226,37 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                         parser->value = false;
                         // fallthrough
                     default:
-                        // The token is unexpected or invalid
-                        sprint_check(sprint_parser_statement_destroy(statement));
-                        sprint_check(sprint_token_unexpected_internal(parser, sync));
-                        if (sync)
-                            continue;
-
-                        // Fall through and return a syntax error
+                        // Fall through to an error
                         break;
                 }
+                // The token is unexpected or invalid
+                sprint_check(sprint_parser_statement_destroy(statement));
+                sprint_check(sprint_token_unexpected_internal(parser, sync));
+                if (sync)
+                    continue;
                 return SPRINT_ERROR_SYNTAX;
 
             case SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR:
+                // If not syncing, return an empty statement
+                if (!sync) {
+                    // Clear the statement
+                    memset(statement, 0, sizeof(*statement));
+
+                    // Set the last flag
+                    statement->flags = SPRINT_STATEMENT_FLAG_LAST;
+
+                    // Set the first flag, if applicable
+                    if (!parser->subsequent)
+                        statement->flags |= SPRINT_STATEMENT_FLAG_FIRST;
+
+                    // Clear the subsequent flag for the next word and return success
+                    parser->subsequent = false;
+                    return SPRINT_ERROR_NONE;
+                }
+
                 // Clear the subsequent flag for the next word
                 parser->subsequent = false;
+
                 // fallthrough
             case SPRINT_TOKEN_TYPE_STATEMENT_SEPARATOR:
                 // If there initially is a separator or terminator, skip it in any mode
@@ -393,23 +417,197 @@ sprint_error sprint_parser_next_str(sprint_parser* parser, char** str)
     return sprint_rethrow(error);
 }
 
+static sprint_error sprint_parser_next_uint(sprint_parser* parser, int* val)
+{
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (sprint_chain(error, sprint_parser_next_int(parser, val)) && *val < 0)
+        return SPRINT_ERROR_SYNTAX;
+    return error;
+}
+
+static sprint_error sprint_parser_next_layer(sprint_parser* parser, sprint_layer* layer)
+{
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (sprint_chain(error, sprint_parser_next_int(parser, (int*) layer)) && !sprint_dist_valid(*layer))
+        return SPRINT_ERROR_SYNTAX;
+    return error;
+}
+
+static sprint_error sprint_parser_next_tht_form(sprint_parser* parser, sprint_pad_tht_form* form)
+{
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (sprint_chain(error, sprint_parser_next_int(parser, (int*) form)) && !sprint_pad_tht_form_valid(*form))
+        return SPRINT_ERROR_SYNTAX;
+    return error;
+}
+
+static sprint_error sprint_parser_next_text_style(sprint_parser* parser, sprint_text_style* style)
+{
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (sprint_chain(error, sprint_parser_next_int(parser, (int*) style)) && !sprint_text_style_valid(*style))
+        return SPRINT_ERROR_SYNTAX;
+    return error;
+}
+
+static sprint_error sprint_parser_next_text_thickness(sprint_parser* parser, sprint_text_thickness* thickness)
+{
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (sprint_chain(error, sprint_parser_next_int(parser, (int*) thickness)) &&
+        !sprint_text_thickness_valid(*thickness))
+        return SPRINT_ERROR_SYNTAX;
+    return error;
+}
+
+static sprint_error sprint_parser_value_internal(sprint_parser* parser, sprint_statement* statement, bool* salvaged)
+{
+    // Keep reading until a valid statement or a terminator is found
+    while (parser->subsequent) {
+        // Read the next statement
+        sprint_error error = sprint_parser_next_statement(parser, statement, *salvaged);
+        if (error == SPRINT_ERROR_SYNTAX) {
+            // Destroy the statement
+            sprint_check(sprint_parser_statement_destroy(statement));
+
+            // Set the salvaged flag, emit a warning and skip this statement
+            *salvaged = true;
+            sprint_check(sprint_token_unexpected_internal(parser, true));
+            continue;
+        } else if (!sprint_check(error))
+            return sprint_rethrow(error);
+
+        // Make sure the flags are valid
+        const sprint_statement_flags required_flags = SPRINT_STATEMENT_FLAG_NAME | SPRINT_STATEMENT_FLAG_VALUE;
+        if (sprint_parser_statement_flags(statement, false, required_flags))
+            return SPRINT_ERROR_NONE;
+
+        // Destroy the statement
+        sprint_check(sprint_parser_statement_destroy(statement));
+
+        // If the last flag is present, stop processing
+        if (sprint_parser_statement_flags(statement, true, SPRINT_STATEMENT_FLAG_LAST))
+            break;
+
+        // Set the salvaged flag, emit a warning and skip this statement
+        *salvaged = true;
+        sprint_check(sprint_token_unexpected_internal(parser, true));
+    }
+
+    // Return an end of statement error
+    return SPRINT_ERROR_EOS;
+}
+
 static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
 {
+    // Initialize the element
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (!sprint_chain(error, sprint_track_default(element, true)))
+        return sprint_rethrow(error);
+    element->parsed = true;
+
+    // Keep track of found properties
     bool found_layer = false, found_width = false, found_clear = false, found_cutout = false, found_soldermask = false,
-        found_flat_start = false, found_flat_end = false;
+            found_flat_start = false, found_flat_end = false;
 
+    // Keep a list of points
+    sprint_list* list = sprint_list_create(sizeof(*element->track.points), 15);
+    if (list == NULL)
+        return SPRINT_ERROR_MEMORY;
 
+    // Read all element properties
+    sprint_statement statement;
+    while (parser->subsequent) {
+        // Read the next value statement
+        error = sprint_parser_value_internal(parser, &statement, salvaged);
+        if (error == SPRINT_ERROR_EOS)
+            break;
+        if (!sprint_check(error)) {
+            sprint_check(sprint_list_destroy(list));
+            return sprint_rethrow(error);
+        }
 
-    sprint_layer layer;
-    sprint_dist width;
-    int num_points;
-    sprint_tuple* points;
+        // Determine the statement name
+        bool already_found = false;
+        if (strcasecmp(statement.name, "P") == 0) {
+            sprint_tuple tuple;
+            if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX) &&
+                    sprint_parser_statement_index(&statement) == sprint_list_count(list) &&
+                    sprint_chain(error, sprint_parser_next_tuple(parser, &tuple)))
+                    sprint_chain(error, sprint_list_add(list, &tuple));
+        } else if (strcasecmp(statement.name, "LAYER") == 0) {
+            if (found_layer)
+                already_found = true;
+            sprint_chain(error, sprint_parser_next_layer(parser, &element->track.layer));
+            found_layer = true;
+        } else if (strcasecmp(statement.name, "WIDTH") == 0) {
+            if (found_width)
+                already_found = true;
+            sprint_chain(error, sprint_parser_next_size(parser, &element->track.width));
+            found_width = true;
+        } else if (strcasecmp(statement.name, "CLEAR") == 0) {
+            if (found_clear)
+                already_found = true;
+            sprint_chain(error, sprint_parser_next_size(parser, &element->track.clear));
+            found_clear = true;
+        } else if (strcasecmp(statement.name, "CUTOUT") == 0) {
+            if (found_cutout)
+                already_found = true;
+            sprint_chain(error, sprint_parser_next_bool(parser, &element->track.cutout));
+            found_cutout = true;
+        } else if (strcasecmp(statement.name, "SOLDERMASK") == 0) {
+            if (found_soldermask)
+                already_found = true;
+            sprint_chain(error, sprint_parser_next_bool(parser, &element->track.soldermask));
+            found_soldermask = true;
+        } else if (strcasecmp(statement.name, "FLATSTART") == 0) {
+            if (found_flat_start)
+                already_found = true;
+            sprint_chain(error, sprint_parser_next_bool(parser, &element->track.flat_start));
+            found_flat_start = true;
+        } else if (strcasecmp(statement.name, "FLATEND") == 0) {
+            if (found_flat_end)
+                already_found = true;
+            sprint_chain(error, sprint_parser_next_bool(parser, &element->track.flat_end));
+            found_flat_end = true;
+        } else {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format("unknown property: %s", statement.name);
+        }
 
-    sprint_dist clear;
-    bool cutout;
-    bool soldermask;
-    bool flat_start;
-    bool flat_end;
+        // Destroy the statement
+        sprint_check(sprint_parser_statement_destroy(&statement));
+
+        // Handle syntax errors by enabling salvaged mode and ignoring the property
+        if (error == SPRINT_ERROR_SYNTAX) {
+            *salvaged = true;
+            continue;
+        }
+
+        // All other errors stop processing
+        if (error != SPRINT_ERROR_NONE) {
+            sprint_check(sprint_list_destroy(list));
+            return sprint_rethrow(error);
+        }
+
+        // Handle already found properties
+        if (already_found)
+            sprint_warning_format("overwriting duplicate property: %s", statement.name);
+    }
+
+    // Make sure that there are at least two points and all flags
+    if (!found_layer | !found_width | sprint_list_count(list) < 2) {
+        sprint_throw_format("incomplete element: %s", sprint_element_type_to_keyword(SPRINT_ELEMENT_TRACK, false));
+        error = SPRINT_ERROR_SYNTAX;
+    }
+
+    // Complete the list and check verify full validity
+    if (sprint_chain(error, sprint_list_complete(list, &element->track.num_points, (void*) &element->track.points)) &&
+        !sprint_assert(false, sprint_track_valid(&element->track)))
+        error = SPRINT_ERROR_ASSERTION;
+
+    // Check, if everything went well
+    if (error != SPRINT_ERROR_NONE)
+        sprint_check(sprint_element_destroy(element));
+    return sprint_rethrow(error);
 }
 
 static sprint_error sprint_parser_next_pad_tht_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
@@ -462,8 +660,12 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
         if (error == SPRINT_ERROR_EOF || !sprint_check(error))
             return sprint_rethrow(error);
 
+        const sprint_statement_flags bad_flags = SPRINT_STATEMENT_FLAG_VALUE,
+            required_flags = SPRINT_STATEMENT_FLAG_FIRST | SPRINT_STATEMENT_FLAG_NAME;
+
         // Check, if the flags are valid for a keyword
-        if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_FIRST))
+        if (sprint_parser_statement_flags(&statement, true, bad_flags) ||
+            !sprint_parser_statement_flags(&statement, false, required_flags))
         {
             // If they aren't, destroy the statement
             sprint_check(sprint_parser_statement_destroy(&statement));
@@ -478,13 +680,17 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
         memset(element, 0, sizeof(*element));
 
         // If the depth is at least one and the parent a component, try to match the other text types first
+        bool element_salvaged = false;
         sprint_text_type text_type = 0;
         if (depth > 0 && parent == SPRINT_ELEMENT_COMPONENT &&
             sprint_text_type_from_keyword(&text_type, statement.name)) {
             // Destroy the statement, read the text and update the subtype
             sprint_check(sprint_parser_statement_destroy(&statement));
-            if (sprint_chain(error, sprint_parser_next_text_internal(parser, element, salvaged)))
+            if (sprint_chain(error, sprint_parser_next_text_internal(parser, element, &element_salvaged)))
                 element->text.subtype = text_type;
+
+            // Update the salvaged flag
+            *salvaged |= element_salvaged;
 
             // For any status other than a syntax error, stop the loop
             if (error != SPRINT_ERROR_SYNTAX)
@@ -511,33 +717,36 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
         // And dispatch to the correct parser
         switch (type) {
             case SPRINT_ELEMENT_TRACK:
-                sprint_chain(error, sprint_parser_next_track_internal(parser, element, salvaged));
+                sprint_chain(error, sprint_parser_next_track_internal(parser, element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_PAD_THT:
-                sprint_chain(error, sprint_parser_next_pad_tht_internal(parser, element, salvaged));
+                sprint_chain(error, sprint_parser_next_pad_tht_internal(parser, element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_PAD_SMT:
-                sprint_chain(error, sprint_parser_next_pad_smt_internal(parser, element, salvaged));
+                sprint_chain(error, sprint_parser_next_pad_smt_internal(parser, element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_ZONE:
-                sprint_chain(error, sprint_parser_next_zone_internal(parser, element, salvaged));
+                sprint_chain(error, sprint_parser_next_zone_internal(parser, element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_TEXT:
-                sprint_chain(error, sprint_parser_next_text_internal(parser, element, salvaged));
+                sprint_chain(error, sprint_parser_next_text_internal(parser, element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_CIRCLE:
-                sprint_chain(error, sprint_parser_next_circle_internal(parser, element, salvaged));
+                sprint_chain(error, sprint_parser_next_circle_internal(parser, element, &element_salvaged));
                 break;
             case SPRINT_ELEMENT_COMPONENT:
-                sprint_chain(error, sprint_parser_next_component_internal(parser, element, salvaged, depth));
+                sprint_chain(error, sprint_parser_next_component_internal(parser, element, &element_salvaged, depth));
                 break;
             case SPRINT_ELEMENT_GROUP:
-                sprint_chain(error, sprint_parser_next_group_internal(parser, element, salvaged, depth));
+                sprint_chain(error, sprint_parser_next_group_internal(parser, element, &element_salvaged, depth));
                 break;
             default:
                 sprint_throw_format(false, "element type unknown: %d", type);
                 return SPRINT_ERROR_INTERNAL;
         }
+
+        // Update the salvaged flag
+        *salvaged |= element_salvaged;
 
         // For any status other than a syntax error, stop the loop
         if (error != SPRINT_ERROR_SYNTAX)
