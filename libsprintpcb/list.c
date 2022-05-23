@@ -36,6 +36,31 @@ sprint_error sprint_list_destroy(sprint_list* list)
     return SPRINT_ERROR_NONE;
 }
 
+sprint_error sprint_list_complete(sprint_list* list, int* count, void** elements)
+{
+    if (list == NULL || count == NULL || elements == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (!sprint_chain(error, sprint_list_trim(list))) {
+        free(list);
+        return sprint_rethrow(error);
+    }
+
+    // Store the elements and count
+    *elements = list->elements;
+    *count = list->count;
+
+    // Zero the state
+    list->count = 0;
+    list->size = 0;
+    list->capacity = 0;
+
+    // And finally, free the list
+    free(list);
+
+    return SPRINT_ERROR_NONE;
+}
+
 int sprint_list_count(sprint_list* list)
 {
     return list == NULL ? 0 : list->count;

@@ -26,6 +26,7 @@ typedef struct sprint_list {
 
 sprint_list* sprint_list_create(int width, int capacity);
 sprint_error sprint_list_destroy(sprint_list* list);
+sprint_error sprint_list_complete(sprint_list* list, int* count, void** elements);
 int sprint_list_count(sprint_list* list);
 int sprint_list_size(sprint_list* list);
 int sprint_list_capacity(sprint_list* list);
