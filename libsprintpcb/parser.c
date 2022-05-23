@@ -431,7 +431,7 @@ static sprint_error sprint_parser_next_uint(sprint_parser* parser, int* val)
 static sprint_error sprint_parser_next_layer(sprint_parser* parser, sprint_layer* layer)
 {
     sprint_error error = SPRINT_ERROR_NONE;
-    if (sprint_chain(error, sprint_parser_next_int(parser, (int*) layer)) && !sprint_dist_valid(*layer))
+    if (sprint_chain(error, sprint_parser_next_int(parser, (int*) layer)) && !sprint_layer_valid(*layer))
         return SPRINT_ERROR_SYNTAX;
     return error;
 }
@@ -541,38 +541,31 @@ static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, spr
         } else if (strcasecmp(statement.name, "LAYER") == 0) {
             if (found_layer)
                 already_found = true;
-            sprint_chain(error, sprint_parser_next_layer(parser, &element->track.layer));
-            found_layer = true;
+            found_layer |= sprint_chain(error, sprint_parser_next_layer(parser, &element->track.layer));
         } else if (strcasecmp(statement.name, "WIDTH") == 0) {
             if (found_width)
                 already_found = true;
-            sprint_chain(error, sprint_parser_next_size(parser, &element->track.width));
-            found_width = true;
+            found_width |= sprint_chain(error, sprint_parser_next_size(parser, &element->track.width));
         } else if (strcasecmp(statement.name, "CLEAR") == 0) {
             if (found_clear)
                 already_found = true;
-            sprint_chain(error, sprint_parser_next_size(parser, &element->track.clear));
-            found_clear = true;
+            found_clear |= sprint_chain(error, sprint_parser_next_size(parser, &element->track.clear));
         } else if (strcasecmp(statement.name, "CUTOUT") == 0) {
             if (found_cutout)
                 already_found = true;
-            sprint_chain(error, sprint_parser_next_bool(parser, &element->track.cutout));
-            found_cutout = true;
+            found_cutout |= sprint_chain(error, sprint_parser_next_bool(parser, &element->track.cutout));
         } else if (strcasecmp(statement.name, "SOLDERMASK") == 0) {
             if (found_soldermask)
                 already_found = true;
-            sprint_chain(error, sprint_parser_next_bool(parser, &element->track.soldermask));
-            found_soldermask = true;
+            found_soldermask |= sprint_chain(error, sprint_parser_next_bool(parser, &element->track.soldermask));
         } else if (strcasecmp(statement.name, "FLATSTART") == 0) {
             if (found_flat_start)
                 already_found = true;
-            sprint_chain(error, sprint_parser_next_bool(parser, &element->track.flat_start));
-            found_flat_start = true;
+            found_flat_start |= sprint_chain(error, sprint_parser_next_bool(parser, &element->track.flat_start));
         } else if (strcasecmp(statement.name, "FLATEND") == 0) {
             if (found_flat_end)
                 already_found = true;
-            sprint_chain(error, sprint_parser_next_bool(parser, &element->track.flat_end));
-            found_flat_end = true;
+            found_flat_end |= sprint_chain(error, sprint_parser_next_bool(parser, &element->track.flat_end));
         } else {
             error = SPRINT_ERROR_SYNTAX;
             sprint_throw_format("unknown property: %s", statement.name);
@@ -583,6 +576,7 @@ static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, spr
 
         // Handle syntax errors by enabling salvaged mode and ignoring the property
         if (error == SPRINT_ERROR_SYNTAX) {
+            sprint_check(sprint_token_unexpected_internal(parser, false));
             *salvaged = true;
             continue;
         }
