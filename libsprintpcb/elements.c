@@ -579,6 +579,7 @@ sprint_error sprint_text_create(sprint_element* element, sprint_text_type type, 
         return sprint_rethrow(error);
 
     // Copy required fields
+    element->text.subtype = type;
     element->text.layer = layer;
     element->text.position = position;
     element->text.height = height;
