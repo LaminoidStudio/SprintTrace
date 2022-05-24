@@ -226,6 +226,7 @@ typedef struct sprint_group {
     int num_elements;
     sprint_element* elements;
 } sprint_group;
+bool sprint_group_valid(sprint_group* group);
 
 typedef enum sprint_element_type {
     SPRINT_ELEMENT_TRACK,
