@@ -446,14 +446,28 @@ void sprint_plugin_bail(int error)
     exit(operation);
 }
 
-sprint_error sprint_plugin_end(sprint_operation operation)
+void sprint_plugin_end(sprint_operation operation)
 {
-    if (!sprint_operation_valid(operation, false))
-        return SPRINT_ERROR_ARGUMENT_RANGE;
+    // Check the operation
+    int code = operation;
+    if (!sprint_operation_valid(operation, false)) {
+        operation = SPRINT_OPERATION_NONE;
+        code = sprint_plugin_get_exit_code();
+    }
 
-    // TODO: Write output
+    // Try to output all elements
+    sprint_output* output = sprint_output_create_file(stdout, false);
+    if (operation != SPRINT_OPERATION_NONE) {
+        sprint_error error = SPRINT_ERROR_NONE;
+        for (int index = 0; index < sprint_plugin.pcb.num_elements; index++)
+            if (!sprint_chain(error, sprint_element_output(&sprint_plugin.pcb.elements[index], output, SPRINT_PRIM_FORMAT_RAW)))
+                break;
+        if (error != SPRINT_ERROR_NONE)
+            code = sprint_plugin_get_exit_code();
+    }
 
-    exit(operation);
+    // And exit
+    exit(code);
 }
 
 sprint_error sprint_plugin_output(sprint_output* output)

@@ -80,7 +80,7 @@ extern const char* SPRINT_OUTPUT_SUFFIX;
 sprint_error sprint_plugin_begin(int argc, const char* argv[]);
 sprint_error sprint_plugin_output(sprint_output* output);
 void sprint_plugin_bail(int error);
-sprint_error sprint_plugin_end(sprint_operation operation);
+void sprint_plugin_end(sprint_operation operation);
 sprint_pcb* sprint_plugin_get_pcb(void);
 bool sprint_plugin_is_selection(void);
 sprint_plugin_state sprint_plugin_get_state(void);
