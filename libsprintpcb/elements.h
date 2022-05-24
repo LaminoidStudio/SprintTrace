@@ -206,6 +206,7 @@ typedef struct sprint_circle {
     sprint_angle stop;
     bool fill;
 } sprint_circle;
+bool sprint_circle_valid(sprint_circle* circle);
 
 typedef struct sprint_component {
     sprint_element* text_id;

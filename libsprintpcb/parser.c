@@ -1042,6 +1042,10 @@ static sprint_error sprint_parser_next_text_internal(sprint_parser* parser, spri
             if (found_mirror_vertical)
                 already_found = true;
             found_mirror_vertical |= sprint_chain(error, sprint_parser_next_bool(parser, &element->text.mirror_vertical));
+        } else if (strcasecmp(statement.name, "VISIBLE") == 0) {
+            if (found_visible)
+                already_found = true;
+            found_visible |= sprint_chain(error, sprint_parser_next_bool(parser, &element->text.visible));
         } else {
             error = SPRINT_ERROR_SYNTAX;
             sprint_throw_format(false, "unknown property: %s", statement.name);
@@ -1081,6 +1085,117 @@ static sprint_error sprint_parser_next_text_internal(sprint_parser* parser, spri
 
 static sprint_error sprint_parser_next_circle_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
 {
+    // Initialize the element
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (!sprint_chain(error, sprint_circle_default(element, true)))
+        return sprint_rethrow(error);
+    element->parsed = true;
+
+    sprint_layer layer;
+    sprint_dist width;
+    sprint_tuple center;
+    sprint_dist radius;
+
+    sprint_dist clear;
+    bool cutout;
+    bool soldermask;
+    sprint_angle start;
+    sprint_angle stop;
+    bool fill;
+
+    // Keep track of found properties
+    bool found_layer = false, found_width = false, found_center = false, found_radius = false, found_clear = false,
+            found_cutout = false, found_soldermask = false, found_start = false, found_stop = false, found_fill = false;
+
+    // Read all element properties
+    sprint_statement statement;
+    while (parser->subsequent) {
+        // Read the next value statement
+        error = sprint_parser_next_value_internal(parser, &statement, salvaged);
+        if (error == SPRINT_ERROR_EOS) {
+            error = SPRINT_ERROR_NONE;
+            break;
+        }
+        if (!sprint_check(error))
+            return sprint_rethrow(error);
+
+        // Determine the statement name
+        bool already_found = false;
+        if (strcasecmp(statement.name, "LAYER") == 0) {
+            if (found_layer)
+                already_found = true;
+            found_layer |= sprint_chain(error, sprint_parser_next_layer(parser, &element->circle.layer));
+        } else if (strcasecmp(statement.name, "WIDTH") == 0) {
+            if (found_width)
+                already_found = true;
+            found_width |= sprint_chain(error, sprint_parser_next_size(parser, &element->circle.width));
+        } else if (strcasecmp(statement.name, "CENTER") == 0) {
+            if (found_center)
+                already_found = true;
+            found_center |= sprint_chain(error, sprint_parser_next_tuple(parser, &element->circle.center));
+        } else if (strcasecmp(statement.name, "RADIUS") == 0) {
+            if (found_radius)
+                already_found = true;
+            found_radius |= sprint_chain(error, sprint_parser_next_size(parser, &element->circle.radius));
+        } else if (strcasecmp(statement.name, "CLEAR") == 0) {
+            if (found_clear)
+                already_found = true;
+            found_clear |= sprint_chain(error, sprint_parser_next_size(parser, &element->circle.clear));
+        } else if (strcasecmp(statement.name, "CUTOUT") == 0) {
+            if (found_cutout)
+                already_found = true;
+            found_cutout |= sprint_chain(error, sprint_parser_next_bool(parser, &element->circle.cutout));
+        } else if (strcasecmp(statement.name, "SOLDERMASK") == 0) {
+            if (found_soldermask)
+                already_found = true;
+            found_soldermask |= sprint_chain(error, sprint_parser_next_bool(parser, &element->circle.soldermask));
+        } else if (strcasecmp(statement.name, "START") == 0) {
+            if (found_start)
+                already_found = true;
+            found_start |= sprint_chain(error, sprint_parser_next_angle(parser, &element->circle.start, SPRINT_PRIM_FORMAT_ANGLE_FINE));
+        } else if (strcasecmp(statement.name, "STOP") == 0) {
+            if (found_stop)
+                already_found = true;
+            found_stop |= sprint_chain(error, sprint_parser_next_angle(parser, &element->circle.stop, SPRINT_PRIM_FORMAT_ANGLE_FINE));
+        } else if (strcasecmp(statement.name, "FILL") == 0) {
+            if (found_fill)
+                already_found = true;
+            found_fill |= sprint_chain(error, sprint_parser_next_bool(parser, &element->circle.fill));
+        } else {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format(false, "unknown property: %s", statement.name);
+        }
+
+        // Handle already found properties
+        if (already_found)
+            sprint_warning_format("overwriting duplicate property: %s", statement.name);
+
+        // Destroy the statement
+        sprint_check(sprint_parser_statement_destroy(&statement));
+
+        // Handle syntax errors by enabling salvaged mode and ignoring the property
+        if (error == SPRINT_ERROR_SYNTAX) {
+            sprint_check(sprint_token_unexpected_internal(parser, false));
+            *salvaged = true;
+            continue;
+        }
+
+        // All other errors stop processing
+        if (error != SPRINT_ERROR_NONE)
+            return sprint_rethrow(error);
+    }
+
+    // Make sure that there are all properties
+    if (!found_layer | !found_width | !found_center | !found_radius) {
+        sprint_throw_format(false, "incomplete element: %s", sprint_element_type_to_keyword(SPRINT_ELEMENT_CIRCLE, false));
+        error = SPRINT_ERROR_SYNTAX;
+    }
+
+    // Verify full validity
+    if (!sprint_assert(false, sprint_circle_valid(&element->circle)))
+        error = SPRINT_ERROR_ASSERTION;
+
+    return sprint_rethrow(error);
 }
 
 #pragma clang diagnostic push
