@@ -102,7 +102,7 @@ static sprint_error sprint_token_unexpected_internal(sprint_parser* parser, bool
     // Append the contents
     char* contents = NULL;
     if (sprint_check(sprint_token_contents(token, parser->builder, &contents)) && contents != NULL)
-        sprint_chain(error, sprint_stringbuilder_format(builder, ": \"%s\"", contents));
+        sprint_chain(error, sprint_stringbuilder_format(builder, ": %s", contents));
 
     // Complete the builder
     contents = sprint_stringbuilder_complete(builder);
@@ -221,8 +221,8 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                         return SPRINT_ERROR_NONE;
                     case SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR:
                         // Clear the subsequent flag for the next word and set the last flag
-                        statement->flags |= SPRINT_STATEMENT_FLAG_LAST;
                         parser->subsequent = false;
+                        statement->flags |= SPRINT_STATEMENT_FLAG_LAST;
                         // fallthrough
                     case SPRINT_TOKEN_TYPE_STATEMENT_SEPARATOR:
                         // Clear the value flag
@@ -235,32 +235,16 @@ sprint_error sprint_parser_next_statement(sprint_parser* parser, sprint_statemen
                 // The token is unexpected or invalid
                 sprint_check(sprint_parser_statement_destroy(statement));
                 sprint_check(sprint_token_unexpected_internal(parser, sync));
+                if (token->type == SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR)
+                    return SPRINT_ERROR_EOS;
                 if (sync)
                     continue;
                 return SPRINT_ERROR_SYNTAX;
 
             case SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR:
-                // If not syncing, return an empty statement
-                if (!sync) {
-                    // Clear the statement
-                    memset(statement, 0, sizeof(*statement));
-
-                    // Set the last flag
-                    statement->flags = SPRINT_STATEMENT_FLAG_LAST;
-
-                    // Set the first flag, if applicable
-                    if (!parser->subsequent)
-                        statement->flags |= SPRINT_STATEMENT_FLAG_FIRST;
-
-                    // Clear the subsequent flag for the next word and return success
-                    parser->subsequent = false;
-                    return SPRINT_ERROR_NONE;
-                }
-
-                // Clear the subsequent flag for the next word
+                // Clear the subsequent flag for the next word and return an EOS error
                 parser->subsequent = false;
-
-                // fallthrough
+                return SPRINT_ERROR_EOS;
             case SPRINT_TOKEN_TYPE_STATEMENT_SEPARATOR:
                 // If there initially is a separator or terminator, skip it in any mode
                 skipped = !skipped;
@@ -461,7 +445,7 @@ static sprint_error sprint_parser_next_text_thickness(sprint_parser* parser, spr
     return error;
 }
 
-static sprint_error sprint_parser_value_internal(sprint_parser* parser, sprint_statement* statement, bool* salvaged)
+static sprint_error sprint_parser_next_value_internal(sprint_parser* parser, sprint_statement* statement, bool* salvaged)
 {
     // Keep reading until a valid statement or a terminator is found
     while (parser->subsequent) {
@@ -475,7 +459,7 @@ static sprint_error sprint_parser_value_internal(sprint_parser* parser, sprint_s
             *salvaged = true;
             sprint_check(sprint_token_unexpected_internal(parser, true));
             continue;
-        } else if (!sprint_check(error))
+        } else if (error == SPRINT_ERROR_EOS || !sprint_check(error))
             return sprint_rethrow(error);
 
         // Make sure the flags are valid
@@ -520,7 +504,7 @@ static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, spr
     sprint_statement statement;
     while (parser->subsequent) {
         // Read the next value statement
-        error = sprint_parser_value_internal(parser, &statement, salvaged);
+        error = sprint_parser_next_value_internal(parser, &statement, salvaged);
         if (error == SPRINT_ERROR_EOS) {
             error = SPRINT_ERROR_NONE;
             break;
@@ -568,8 +552,12 @@ static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, spr
             found_flat_end |= sprint_chain(error, sprint_parser_next_bool(parser, &element->track.flat_end));
         } else {
             error = SPRINT_ERROR_SYNTAX;
-            sprint_throw_format("unknown property: %s", statement.name);
+            sprint_throw_format(false, "unknown property: %s", statement.name);
         }
+
+        // Handle already found properties
+        if (already_found)
+            sprint_warning_format("overwriting duplicate property: %s", statement.name);
 
         // Destroy the statement
         sprint_check(sprint_parser_statement_destroy(&statement));
@@ -586,15 +574,11 @@ static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, spr
             sprint_check(sprint_list_destroy(list));
             return sprint_rethrow(error);
         }
-
-        // Handle already found properties
-        if (already_found)
-            sprint_warning_format("overwriting duplicate property: %s", statement.name);
     }
 
     // Make sure that there are at least two points and all flags
     if (!found_layer | !found_width | sprint_list_count(list) < 2) {
-        sprint_throw_format("incomplete element: %s", sprint_element_type_to_keyword(SPRINT_ELEMENT_TRACK, false));
+        sprint_throw_format(false, "incomplete element: %s", sprint_element_type_to_keyword(SPRINT_ELEMENT_TRACK, false));
         error = SPRINT_ERROR_SYNTAX;
     }
 
@@ -658,13 +642,14 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
     while (true) {
         // Read the next statement
         error = sprint_parser_next_statement(parser, &statement, *salvaged);
+        if (error == SPRINT_ERROR_EOS)
+            continue;
         if (error == SPRINT_ERROR_EOF || !sprint_check(error))
             break;
 
+        // Check, if the flags are valid for a keyword
         const sprint_statement_flags bad_flags = SPRINT_STATEMENT_FLAG_VALUE,
             required_flags = SPRINT_STATEMENT_FLAG_FIRST | SPRINT_STATEMENT_FLAG_NAME;
-
-        // Check, if the flags are valid for a keyword
         if (sprint_parser_statement_flags(&statement, true, bad_flags) ||
             !sprint_parser_statement_flags(&statement, false, required_flags))
         {

@@ -17,7 +17,8 @@
 #include "libsprintpcb/errors.h"
 
 int main(int argc, const char* argv[]) {
-    const char* track_io = "TRACK,LAYER=9,WIDTH=2000,P0=928537/606471,P1=78537/606471,P2=78537/56471,P3=928537/56471,P4=928537/606471;";
+    //const char* track_io = "TRACK,LAYER=9,WIDTH=2000,P0=928537/606471,P1=78537/606471,P2=78537/56471,P3=928537/56471,P4=928537/606471;";
+    const char* track_io = "TRACK,LAYER=9,Layer=7,layer=5,WIDTH=2000,P0=1/2,P1=3/4;";
     sprint_output* output = sprint_output_create_file(stdout, false);
     sprint_tokenizer* track_tokenizer = sprint_tokenizer_from_str(track_io, false);
     sprint_parser* track_parser = sprint_parser_create(track_tokenizer);
