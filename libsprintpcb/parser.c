@@ -969,6 +969,114 @@ static sprint_error sprint_parser_next_zone_internal(sprint_parser* parser, spri
 
 static sprint_error sprint_parser_next_text_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
 {
+    // Initialize the element
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (!sprint_chain(error, sprint_text_default(element, true)))
+        return sprint_rethrow(error);
+    element->parsed = true;
+
+    // Keep track of found properties
+    bool found_layer = false, found_position = false, found_height = false, found_text = false, found_clear = false,
+            found_cutout = false, found_soldermask = false, found_style = false, found_thickness = false,
+            found_rotation = false, found_mirror_horizontal = false, found_mirror_vertical = false, found_visible = false;
+
+    // Read all element properties
+    sprint_statement statement;
+    while (parser->subsequent) {
+        // Read the next value statement
+        error = sprint_parser_next_value_internal(parser, &statement, salvaged);
+        if (error == SPRINT_ERROR_EOS) {
+            error = SPRINT_ERROR_NONE;
+            break;
+        }
+        if (!sprint_check(error))
+            return sprint_rethrow(error);
+
+        // Determine the statement name
+        bool already_found = false;
+        if (strcasecmp(statement.name, "LAYER") == 0) {
+            if (found_layer)
+                already_found = true;
+            found_layer |= sprint_chain(error, sprint_parser_next_layer(parser, &element->text.layer));
+        } else if (strcasecmp(statement.name, "POS") == 0) {
+            if (found_position)
+                already_found = true;
+            found_position |= sprint_chain(error, sprint_parser_next_tuple(parser, &element->text.position));
+        } else if (strcasecmp(statement.name, "HEIGHT") == 0) {
+            if (found_height)
+                already_found = true;
+            found_height |= sprint_chain(error, sprint_parser_next_size(parser, &element->text.height));
+        } else if (strcasecmp(statement.name, "TEXT") == 0) {
+            if (found_text)
+                already_found = true;
+            found_text |= sprint_chain(error, sprint_parser_next_str(parser, &element->text.text));
+        } else if (strcasecmp(statement.name, "CLEAR") == 0) {
+            if (found_clear)
+                already_found = true;
+            found_clear |= sprint_chain(error, sprint_parser_next_size(parser, &element->text.clear));
+        } else if (strcasecmp(statement.name, "CUTOUT") == 0) {
+            if (found_cutout)
+                already_found = true;
+            found_cutout |= sprint_chain(error, sprint_parser_next_bool(parser, &element->text.cutout));
+        } else if (strcasecmp(statement.name, "SOLDERMASK") == 0) {
+            if (found_soldermask)
+                already_found = true;
+            found_soldermask |= sprint_chain(error, sprint_parser_next_bool(parser, &element->text.soldermask));
+        } else if (strcasecmp(statement.name, "STYLE") == 0) {
+            if (found_style)
+                already_found = true;
+            found_style |= sprint_chain(error, sprint_parser_next_text_style(parser, &element->text.style));
+        } else if (strcasecmp(statement.name, "THICKNESS") == 0) {
+            if (found_thickness)
+                already_found = true;
+            found_thickness |= sprint_chain(error, sprint_parser_next_text_thickness(parser, &element->text.thickness));
+        } else if (strcasecmp(statement.name, "FLATEND") == 0) {
+            if (found_rotation)
+                already_found = true;
+            found_rotation |= sprint_chain(error, sprint_parser_next_angle(parser, &element->text.rotation, SPRINT_PRIM_FORMAT_ANGLE_WHOLE));
+        } else if (strcasecmp(statement.name, "MIRROR_HORZ") == 0) {
+            if (found_mirror_horizontal)
+                already_found = true;
+            found_mirror_horizontal |= sprint_chain(error, sprint_parser_next_bool(parser, &element->text.mirror_horizontal));
+        } else if (strcasecmp(statement.name, "MIRROR_VERT") == 0) {
+            if (found_mirror_vertical)
+                already_found = true;
+            found_mirror_vertical |= sprint_chain(error, sprint_parser_next_bool(parser, &element->text.mirror_vertical));
+        } else {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format(false, "unknown property: %s", statement.name);
+        }
+
+        // Handle already found properties
+        if (already_found)
+            sprint_warning_format("overwriting duplicate property: %s", statement.name);
+
+        // Destroy the statement
+        sprint_check(sprint_parser_statement_destroy(&statement));
+
+        // Handle syntax errors by enabling salvaged mode and ignoring the property
+        if (error == SPRINT_ERROR_SYNTAX) {
+            sprint_check(sprint_token_unexpected_internal(parser, false));
+            *salvaged = true;
+            continue;
+        }
+
+        // All other errors stop processing
+        if (error != SPRINT_ERROR_NONE)
+            return sprint_rethrow(error);
+    }
+
+    // Make sure that there are all properties
+    if (!found_layer | !found_position | !found_height | !found_text) {
+        sprint_throw_format(false, "incomplete element: %s", sprint_element_type_to_keyword(SPRINT_ELEMENT_TEXT, false));
+        error = SPRINT_ERROR_SYNTAX;
+    }
+
+    // Verify full validity
+    if (!sprint_assert(false, sprint_text_valid(&element->text)))
+        error = SPRINT_ERROR_ASSERTION;
+
+    return sprint_rethrow(error);
 }
 
 static sprint_error sprint_parser_next_circle_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
