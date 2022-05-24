@@ -598,22 +598,6 @@ static sprint_error sprint_parser_next_pad_tht_internal(sprint_parser* parser, s
         return sprint_rethrow(error);
     element->parsed = true;
 
-    sprint_layer layer;
-    sprint_tuple position;
-    sprint_dist size;
-    sprint_dist drill;
-    sprint_pad_tht_form form;
-
-    sprint_link link;
-    sprint_dist clear;
-    bool soldermask;
-    sprint_angle rotation;
-    bool via;
-    bool thermal;
-    int thermal_tracks;
-    int thermal_tracks_width;
-    bool thermal_tracks_individual;
-
     // Keep track of found properties
     bool found_layer = false, found_position = false, found_size = false, found_drill = false, found_form = false,
             found_id = false, found_clear = false, found_soldermask = false, found_rotation = false, found_via = false,
@@ -671,6 +655,7 @@ static sprint_error sprint_parser_next_pad_tht_internal(sprint_parser* parser, s
             if (found_id)
                 already_found = true;
             found_id |= sprint_chain(error, sprint_parser_next_uint(parser, &element->pad_tht.link.id));
+            element->pad_tht.link.has_id = found_id;
         } else if (strcasecmp(statement.name, "CLEAR") == 0) {
             if (found_clear)
                 already_found = true;
@@ -747,6 +732,128 @@ static sprint_error sprint_parser_next_pad_tht_internal(sprint_parser* parser, s
 
 static sprint_error sprint_parser_next_pad_smt_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
 {
+    // Initialize the element
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (!sprint_chain(error, sprint_pad_smt_default(element, true)))
+        return sprint_rethrow(error);
+    element->parsed = true;
+
+    // Keep track of found properties
+    bool found_layer = false, found_position = false, found_width = false, found_height = false, found_id = false,
+            found_clear = false, found_soldermask = false, found_rotation = false, found_thermal = false,
+            found_thermal_tracks = false, found_thermal_tracks_width = false;
+
+    // Keep a list of connections
+    sprint_list* list = sprint_list_create(sizeof(*element->pad_smt.link.connections), 8);
+    if (list == NULL)
+        return SPRINT_ERROR_MEMORY;
+
+    // Read all element properties
+    sprint_statement statement;
+    while (parser->subsequent) {
+        // Read the next value statement
+        error = sprint_parser_next_value_internal(parser, &statement, salvaged);
+        if (error == SPRINT_ERROR_EOS) {
+            error = SPRINT_ERROR_NONE;
+            break;
+        }
+        if (!sprint_check(error)) {
+            sprint_check(sprint_list_destroy(list));
+            return sprint_rethrow(error);
+        }
+
+        // Determine the statement name
+        bool already_found = false;
+        if (strcasecmp(statement.name, "CON") == 0) {
+            int id = 0;
+            if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX) &&
+                sprint_parser_statement_index(&statement) == sprint_list_count(list) &&
+                sprint_chain(error, sprint_parser_next_uint(parser, &id)))
+                sprint_chain(error, sprint_list_add(list, &id));
+        } else if (strcasecmp(statement.name, "LAYER") == 0) {
+            if (found_layer)
+                already_found = true;
+            found_layer |= sprint_chain(error, sprint_parser_next_layer(parser, &element->pad_smt.layer));
+        } else if (strcasecmp(statement.name, "POS") == 0) {
+            if (found_position)
+                already_found = true;
+            found_position |= sprint_chain(error, sprint_parser_next_tuple(parser, &element->pad_smt.position));
+        } else if (strcasecmp(statement.name, "SIZE_X") == 0) {
+            if (found_width)
+                already_found = true;
+            found_width |= sprint_chain(error, sprint_parser_next_size(parser, &element->pad_smt.width));
+        } else if (strcasecmp(statement.name, "SIZE_Y") == 0) {
+            if (found_height)
+                already_found = true;
+            found_height |= sprint_chain(error, sprint_parser_next_size(parser, &element->pad_smt.height));
+        } else if (strcasecmp(statement.name, "PAD_ID") == 0) {
+            if (found_id)
+                already_found = true;
+            found_id |= sprint_chain(error, sprint_parser_next_uint(parser, &element->pad_smt.link.id));
+            element->pad_smt.link.has_id = found_id;
+        } else if (strcasecmp(statement.name, "CLEAR") == 0) {
+            if (found_clear)
+                already_found = true;
+            found_clear |= sprint_chain(error, sprint_parser_next_size(parser, &element->pad_smt.clear));
+        } else if (strcasecmp(statement.name, "SOLDERMASK") == 0) {
+            if (found_soldermask)
+                already_found = true;
+            found_soldermask |= sprint_chain(error, sprint_parser_next_bool(parser, &element->pad_smt.soldermask));
+        } else if (strcasecmp(statement.name, "ROTATION") == 0) {
+            if (found_rotation)
+                already_found = true;
+            found_rotation |= sprint_chain(error, sprint_parser_next_angle(parser, &element->pad_smt.rotation, SPRINT_PRIM_FORMAT_ANGLE_COARSE));
+        } else if (strcasecmp(statement.name, "THERMAL") == 0) {
+            if (found_thermal)
+                already_found = true;
+            found_thermal |= sprint_chain(error, sprint_parser_next_bool(parser, &element->pad_smt.thermal));
+        } else if (strcasecmp(statement.name, "THERMAL_TRACKS") == 0) {
+            if (found_thermal_tracks)
+                already_found = true;
+            found_thermal_tracks |= sprint_chain(error, sprint_parser_next_int(parser, &element->pad_smt.thermal_tracks));
+        } else if (strcasecmp(statement.name, "THERMAL_TRACKS_WIDTH") == 0) {
+            if (found_thermal_tracks_width)
+                already_found = true;
+            found_thermal_tracks_width |= sprint_chain(error, sprint_parser_next_uint(parser, &element->pad_smt.thermal_tracks_width));
+        } else {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format(false, "unknown property: %s", statement.name);
+        }
+
+        // Handle already found properties
+        if (already_found)
+            sprint_warning_format("overwriting duplicate property: %s", statement.name);
+
+        // Destroy the statement
+        sprint_check(sprint_parser_statement_destroy(&statement));
+
+        // Handle syntax errors by enabling salvaged mode and ignoring the property
+        if (error == SPRINT_ERROR_SYNTAX) {
+            sprint_check(sprint_token_unexpected_internal(parser, false));
+            *salvaged = true;
+            continue;
+        }
+
+        // All other errors stop processing
+        if (error != SPRINT_ERROR_NONE) {
+            sprint_check(sprint_list_destroy(list));
+            return sprint_rethrow(error);
+        }
+    }
+
+    // Make sure that there are all properties
+    if (!found_layer | !found_position | !found_width | !found_height | (element->pad_smt.thermal & (!found_thermal_tracks | !found_thermal_tracks_width))) {
+        sprint_throw_format(false, "incomplete element: %s", sprint_element_type_to_keyword(SPRINT_ELEMENT_PAD_SMT, false));
+        error = SPRINT_ERROR_SYNTAX;
+    }
+
+    // Complete the list and check verify full validity
+    if (sprint_chain(error, sprint_list_complete(list, &element->pad_smt.link.num_connections,
+                                                 (void*) &element->pad_smt.link.connections)) &&
+        !sprint_assert(false, sprint_pad_smt_valid(&element->pad_smt)))
+        error = SPRINT_ERROR_ASSERTION;
+
+    return sprint_rethrow(error);
 }
 
 static sprint_error sprint_parser_next_zone_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
