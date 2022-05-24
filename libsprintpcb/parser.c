@@ -600,6 +600,113 @@ static sprint_error sprint_parser_next_pad_smt_internal(sprint_parser* parser, s
 
 static sprint_error sprint_parser_next_zone_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
 {
+    // Initialize the element
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (!sprint_chain(error, sprint_zone_default(element, true)))
+        return sprint_rethrow(error);
+    element->parsed = true;
+
+    // Keep track of found properties
+    bool found_layer = false, found_width = false, found_clear = false, found_cutout = false, found_soldermask = false,
+            found_hatch = false, found_hatch_auto = false, found_hatch_width = false;
+
+    // Keep a list of points
+    sprint_list* list = sprint_list_create(sizeof(*element->zone.points), 15);
+    if (list == NULL)
+        return SPRINT_ERROR_MEMORY;
+
+    // Read all element properties
+    sprint_statement statement;
+    while (parser->subsequent) {
+        // Read the next value statement
+        error = sprint_parser_next_value_internal(parser, &statement, salvaged);
+        if (error == SPRINT_ERROR_EOS) {
+            error = SPRINT_ERROR_NONE;
+            break;
+        }
+        if (!sprint_check(error)) {
+            sprint_check(sprint_list_destroy(list));
+            return sprint_rethrow(error);
+        }
+
+        // Determine the statement name
+        bool already_found = false;
+        if (strcasecmp(statement.name, "P") == 0) {
+            sprint_tuple tuple;
+            if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX) &&
+                sprint_parser_statement_index(&statement) == sprint_list_count(list) &&
+                sprint_chain(error, sprint_parser_next_tuple(parser, &tuple)))
+                sprint_chain(error, sprint_list_add(list, &tuple));
+        } else if (strcasecmp(statement.name, "LAYER") == 0) {
+            if (found_layer)
+                already_found = true;
+            found_layer |= sprint_chain(error, sprint_parser_next_layer(parser, &element->zone.layer));
+        } else if (strcasecmp(statement.name, "WIDTH") == 0) {
+            if (found_width)
+                already_found = true;
+            found_width |= sprint_chain(error, sprint_parser_next_size(parser, &element->zone.width));
+        } else if (strcasecmp(statement.name, "CLEAR") == 0) {
+            if (found_clear)
+                already_found = true;
+            found_clear |= sprint_chain(error, sprint_parser_next_size(parser, &element->zone.clear));
+        } else if (strcasecmp(statement.name, "CUTOUT") == 0) {
+            if (found_cutout)
+                already_found = true;
+            found_cutout |= sprint_chain(error, sprint_parser_next_bool(parser, &element->zone.cutout));
+        } else if (strcasecmp(statement.name, "SOLDERMASK") == 0) {
+            if (found_soldermask)
+                already_found = true;
+            found_soldermask |= sprint_chain(error, sprint_parser_next_bool(parser, &element->zone.soldermask));
+        } else if (strcasecmp(statement.name, "HATCH") == 0) {
+            if (found_hatch)
+                already_found = true;
+            found_hatch |= sprint_chain(error, sprint_parser_next_bool(parser, &element->zone.hatch));
+        } else if (strcasecmp(statement.name, "HATCH_AUTO") == 0) {
+            if (found_hatch_auto)
+                already_found = true;
+            found_hatch_auto |= sprint_chain(error, sprint_parser_next_bool(parser, &element->zone.hatch_auto));
+        } else if (strcasecmp(statement.name, "HATCH_WIDTH") == 0) {
+            if (found_hatch_width)
+                already_found = true;
+            found_hatch_width |= sprint_chain(error, sprint_parser_next_size(parser, &element->zone.hatch_width));
+        } else {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format(false, "unknown property: %s", statement.name);
+        }
+
+        // Handle already found properties
+        if (already_found)
+            sprint_warning_format("overwriting duplicate property: %s", statement.name);
+
+        // Destroy the statement
+        sprint_check(sprint_parser_statement_destroy(&statement));
+
+        // Handle syntax errors by enabling salvaged mode and ignoring the property
+        if (error == SPRINT_ERROR_SYNTAX) {
+            sprint_check(sprint_token_unexpected_internal(parser, false));
+            *salvaged = true;
+            continue;
+        }
+
+        // All other errors stop processing
+        if (error != SPRINT_ERROR_NONE) {
+            sprint_check(sprint_list_destroy(list));
+            return sprint_rethrow(error);
+        }
+    }
+
+    // Make sure that there are at least two points and all flags
+    if (!found_layer | !found_width | sprint_list_count(list) < 2 | !element->zone.hatch_auto & !found_hatch_width) {
+        sprint_throw_format(false, "incomplete element: %s", sprint_element_type_to_keyword(SPRINT_ELEMENT_ZONE, false));
+        error = SPRINT_ERROR_SYNTAX;
+    }
+
+    // Complete the list and check verify full validity
+    if (sprint_chain(error, sprint_list_complete(list, &element->zone.num_points, (void*) &element->zone.points)) &&
+        !sprint_assert(false, sprint_zone_valid(&element->zone)))
+        error = SPRINT_ERROR_ASSERTION;
+
+    return sprint_rethrow(error);
 }
 
 static sprint_error sprint_parser_next_text_internal(sprint_parser* parser, sprint_element* element, bool* salvaged)
