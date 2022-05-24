@@ -19,9 +19,10 @@ const char* SPRINT_ERROR_NAMES[] = {
         [SPRINT_ERROR_OVERFLOW] = "overflow",
         [SPRINT_ERROR_RECURSION] = "recursion",
         [SPRINT_ERROR_MEMORY] = "memory",
-        [SPRINT_ERROR_IO] = "I/O",
-        [SPRINT_ERROR_EOF] = "EOF",
-        [SPRINT_ERROR_EOS] = "EOS",
+        [SPRINT_ERROR_IO] = "input/output",
+        [SPRINT_ERROR_EOF] = "end of file",
+        [SPRINT_ERROR_EOS] = "end of statement",
+        [SPRINT_ERROR_EOE] = "end of element",
         [SPRINT_ERROR_TRUNCATED] = "truncated",
         [SPRINT_ERROR_SYNTAX] = "syntax",
         [SPRINT_ERROR_STATE_INVALID] = "state invalid",
@@ -48,6 +49,7 @@ sprint_error sprint_rethrow(sprint_error error)
         case SPRINT_ERROR_IO:
         case SPRINT_ERROR_EOF:
         case SPRINT_ERROR_EOS:
+        case SPRINT_ERROR_EOE:
         case SPRINT_ERROR_TRUNCATED:
         case SPRINT_ERROR_SYNTAX:
         case SPRINT_ERROR_STATE_INVALID:
