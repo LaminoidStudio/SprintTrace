@@ -160,7 +160,13 @@ sprint_error sprint_list_trim(sprint_list* list)
 {
     if (list == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
-    // If there are no elements, trim the list to zero
+    // If there are no elements, free the array
+    if (list->count < 1 && list->elements != NULL) {
+        free(list->elements);
+        list->elements = NULL;
+    }
+
+    // If there is no array, set capacity and count to zero
     if (list->elements == NULL) {
         list->count = 0;
         list->capacity = 0;
