@@ -14,7 +14,7 @@
 #include <string.h>
 
 const int SPRINT_ELEMENT_DEPTH = 1000;
-const int SPRINT_ELEMENT_INDENT = 2;
+const int SPRINT_ELEMENT_INDENT = 3;
 
 const char* SPRINT_ELEMENT_TYPE_NAMES[] = {
         [SPRINT_ELEMENT_TRACK] = "track",
@@ -236,9 +236,9 @@ bool sprint_pad_tht_valid(sprint_pad_tht* pad)
 {
     return pad != NULL && sprint_layer_valid(pad->layer) && sprint_tuple_valid(pad->position) &&
         sprint_size_valid(pad->size) && sprint_size_valid(pad->drill) &&
-        sprint_pad_tht_form_valid(pad->form) && pad->link.num_connections >= 0 &&
-        sprint_size_valid(pad->clear) && sprint_angle_valid(pad->rotation) &&
-        pad->thermal_tracks_width >= 50 && pad->thermal_tracks_width <= 300;
+        sprint_pad_tht_form_valid(pad->form) && sprint_size_valid(pad->clear) &&
+        sprint_angle_valid(pad->rotation) && pad->thermal_tracks_width >= 50 && pad->thermal_tracks_width <= 300 &&
+        pad->link.num_connections >= 0 && (pad->link.num_connections == 0) == (pad->link.connections == NULL);
 }
 
 sprint_error sprint_pad_tht_default(sprint_element* element, bool clear)
@@ -290,9 +290,9 @@ bool sprint_pad_smt_valid(sprint_pad_smt* pad)
 {
     return pad != NULL && sprint_layer_valid(pad->layer) && sprint_tuple_valid(pad->position) &&
            sprint_size_valid(pad->width) && sprint_size_valid(pad->height) &&
-           pad->link.num_connections >= 0 && sprint_size_valid(pad->clear) &&
-           sprint_angle_valid(pad->rotation) && pad->thermal_tracks >= 0 && pad->thermal_tracks <= 0xff &&
-           pad->thermal_tracks_width >= 50 && pad->thermal_tracks_width <= 300;
+           sprint_size_valid(pad->clear) && sprint_angle_valid(pad->rotation) && pad->thermal_tracks >= 0 &&
+           pad->thermal_tracks <= 0xff && pad->thermal_tracks_width >= 50 && pad->thermal_tracks_width <= 300 &&
+           pad->link.num_connections >= 0 && (pad->link.num_connections == 0) == (pad->link.connections == NULL);
 }
 
 static const sprint_pad_smt SPRINT_PAD_SMT_DEFAULT = {
@@ -716,12 +716,12 @@ bool sprint_group_valid(sprint_group* group)
 sprint_error sprint_group_default(sprint_element* element, bool clear)
 {
     if (element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    if (!clear && element->type != SPRINT_ELEMENT_TEXT) return SPRINT_ERROR_STATE_INVALID;
+    if (!clear && element->type != SPRINT_ELEMENT_GROUP) return SPRINT_ERROR_STATE_INVALID;
 
     // Clear the memory, if desired
     if (clear) {
         memset(element, 0, sizeof(*element));
-        element->type = SPRINT_ELEMENT_TEXT;
+        element->type = SPRINT_ELEMENT_GROUP;
     }
 
     return SPRINT_ERROR_NONE;
