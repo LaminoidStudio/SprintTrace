@@ -546,6 +546,8 @@ sprint_error sprint_plugin_end(sprint_operation operation)
     sprint_require(sprint_output_destroy(output, NULL));
 
     // Check, if writing succeeded
+    if (error == SPRINT_ERROR_SYNTAX)
+        error = SPRINT_ERROR_PLUGIN_INPUT_SYNTAX;
     if (error != SPRINT_ERROR_NONE)
         return sprint_rethrow(error);
 
