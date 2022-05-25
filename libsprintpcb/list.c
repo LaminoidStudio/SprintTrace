@@ -78,7 +78,7 @@ int sprint_list_capacity(sprint_list* list)
 
 sprint_error sprint_list_add(sprint_list* list, void* element)
 {
-    if (list == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (list == NULL || element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     // Start with an initial capacity of one
     if (list->capacity < 1) list->capacity = 1;
