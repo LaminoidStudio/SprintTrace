@@ -16,7 +16,7 @@
 #include "libsprintpcb/parser.h"
 #include "libsprintpcb/errors.h"
 
-void pause(void)
+static void sprint_pause(void)
 {
     volatile int a = getchar();
 }
@@ -24,7 +24,7 @@ void pause(void)
 int main(int argc, const char* argv[])
 {
 #ifdef NDEBUG
-    atexit(pause);
+    atexit(sprint_pause);
 #endif
 
     /*for (int i = 1; i < argc; i++)
