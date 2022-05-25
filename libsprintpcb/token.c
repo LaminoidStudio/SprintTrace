@@ -93,7 +93,7 @@ sprint_tokenizer_state sprint_tokenizer_state_next(sprint_tokenizer_state curren
         current_state != SPRINT_SLICER_STATE_NUMBER && current_state != SPRINT_SLICER_STATE_WORD)
         return SPRINT_SLICER_STATE_NUMBER;
 
-    // Handle the single digit separators and terminator
+    // Handle the single digit separators, terminators and the string delimiter
     if (next_chr == SPRINT_VALUE_SEPARATOR)
         return SPRINT_SLICER_STATE_VALUE_SEPARATOR;
     if (next_chr == SPRINT_TUPLE_SEPARATOR)
@@ -102,7 +102,10 @@ sprint_tokenizer_state sprint_tokenizer_state_next(sprint_tokenizer_state curren
         return SPRINT_SLICER_STATE_STATEMENT_SEPARATOR;
     if (next_chr == SPRINT_STATEMENT_TERMINATOR)
         return SPRINT_SLICER_STATE_STATEMENT_TERMINATOR;
+    if (next_chr == SPRINT_STRING_DELIMITER)
+        return SPRINT_SLICER_STATE_STRING_START;
 
+    // All other characters are invalid
     return SPRINT_SLICER_STATE_INVALID;
 }
 
