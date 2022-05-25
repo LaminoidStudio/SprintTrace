@@ -5,18 +5,25 @@
 //
 
 #include "plugin.h"
+#include "token.h"
+#include "parser.h"
+#include "pcb.h"
+#include "list.h"
 #include "stringbuilder.h"
+#include "errors.h"
 
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifndef WIN32
 #include <errno.h>
 #endif
 
-bool sprint_plugin_parse_int_internal(int* output, const char* input);
-bool sprint_plugin_parse_language_internal(int* output, const char* input);
-sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[]);
-sprint_error sprint_plugin_parse_input_internal();
+static bool sprint_plugin_parse_int_internal(int* output, const char* input);
+static bool sprint_plugin_parse_language_internal(int* output, const char* input);
+static sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[]);
+static sprint_error sprint_plugin_parse_input_internal();
 
 const char* SPRINT_LANGUAGE_NAMES[] = {
         [SPRINT_LANGUAGE_ENGLISH] = "English",
@@ -69,7 +76,7 @@ const char SPRINT_FLAG_PREFIX = '-';
 const char SPRINT_FLAG_DELIMITER = ':';
 const char* SPRINT_OUTPUT_SUFFIX = "_out";
 
-bool sprint_plugin_parse_int_internal(int* output, const char* input)
+static bool sprint_plugin_parse_int_internal(int* output, const char* input)
 {
     if (*input == 0) return false;
 
@@ -83,7 +90,7 @@ bool sprint_plugin_parse_int_internal(int* output, const char* input)
     return true;
 }
 
-bool sprint_plugin_parse_language_internal(int* output, const char* input)
+static bool sprint_plugin_parse_language_internal(int* output, const char* input)
 {
     if (*input == 0) return false;
 
@@ -99,8 +106,12 @@ bool sprint_plugin_parse_language_internal(int* output, const char* input)
     return true;
 }
 
-sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
+static sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
 {
+    // Check the state
+    if (sprint_plugin.state != SPRINT_PLUGIN_STATE_PARSING_FLAGS)
+        return SPRINT_ERROR_STATE_INVALID;
+
     // Check, if the number of arguments could be enough
     if (argc < 4) {
         sprint_throw(false, "too few arguments");
@@ -405,13 +416,62 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
     return SPRINT_ERROR_NONE;
 }
 
-sprint_error sprint_plugin_parse_input_internal()
+static sprint_error sprint_plugin_parse_input_internal()
 {
-    // Open input file
-    sprint_plugin.input;
+    // Check the state
+    if (sprint_plugin.state != SPRINT_PLUGIN_STATE_PARSING_INPUT)
+        return SPRINT_ERROR_STATE_INVALID;
 
-    // TODO
-    return SPRINT_ERROR_NONE;
+    // Open the input file
+    FILE* file = fopen(sprint_plugin.input, "r");
+    if (file == NULL) {
+        sprint_throw_format(false, "error opening file for reading: %s", strerror(errno));
+        return SPRINT_ERROR_IO;
+    }
+
+    // Create the tokenizer
+    sprint_tokenizer* tokenizer = sprint_tokenizer_from_file(file, sprint_plugin.input, true);
+    sprint_assert(true, tokenizer != NULL);
+
+    // Create the parser
+    sprint_parser* parser = sprint_parser_create(tokenizer);
+    sprint_assert(true, parser != NULL);
+
+    // Create an element list
+    sprint_list* list = sprint_list_create(sizeof(*sprint_plugin.pcb.elements), 64);
+    sprint_assert(true, list);
+
+    // Clear the salvaged flag
+    sprint_plugin.pcb.salvaged = false;
+
+    // Parse all elements
+    sprint_error error;
+    sprint_element* element;
+    while (true) {
+        // Read the element
+        error = sprint_parser_next_element(parser, &element, &sprint_plugin.pcb.salvaged);
+
+        // Handle EOF
+        if (error == SPRINT_ERROR_EOF) {
+            error = SPRINT_ERROR_NONE;
+            break;
+        }
+
+        // Handle other errors and add the element
+        if (!sprint_check(error) || !sprint_chain(error, sprint_list_add(list, element)))
+            break;
+    }
+
+    // Complete the element list, if it succeeded
+    if (error == SPRINT_ERROR_NONE)
+        sprint_require(sprint_list_complete(list, &sprint_plugin.pcb.num_elements, (void*) &sprint_plugin.pcb.elements));
+    else
+        sprint_require(sprint_list_destroy(list));
+
+    // Destroy the parser (and thus also the tokenizer, and close the file)
+    sprint_require(sprint_parser_destroy(parser, true, NULL));
+
+    return sprint_rethrow(error);
 }
 
 sprint_error sprint_plugin_begin(int argc, const char* argv[])
@@ -439,35 +499,61 @@ sprint_error sprint_plugin_begin(int argc, const char* argv[])
 
 void sprint_plugin_bail(int error)
 {
+    // Clamp the error code
     sprint_operation operation = SPRINT_OPERATION_FAILED_PLUGIN + error;
     if (!sprint_operation_valid(operation, true) || operation < SPRINT_OPERATION_FAILED_PLUGIN)
         operation = SPRINT_OPERATION_FAILED_END;
 
+    // Update the state
+    sprint_plugin.state = SPRINT_PLUGIN_STATE_COMPLETED;
+
+    // And exit
     exit(operation);
 }
 
-void sprint_plugin_end(sprint_operation operation)
+sprint_error sprint_plugin_end(sprint_operation operation)
 {
     // Check the operation
-    int code = operation;
-    if (!sprint_operation_valid(operation, false)) {
-        operation = SPRINT_OPERATION_NONE;
-        code = sprint_plugin_get_exit_code();
+    if (!sprint_operation_valid(operation, false))
+        return SPRINT_ERROR_ARGUMENT_RANGE;
+
+    // Check the state
+    if (sprint_plugin.state != SPRINT_PLUGIN_STATE_PROCESSING)
+        return SPRINT_ERROR_STATE_INVALID;
+
+    // Update the state
+    sprint_plugin.state = SPRINT_PLUGIN_STATE_WRITING_OUTPUT;
+
+    // Open the output file
+    FILE* file = fopen(sprint_plugin.output, "w");
+    if (file == NULL) {
+        sprint_throw_format(false, "error opening file for writing: %s", strerror(errno));
+        return SPRINT_ERROR_IO;
     }
 
+    // Create the output
+    sprint_output* output = sprint_output_create_file(file, true);
+    sprint_assert(true, output != NULL);
+
     // Try to output all elements
-    sprint_output* output = sprint_output_create_file(stdout, false);
-    if (operation != SPRINT_OPERATION_NONE) {
-        sprint_error error = SPRINT_ERROR_NONE;
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (operation != SPRINT_OPERATION_NONE)
         for (int index = 0; index < sprint_plugin.pcb.num_elements; index++)
             if (!sprint_chain(error, sprint_element_output(&sprint_plugin.pcb.elements[index], output, SPRINT_PRIM_FORMAT_RAW)))
                 break;
-        if (error != SPRINT_ERROR_NONE)
-            code = sprint_plugin_get_exit_code();
-    }
+
+    // Destroy the output (and thus close the file)
+    sprint_require(sprint_output_destroy(output, NULL));
+
+    // Check, if writing succeeded
+    if (error != SPRINT_ERROR_NONE)
+        return sprint_rethrow(error);
+
+    // Update the state
+    sprint_plugin.state = SPRINT_PLUGIN_STATE_COMPLETED;
 
     // And exit
-    exit(code);
+    exit(operation);
 }
 
 sprint_error sprint_plugin_output(sprint_output* output)

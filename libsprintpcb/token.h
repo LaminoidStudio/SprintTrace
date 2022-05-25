@@ -96,7 +96,7 @@ struct sprint_tokenizer {
 };
 
 sprint_tokenizer* sprint_tokenizer_from_str(const char* str, bool free);
-sprint_tokenizer* sprint_tokenizer_from_file(const char* path);
+sprint_tokenizer* sprint_tokenizer_from_file(FILE* stream, const char* path, bool close);
 /**
  * Reads the next token from the tokenizer.
  * @param tokenizer The tokenizer instance.

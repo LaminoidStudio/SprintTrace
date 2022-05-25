@@ -298,20 +298,15 @@ sprint_tokenizer* sprint_tokenizer_from_str(const char* str, bool free)
     return tokenizer;
 }
 
-sprint_tokenizer* sprint_tokenizer_from_file(const char* path)
+sprint_tokenizer* sprint_tokenizer_from_file(FILE* stream, const char* path, bool close)
 {
-    if (path == NULL) return NULL;
-
-    // Try to open the file
-    FILE* file = fopen(path, "r");
-    if (file == NULL)
-        return NULL;
+    if (stream == NULL || path == NULL) return NULL;
 
     // Allocate the tokenizer
     sprint_tokenizer* tokenizer = calloc(1, sizeof(*tokenizer));
-    tokenizer->file = file;
+    tokenizer->file = stream;
     tokenizer->read = sprint_tokenizer_read_file_internal;
-    tokenizer->close = sprint_tokenizer_close_file_internal;
+    tokenizer->close = close ? sprint_tokenizer_close_file_internal : NULL;
     tokenizer->origin.source = path;
 
     return tokenizer;
