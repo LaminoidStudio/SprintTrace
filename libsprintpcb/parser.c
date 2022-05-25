@@ -1305,6 +1305,12 @@ static sprint_error sprint_parser_next_component_internal(sprint_parser* parser,
         sprint_check(sprint_list_add(list, child));
     }
 
+    // Ignore end of element errors and destroy the list on other errors
+    if (error == SPRINT_ERROR_EOE)
+        error = SPRINT_ERROR_NONE;
+    else if (error != SPRINT_ERROR_NONE)
+        sprint_check(sprint_list_destroy(list));
+
     // Make sure that there are all properties
     if (!found_text_id || !found_text_value) {
         sprint_throw_format(false, "incomplete element: %s", sprint_element_type_to_keyword(SPRINT_ELEMENT_COMPONENT, false));
@@ -1348,7 +1354,6 @@ static sprint_error sprint_parser_next_group_internal(sprint_parser* parser, spr
     }
 
     // Read the elements
-    bool found_text_id = false, found_text_value = false;
     sprint_list* list = sprint_list_create(sizeof(sprint_element), 16);
     if (list == NULL)
         return SPRINT_ERROR_MEMORY;
@@ -1360,40 +1365,15 @@ static sprint_error sprint_parser_next_group_internal(sprint_parser* parser, spr
         if (error == SPRINT_ERROR_EOE || !sprint_check(error))
             break;
 
-        // Check, if the element is an ID or value text
-        if (child->type == SPRINT_ELEMENT_TEXT) {
-            bool special_text_found = true, already_found = false;
-            sprint_text_type subtype = child->text.subtype;
-            switch (subtype) {
-                case SPRINT_TEXT_ID:
-                    if (found_text_id)
-                        already_found = true;
-                    found_text_id = true;
-                    element->component.text_id = child;
-                    break;
-                case SPRINT_TEXT_VALUE:
-                    if (found_text_value)
-                        already_found = true;
-                    found_text_value = true;
-                    element->component.text_value = child;
-                    break;
-                default:
-                    special_text_found = false;
-                    break;
-            }
-
-            // Handle already found properties
-            if (already_found)
-                sprint_warning_format("overwriting duplicate property: %s", sprint_text_type_to_keyword(subtype));
-
-            // Go to the next element, if a special text was found
-            if (special_text_found)
-                continue;
-        }
-
         // Add the element
         sprint_check(sprint_list_add(list, child));
     }
+
+    // Ignore end of element errors and destroy the list on other errors
+    if (error == SPRINT_ERROR_EOE)
+        error = SPRINT_ERROR_NONE;
+    else if (error != SPRINT_ERROR_NONE)
+        sprint_check(sprint_list_destroy(list));
 
     // Complete the list and check verify full validity
     if (sprint_chain(error, sprint_list_complete(list, &element->group.num_elements, (void*) &element->group.elements)) &&
@@ -1476,7 +1456,7 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
         sprint_check(sprint_parser_statement_destroy(&statement));
 
         // If it failed, or if this is a closing keyword for the wrong element type, emit a warning
-        if (!success || closing && depth > 0 || closing && parent != type) {
+        if (!success || closing && depth < 1 || closing && parent != type) {
             // Emit a warning, turn on salvaged mode and move on to the next element
             *salvaged = true;
             sprint_token_unexpected_internal(parser, true);
