@@ -1451,14 +1451,22 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
             continue;
         }
 
-        // Otherwise, determine the type of the element and destroy the statement
+        // Otherwise, determine the type of the element
         sprint_element_type type = 0;
         bool closing = false;
         bool success = sprint_element_type_from_keyword(&type, &closing, statement.name);
+
+        // Check, if the statement is a valid closing keyword
+        if (closing && success) {
+            success &= depth > 0 & parent == type;
+            success &= sprint_parser_statement_flags(&statement, false, SPRINT_STATEMENT_FLAG_FIRST | SPRINT_STATEMENT_FLAG_LAST);
+        }
+
+        // Destroy the statement
         sprint_check(sprint_parser_statement_destroy(&statement));
 
-        // If it failed, or if this is a closing keyword for the wrong element type, emit a warning
-        if (!success || closing && depth < 1 || closing && parent != type) {
+        // If it failed, emit a warning
+        if (!success) {
             // Emit a warning, turn on salvaged mode and move on to the next element
             *salvaged = true;
             sprint_token_unexpected_internal(parser, true);
