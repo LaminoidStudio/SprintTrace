@@ -36,9 +36,49 @@ sprint_error sprint_list_destroy(sprint_list* list)
     return SPRINT_ERROR_NONE;
 }
 
+sprint_error sprint_list_complete(sprint_list* list, int* count, void** elements)
+{
+    if (list == NULL || count == NULL || elements == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (!sprint_chain(error, sprint_list_trim(list))) {
+        free(list);
+        return sprint_rethrow(error);
+    }
+
+    // Store the elements and count
+    *elements = list->elements;
+    *count = list->count;
+
+    // Zero the state
+    list->count = 0;
+    list->size = 0;
+    list->capacity = 0;
+
+    // And finally, free the list
+    free(list);
+
+    return SPRINT_ERROR_NONE;
+}
+
+int sprint_list_count(sprint_list* list)
+{
+    return list == NULL ? 0 : list->count;
+}
+
+int sprint_list_size(sprint_list* list)
+{
+    return list == NULL ? 0 : list->size;
+}
+
+int sprint_list_capacity(sprint_list* list)
+{
+    return list == NULL ? 0 : list->capacity;
+}
+
 sprint_error sprint_list_add(sprint_list* list, void* element)
 {
-    if (list == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (list == NULL || element == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     // Start with an initial capacity of one
     if (list->capacity < 1) list->capacity = 1;
@@ -49,7 +89,7 @@ sprint_error sprint_list_add(sprint_list* list, void* element)
         int new_capacity = list->capacity * 2;
         if (new_capacity < list->capacity) return SPRINT_ERROR_OVERFLOW;
         sprint_error error = sprint_list_grow(list, new_capacity);
-        if (error != SPRINT_ERROR_NONE) return error;
+        if (error != SPRINT_ERROR_NONE) return sprint_rethrow(error);
     }
 
     // Copy the new element to the end of the list and increment the count
@@ -120,7 +160,13 @@ sprint_error sprint_list_trim(sprint_list* list)
 {
     if (list == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
-    // If there are no elements, trim the list to zero
+    // If there are no elements, free the array
+    if (list->count < 1 && list->elements != NULL) {
+        free(list->elements);
+        list->elements = NULL;
+    }
+
+    // If there is no array, set capacity and count to zero
     if (list->elements == NULL) {
         list->count = 0;
         list->capacity = 0;

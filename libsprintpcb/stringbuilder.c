@@ -64,17 +64,17 @@ sprint_error sprint_stringbuilder_destroy(sprint_stringbuilder* builder)
 
 char* sprint_stringbuilder_complete(sprint_stringbuilder* builder)
 {
-    if (sprint_stringbuilder_trim(builder) != SPRINT_ERROR_NONE) {
-        if (builder != NULL)
-            free(builder);
+    if (!sprint_check(sprint_stringbuilder_trim(builder))) {
+        free(builder);
         return NULL;
     }
 
+    // Store the count and zero the state
     int count = builder->count;
     builder->count = 0;
     builder->capacity = 0;
 
-    // If required, free the content
+    // Append a null terminator
     char* result = builder->content;
     if (builder->content != NULL)
         builder->content[count] = 0;
@@ -82,6 +82,16 @@ char* sprint_stringbuilder_complete(sprint_stringbuilder* builder)
     // And finally, free the builder
     free(builder);
     return result;
+}
+
+int sprint_stringbuilder_count(sprint_stringbuilder* builder)
+{
+    return builder == NULL ? 0 : builder->count;
+}
+
+int sprint_stringbuilder_capacity(sprint_stringbuilder* builder)
+{
+    return builder == NULL ? 0 : builder->capacity;
 }
 
 sprint_error sprint_stringbuilder_flush(sprint_stringbuilder* builder, FILE* stream)
@@ -109,29 +119,43 @@ sprint_error sprint_stringbuilder_output(sprint_stringbuilder* builder, char* de
 
 sprint_error sprint_stringbuilder_format(sprint_stringbuilder* builder, const char* format, ...)
 {
-    if (builder == NULL || format == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    // Determine the required buffer space
     va_list args;
     va_start(args, format);
+    sprint_error error = sprint_stringbuilder_format_args(builder, format, args);
+    va_end(args);
+    return error;
+}
+
+sprint_error sprint_stringbuilder_format_args(sprint_stringbuilder* builder, const char* format, va_list args)
+{
+    if (builder == NULL || format == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+
+    // Make a copy of the arguments for later
+    va_list args2;
+    va_copy(args2, args);
+
+    // Determine the required buffer space
     int additional_length = vsnprintf(NULL, 0, format, args);
     va_end(args);
-    if (additional_length < 0)
+    if (additional_length < 0) {
+        va_end(args2);
         return SPRINT_ERROR_ARGUMENT_FORMAT;
+    }
 
     // Grow the buffer to fit the new content
     int minimum_capacity = builder->count + additional_length;
     if (builder->content == NULL || minimum_capacity >= builder->capacity)
     {
         sprint_error error = sprint_stringbuilder_grow(builder, builder->capacity * 2 + minimum_capacity);
-        if (error != SPRINT_ERROR_NONE)
-            return error;
+        if (error != SPRINT_ERROR_NONE) {
+            va_end(args2);
+            return sprint_rethrow(error);
+        }
     }
 
     // Actually write the formatted content
-    va_start(args, format);
-    int written_length = vsnprintf(builder->content + builder->count, builder->capacity + 1, format, args);
-    va_end(args);
+    int written_length = vsnprintf(builder->content + builder->count, builder->capacity + 1, format, args2);
+    va_end(args2);
     if (written_length != additional_length)
         return SPRINT_ERROR_ASSERTION;
 
@@ -159,7 +183,7 @@ sprint_error sprint_stringbuilder_put_range(sprint_stringbuilder* builder, sprin
     {
         sprint_error error = sprint_stringbuilder_grow(builder, builder->capacity * 2 + minimum_capacity);
         if (error != SPRINT_ERROR_NONE)
-            return error;
+            return sprint_rethrow(error);
     }
 
     // Copy the contents of the source to the builder and increase the size
@@ -177,7 +201,7 @@ sprint_error sprint_stringbuilder_put_chr(sprint_stringbuilder* builder, char ch
     {
         sprint_error error = sprint_stringbuilder_grow(builder, builder->capacity * 2);
         if (error != SPRINT_ERROR_NONE)
-            return error;
+            return sprint_rethrow(error);
     }
 
     // Store the character
@@ -206,7 +230,7 @@ sprint_error sprint_stringbuilder_put_str_range(sprint_stringbuilder* builder, c
     {
         sprint_error error = sprint_stringbuilder_grow(builder, builder->capacity * 2 + minimum_capacity);
         if (error != SPRINT_ERROR_NONE)
-            return error;
+            return sprint_rethrow(error);
     }
 
     // Copy the string
@@ -225,21 +249,6 @@ sprint_error sprint_stringbuilder_put_hex(sprint_stringbuilder* builder, int num
 {
     // Using the formatter is the safest option to print an hexadecimal integer
     return sprint_stringbuilder_format(builder, "%x", num);
-}
-
-sprint_error sprint_stringbuilder_put_padded(sprint_stringbuilder* builder, int num, bool hex, bool zero, int width)
-{
-    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-    if (width < 1 || width > 999) return SPRINT_ERROR_ARGUMENT_RANGE;
-
-    // Allocate a buffer with enough space to hold the longest format plus null (%0999d\0) and build the format
-    char format[7];
-    int format_size = snprintf(format, sizeof(format), zero ? "%%0%d%c" : "%%%d%c", width, hex ? 'x' : 'd');
-    if (format_size < 0 || format_size >= sizeof(format))
-        return SPRINT_ERROR_ASSERTION;
-
-    // Finally, use the constructed format to format the number
-    return sprint_stringbuilder_format(builder, format, num);
 }
 
 sprint_error sprint_stringbuilder_at(sprint_stringbuilder* builder, char* result, int position)

@@ -5,18 +5,25 @@
 //
 
 #include "plugin.h"
+#include "token.h"
+#include "parser.h"
+#include "pcb.h"
+#include "list.h"
 #include "stringbuilder.h"
+#include "errors.h"
 
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifndef WIN32
 #include <errno.h>
 #endif
 
-bool sprint_plugin_parse_int_internal(int* output, const char* input);
-bool sprint_plugin_parse_language_internal(int* output, const char* input);
-sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[]);
-sprint_error sprint_plugin_parse_input_internal();
+static bool sprint_plugin_parse_int_internal(int* output, const char* input);
+static bool sprint_plugin_parse_language_internal(int* output, const char* input);
+static sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[]);
+static sprint_error sprint_plugin_parse_input_internal();
 
 const char* SPRINT_LANGUAGE_NAMES[] = {
         [SPRINT_LANGUAGE_ENGLISH] = "English",
@@ -69,7 +76,7 @@ const char SPRINT_FLAG_PREFIX = '-';
 const char SPRINT_FLAG_DELIMITER = ':';
 const char* SPRINT_OUTPUT_SUFFIX = "_out";
 
-bool sprint_plugin_parse_int_internal(int* output, const char* input)
+static bool sprint_plugin_parse_int_internal(int* output, const char* input)
 {
     if (*input == 0) return false;
 
@@ -83,7 +90,7 @@ bool sprint_plugin_parse_int_internal(int* output, const char* input)
     return true;
 }
 
-bool sprint_plugin_parse_language_internal(int* output, const char* input)
+static bool sprint_plugin_parse_language_internal(int* output, const char* input)
 {
     if (*input == 0) return false;
 
@@ -99,8 +106,12 @@ bool sprint_plugin_parse_language_internal(int* output, const char* input)
     return true;
 }
 
-sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
+static sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
 {
+    // Check the state
+    if (sprint_plugin.state != SPRINT_PLUGIN_STATE_PARSING_FLAGS)
+        return SPRINT_ERROR_STATE_INVALID;
+
     // Check, if the number of arguments could be enough
     if (argc < 4) {
         sprint_throw(false, "too few arguments");
@@ -267,6 +278,10 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
             sprint_chain(error, sprint_stringbuilder_put_str(builder, error_separator));
         sprint_chain(error, sprint_stringbuilder_put_str(builder, "height (H)"));
     }
+    if (error != SPRINT_ERROR_NONE) {
+        sprint_check(sprint_stringbuilder_destroy(builder));
+        return sprint_rethrow(error);
+    }
     if (builder->count > 0) {
         char* flags_str = sprint_stringbuilder_complete(builder);
         if (sprint_assert(false, flags_str != NULL)) {
@@ -306,6 +321,10 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
         if (builder->count > 0)
             sprint_chain(error, sprint_stringbuilder_put_str(builder, error_separator));
         sprint_chain(error, sprint_stringbuilder_put_str(builder, "process ID (P)"));
+    }
+    if (error != SPRINT_ERROR_NONE) {
+        sprint_check(sprint_stringbuilder_destroy(builder));
+        return sprint_rethrow(error);
     }
     if (builder->count > 0) {
         char* flags_str = sprint_stringbuilder_complete(builder);
@@ -356,12 +375,14 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
         !sprint_chain(error, sprint_stringbuilder_put_str_range(builder, input_path, input_head_length)))
     {
         sprint_check(sprint_stringbuilder_destroy(builder));
-        return error;
+        return sprint_rethrow(error);
     }
 
     // Append the output filename suffix
-    if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_OUTPUT_SUFFIX)))
-        return error;
+    if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_OUTPUT_SUFFIX))) {
+        sprint_check(sprint_stringbuilder_destroy(builder));
+        return sprint_rethrow(error);
+    }
 
     // Append the rest of the filename
     int input_tail_length = (int) (input_ptr - input_path) - input_head_length;
@@ -374,7 +395,7 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
         !sprint_chain(error, sprint_stringbuilder_put_str(builder, input_path + input_head_length)))
     {
         sprint_check(sprint_stringbuilder_destroy(builder));
-        return error;
+        return sprint_rethrow(error);
     }
 
     // Complete the builder and store the input and output path
@@ -395,13 +416,62 @@ sprint_error sprint_plugin_parse_flags_internal(int argc, const char* argv[])
     return SPRINT_ERROR_NONE;
 }
 
-sprint_error sprint_plugin_parse_input_internal()
+static sprint_error sprint_plugin_parse_input_internal()
 {
-    // Open input file
-    sprint_plugin.input;
+    // Check the state
+    if (sprint_plugin.state != SPRINT_PLUGIN_STATE_PARSING_INPUT)
+        return SPRINT_ERROR_STATE_INVALID;
 
-    // TODO
-    return SPRINT_ERROR_NONE;
+    // Open the input file
+    FILE* file = fopen(sprint_plugin.input, "r");
+    if (file == NULL) {
+        sprint_throw_format(false, "error opening file for reading: %s", strerror(errno));
+        return SPRINT_ERROR_IO;
+    }
+
+    // Create the tokenizer
+    sprint_tokenizer* tokenizer = sprint_tokenizer_from_file(file, sprint_plugin.input, true);
+    sprint_assert(true, tokenizer != NULL);
+
+    // Create the parser
+    sprint_parser* parser = sprint_parser_create(tokenizer);
+    sprint_assert(true, parser != NULL);
+
+    // Create an element list
+    sprint_list* list = sprint_list_create(sizeof(*sprint_plugin.pcb.elements), 64);
+    sprint_assert(true, list);
+
+    // Clear the salvaged flag
+    sprint_plugin.pcb.salvaged = false;
+
+    // Parse all elements
+    sprint_error error;
+    sprint_element* element;
+    while (true) {
+        // Read the element
+        error = sprint_parser_next_element(parser, &element, &sprint_plugin.pcb.salvaged);
+
+        // Handle EOF
+        if (error == SPRINT_ERROR_EOF) {
+            error = SPRINT_ERROR_NONE;
+            break;
+        }
+
+        // Handle other errors and add the element
+        if (!sprint_check(error) || !sprint_chain(error, sprint_list_add(list, element)))
+            break;
+    }
+
+    // Complete the element list, if it succeeded
+    if (error == SPRINT_ERROR_NONE)
+        sprint_require(sprint_list_complete(list, &sprint_plugin.pcb.num_elements, (void*) &sprint_plugin.pcb.elements));
+    else
+        sprint_require(sprint_list_destroy(list));
+
+    // Destroy the parser (and thus also the tokenizer, and close the file)
+    sprint_require(sprint_parser_destroy(parser, true, NULL));
+
+    return sprint_rethrow(error);
 }
 
 sprint_error sprint_plugin_begin(int argc, const char* argv[])
@@ -415,12 +485,12 @@ sprint_error sprint_plugin_begin(int argc, const char* argv[])
     sprint_error error = SPRINT_ERROR_NONE;
     sprint_plugin.state = SPRINT_PLUGIN_STATE_PARSING_FLAGS;
     if (!sprint_chain(error, sprint_plugin_parse_flags_internal(argc, argv)))
-        return error;
+        return sprint_rethrow(error);
 
     // Parse the input
     sprint_plugin.state = SPRINT_PLUGIN_STATE_PARSING_INPUT;
     if (!sprint_chain(error, sprint_plugin_parse_input_internal()))
-        return error;
+        return sprint_rethrow(error);
 
     // Finally, update the state to processing and allow the plugin to run
     sprint_plugin.state = SPRINT_PLUGIN_STATE_PROCESSING;
@@ -429,110 +499,86 @@ sprint_error sprint_plugin_begin(int argc, const char* argv[])
 
 void sprint_plugin_bail(int error)
 {
+    // Clamp the error code
     sprint_operation operation = SPRINT_OPERATION_FAILED_PLUGIN + error;
     if (!sprint_operation_valid(operation, true) || operation < SPRINT_OPERATION_FAILED_PLUGIN)
         operation = SPRINT_OPERATION_FAILED_END;
 
+    // Update the state
+    sprint_plugin.state = SPRINT_PLUGIN_STATE_COMPLETED;
+
+    // And exit
     exit(operation);
 }
 
 sprint_error sprint_plugin_end(sprint_operation operation)
 {
+    // Check the operation
     if (!sprint_operation_valid(operation, false))
         return SPRINT_ERROR_ARGUMENT_RANGE;
 
-    // TODO: Write output
+    // Check the state
+    if (sprint_plugin.state != SPRINT_PLUGIN_STATE_PROCESSING)
+        return SPRINT_ERROR_STATE_INVALID;
 
+    // Update the state
+    sprint_plugin.state = SPRINT_PLUGIN_STATE_WRITING_OUTPUT;
+
+    // Open the output file
+    FILE* file = fopen(sprint_plugin.output, "w");
+    if (file == NULL) {
+        sprint_throw_format(false, "error opening file for writing: %s", strerror(errno));
+        return SPRINT_ERROR_IO;
+    }
+
+    // Create the output
+    sprint_output* output = sprint_output_create_file(file, true);
+    sprint_assert(true, output != NULL);
+
+    // Try to output all elements
+    sprint_error error = SPRINT_ERROR_NONE;
+    if (operation != SPRINT_OPERATION_NONE)
+        for (int index = 0; index < sprint_plugin.pcb.num_elements; index++)
+            if (!sprint_chain(error, sprint_element_output(&sprint_plugin.pcb.elements[index], output, SPRINT_PRIM_FORMAT_RAW)))
+                break;
+
+    // Destroy the output (and thus close the file)
+    sprint_require(sprint_output_destroy(output, NULL));
+
+    // Check, if writing succeeded
+    if (error == SPRINT_ERROR_SYNTAX)
+        error = SPRINT_ERROR_PLUGIN_INPUT_SYNTAX;
+    if (error != SPRINT_ERROR_NONE)
+        return sprint_rethrow(error);
+
+    // Update the state
+    sprint_plugin.state = SPRINT_PLUGIN_STATE_COMPLETED;
+
+    // And exit
     exit(operation);
 }
 
-sprint_error sprint_plugin_print(FILE* stream)
+sprint_error sprint_plugin_output(sprint_output* output)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(63);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    sprint_error error = sprint_plugin_string(builder);
-    if (error == SPRINT_ERROR_NONE)
-        return sprint_stringbuilder_flush(builder, stream);
-
-    sprint_stringbuilder_destroy(builder);
-    return error;
-}
-
-sprint_error sprint_plugin_string(sprint_stringbuilder* builder)
-{
-    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    int initial_count = builder->count;
     sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, "sprint_plugin{state="));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_PLUGIN_STATE_NAMES[sprint_plugin.state]));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", language="));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", operation="));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_OPERATION_NAMES[sprint_plugin.operation]));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", selection="));
-    sprint_chain(error, sprint_bool_string(sprint_plugin.selection, builder));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", pcb="));
-    sprint_chain(error, sprint_pcb_string(&sprint_plugin.pcb, builder));
-    sprint_chain(error, sprint_stringbuilder_format(builder, ", process=%p", sprint_plugin.process));
-    sprint_chain(error, sprint_stringbuilder_format(builder, ", input=%s", sprint_plugin.input));
-    sprint_chain(error, sprint_stringbuilder_format(builder, ", output=%s", sprint_plugin.output));
-    if (!sprint_chain(error, sprint_stringbuilder_put_chr(builder, '}')))
-        builder->count = initial_count;
+    sprint_chain(error, sprint_output_put_str(output, "sprint_plugin{state="));
+    sprint_chain(error, sprint_output_put_str(output, SPRINT_PLUGIN_STATE_NAMES[sprint_plugin.state]));
+    sprint_chain(error, sprint_output_put_str(output, ", language="));
+    sprint_chain(error, sprint_output_put_str(output, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]));
+    sprint_chain(error, sprint_output_put_str(output, ", operation="));
+    sprint_chain(error, sprint_output_put_str(output, SPRINT_OPERATION_NAMES[sprint_plugin.operation]));
+    sprint_chain(error, sprint_output_put_str(output, ", selection="));
+    sprint_chain(error, sprint_bool_output(sprint_plugin.selection, output));
+    sprint_chain(error, sprint_output_put_str(output, ", pcb="));
+    sprint_chain(error, sprint_pcb_output(&sprint_plugin.pcb, output));
+    sprint_chain(error, sprint_output_format(output, ", process=%p", sprint_plugin.process));
+    sprint_chain(error, sprint_output_format(output, ", input=%s", sprint_plugin.input));
+    sprint_chain(error, sprint_output_format(output, ", output=%s", sprint_plugin.output));
+    sprint_chain(error, sprint_output_put_chr(output, '}'));
 
-    return error;
-}
-
-#include "../nuklear.h"
-sprint_error sprint_plugin_gui(struct nk_context* ctx)
-{
-    sprint_stringbuilder* builder = sprint_stringbuilder_of("Language: ");
-    sprint_stringbuilder_put_str(builder, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]);
-    nk_layout_row_dynamic(ctx, 15, 1);
-    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
-
-    builder = sprint_stringbuilder_of("Selection: ");
-    sprint_bool_string(sprint_plugin.selection, builder);
-    nk_layout_row_dynamic(ctx, 15, 1);
-    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
-
-    builder = sprint_stringbuilder_of("PCB width: ");
-    sprint_require(sprint_dist_string(sprint_plugin.pcb.width, builder, SPRINT_PRIM_FORMAT_COOKED));
-    nk_layout_row_dynamic(ctx, 15, 1);
-    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
-
-    builder = sprint_stringbuilder_of("PCB height: ");
-    sprint_require(sprint_dist_string(sprint_plugin.pcb.height, builder, SPRINT_PRIM_FORMAT_COOKED));
-    nk_layout_row_dynamic(ctx, 15, 1);
-    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
-
-    builder = sprint_stringbuilder_of("PCB grid: ");
-    sprint_require(sprint_grid_string(&sprint_plugin.pcb.grid, builder));
-    nk_layout_row_dynamic(ctx, 15, 1);
-    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
-
-    builder = sprint_stringbuilder_of("PCB flags: ");
-    sprint_require(sprint_pcb_flags_string(sprint_plugin.pcb.flags, builder));
-    nk_layout_row_dynamic(ctx, 15, 1);
-    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
-
-    // todo: grid + elems
-
-    builder = sprint_stringbuilder_of("Input: ");
-    sprint_stringbuilder_put_str(builder, sprint_plugin.input);
-    nk_layout_row_dynamic(ctx, 15, 1);
-    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
-
-    builder = sprint_stringbuilder_of("Output: ");
-    sprint_stringbuilder_put_str(builder, sprint_plugin.output);
-    nk_layout_row_dynamic(ctx, 15, 1);
-    nk_label(ctx, sprint_stringbuilder_complete(builder), NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
-
-    return SPRINT_ERROR_NONE;
+    return sprint_rethrow(error);
 }
 
 sprint_pcb* sprint_plugin_get_pcb(void)
@@ -557,4 +603,77 @@ sprint_plugin_state sprint_plugin_get_state(void)
 int sprint_plugin_get_exit_code(void)
 {
     return (int) (SPRINT_OPERATION_FAILED_LIBRARY + sprint_plugin_get_state());
+}
+
+#include "../nuklear.h"
+sprint_error sprint_plugin_gui(struct nk_context* ctx)
+{
+    sprint_output* output = sprint_output_create_str(15);
+    char* str = NULL;
+    sprint_output_put_str(output, "Language: ");
+    sprint_output_put_str(output, SPRINT_LANGUAGE_NAMES[sprint_plugin.language]);
+    sprint_output_destroy(output, &str);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, str, NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+    free(str);
+
+    output = sprint_output_create_str(15);
+    sprint_output_put_str(output, "Selection: ");
+    sprint_bool_output(sprint_plugin.selection, output);
+    sprint_output_destroy(output, &str);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, str, NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+    free(str);
+
+    output = sprint_output_create_str(15);
+    sprint_output_put_str(output, "PCB width: ");
+    sprint_require(sprint_dist_output(sprint_plugin.pcb.width, output, SPRINT_PRIM_FORMAT_COOKED));
+    sprint_output_destroy(output, &str);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, str, NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+    free(str);
+
+    output = sprint_output_create_str(15);
+    sprint_output_put_str(output, "PCB height: ");
+    sprint_require(sprint_dist_output(sprint_plugin.pcb.height, output, SPRINT_PRIM_FORMAT_COOKED));
+    sprint_output_destroy(output, &str);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, str, NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+    free(str);
+
+    output = sprint_output_create_str(15);
+    sprint_output_put_str(output, "PCB grid: ");
+    sprint_require(sprint_grid_output(&sprint_plugin.pcb.grid, output));
+    sprint_output_destroy(output, &str);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, str, NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+    free(str);
+
+    output = sprint_output_create_str(15);
+    sprint_output_put_str(output, "PCB flags: ");
+    sprint_require(sprint_pcb_flags_output(sprint_plugin.pcb.flags, output));
+    sprint_output_destroy(output, &str);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, str, NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+    free(str);
+
+    // todo: grid + elems
+
+    output = sprint_output_create_str(15);
+    sprint_output_put_str(output, "Input: ");
+    sprint_output_put_str(output, sprint_plugin.input);
+    sprint_output_destroy(output, &str);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, str, NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+    free(str);
+
+    output = sprint_output_create_str(15);
+    sprint_output_put_str(output, "Output: ");
+    sprint_output_put_str(output, sprint_plugin.output);
+    sprint_output_destroy(output, &str);
+    nk_layout_row_dynamic(ctx, 15, 1);
+    nk_label(ctx, str, NK_TEXT_ALIGN_TOP | NK_TEXT_ALIGN_LEFT);
+    free(str);
+
+    return SPRINT_ERROR_NONE;
 }

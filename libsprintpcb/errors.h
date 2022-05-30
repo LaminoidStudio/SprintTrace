@@ -19,9 +19,14 @@ typedef enum sprint_error {
     SPRINT_ERROR_ASSERTION,
     SPRINT_ERROR_UNDERFLOW,
     SPRINT_ERROR_OVERFLOW,
+    SPRINT_ERROR_RECURSION,
     SPRINT_ERROR_MEMORY,
     SPRINT_ERROR_IO,
     SPRINT_ERROR_EOF,
+    SPRINT_ERROR_EOS,
+    SPRINT_ERROR_EOE,
+    SPRINT_ERROR_TRUNCATED,
+    SPRINT_ERROR_SYNTAX,
     SPRINT_ERROR_STATE_INVALID,
     SPRINT_ERROR_ARGUMENT_NULL,
     SPRINT_ERROR_ARGUMENT_RANGE,
@@ -30,9 +35,7 @@ typedef enum sprint_error {
     SPRINT_ERROR_PLUGIN_INPUT_MISSING,
     SPRINT_ERROR_PLUGIN_INPUT_SYNTAX,
     SPRINT_ERROR_PLUGIN_FLAGS_MISSING,
-    SPRINT_ERROR_PLUGIN_FLAGS_SYNTAX,
-    SPRINT_ERROR_NOT_ASCII,
-    SPRINT_ERROR_SYNTAX// fixme
+    SPRINT_ERROR_PLUGIN_FLAGS_SYNTAX
 } sprint_error;
 extern const char* SPRINT_ERROR_NAMES[];
 
@@ -42,6 +45,7 @@ bool sprint_error_print(sprint_error error, FILE* stream, bool capitalized);
 void sprint_debug_internal(const char* file, int line, const char* context);
 void sprint_warning_internal(const char* file, int line, const char* context);
 bool sprint_error_internal(sprint_error error, bool critical, const char* file, int line, const char* context);
+sprint_error sprint_rethrow(sprint_error error);
 bool sprint_log(const char* what);
 bool sprint_log_format(const char* format, ...);
 #ifndef NDEBUG

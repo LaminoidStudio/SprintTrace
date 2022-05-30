@@ -8,8 +8,10 @@
 #define SPRINTPCB_PLUGIN_H
 
 #include "pcb.h"
-#include "errors.h"
 #include "stringbuilder.h"
+#include "elements.h"
+#include "output.h"
+#include "errors.h"
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -62,16 +64,21 @@ typedef enum sprint_plugin_state {
 } sprint_plugin_state;
 extern const char* SPRINT_PLUGIN_STATE_NAMES[];
 
-// pid_t (Mac, Linux), DWORD (Windows)
-typedef int sprint_process_id;
+#ifdef WIN32
+#include <windows.h>
+typedef DWORD sprint_process_id;
+#else
+#include <unistd.h>
+#include <sys/types.h>
+typedef pid_t sprint_process_id;
+#endif
 
 extern const char SPRINT_FLAG_PREFIX;
 extern const char SPRINT_FLAG_DELIMITER;
 extern const char* SPRINT_OUTPUT_SUFFIX;
 
 sprint_error sprint_plugin_begin(int argc, const char* argv[]);
-sprint_error sprint_plugin_print(FILE* stream);
-sprint_error sprint_plugin_string(sprint_stringbuilder* builder);
+sprint_error sprint_plugin_output(sprint_output* output);
 void sprint_plugin_bail(int error);
 sprint_error sprint_plugin_end(sprint_operation operation);
 sprint_pcb* sprint_plugin_get_pcb(void);

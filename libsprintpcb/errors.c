@@ -17,9 +17,14 @@ const char* SPRINT_ERROR_NAMES[] = {
         [SPRINT_ERROR_ASSERTION] = "assertion",
         [SPRINT_ERROR_UNDERFLOW] = "underflow",
         [SPRINT_ERROR_OVERFLOW] = "overflow",
+        [SPRINT_ERROR_RECURSION] = "recursion",
         [SPRINT_ERROR_MEMORY] = "memory",
-        [SPRINT_ERROR_IO] = "I/O",
-        [SPRINT_ERROR_EOF] = "EOF",
+        [SPRINT_ERROR_IO] = "input/output",
+        [SPRINT_ERROR_EOF] = "end of file",
+        [SPRINT_ERROR_EOS] = "end of statement",
+        [SPRINT_ERROR_EOE] = "end of element",
+        [SPRINT_ERROR_TRUNCATED] = "truncated",
+        [SPRINT_ERROR_SYNTAX] = "syntax",
         [SPRINT_ERROR_STATE_INVALID] = "state invalid",
         [SPRINT_ERROR_ARGUMENT_NULL] = "argument null",
         [SPRINT_ERROR_ARGUMENT_RANGE] = "argument range",
@@ -30,6 +35,41 @@ const char* SPRINT_ERROR_NAMES[] = {
         [SPRINT_ERROR_PLUGIN_FLAGS_MISSING] = "plugin flags missing",
         [SPRINT_ERROR_PLUGIN_FLAGS_SYNTAX] = "plugin flags syntax"
 };
+
+sprint_error sprint_rethrow(sprint_error error)
+{
+    switch (error) {
+        case SPRINT_ERROR_NONE:
+        case SPRINT_ERROR_INTERNAL:
+        case SPRINT_ERROR_ASSERTION:
+        case SPRINT_ERROR_UNDERFLOW:
+        case SPRINT_ERROR_OVERFLOW:
+        case SPRINT_ERROR_RECURSION:
+        case SPRINT_ERROR_MEMORY:
+        case SPRINT_ERROR_IO:
+        case SPRINT_ERROR_EOF:
+        case SPRINT_ERROR_EOS:
+        case SPRINT_ERROR_EOE:
+        case SPRINT_ERROR_TRUNCATED:
+        case SPRINT_ERROR_SYNTAX:
+        case SPRINT_ERROR_STATE_INVALID:
+        case SPRINT_ERROR_PLUGIN_INPUT_MISSING:
+        case SPRINT_ERROR_PLUGIN_INPUT_SYNTAX:
+        case SPRINT_ERROR_PLUGIN_FLAGS_MISSING:
+        case SPRINT_ERROR_PLUGIN_FLAGS_SYNTAX:
+            return error;
+
+        case SPRINT_ERROR_ARGUMENT_NULL:
+        case SPRINT_ERROR_ARGUMENT_RANGE:
+        case SPRINT_ERROR_ARGUMENT_FORMAT:
+        case SPRINT_ERROR_ARGUMENT_INCOMPLETE:
+            return SPRINT_ERROR_INTERNAL;
+
+        default:
+            sprint_warning_format("unknown error %d rethrown", error);
+            return error;
+    }
+}
 
 const char* sprint_error_string(sprint_error error)
 {

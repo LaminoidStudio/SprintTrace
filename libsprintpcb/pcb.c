@@ -5,6 +5,11 @@
 //
 
 #include "pcb.h"
+#include "primitives.h"
+#include "output.h"
+#include "grid.h"
+#include "elements.h"
+#include "errors.h"
 
 const char* SPRINT_PCB_FLAG_NAMES[] = {
         "top fill",
@@ -14,83 +19,46 @@ const char* SPRINT_PCB_FLAG_NAMES[] = {
         "multilayer"
 };
 
-sprint_error sprint_pcb_flags_print(sprint_pcb_flags flags, FILE* stream)
+sprint_error sprint_pcb_flags_output(sprint_pcb_flags flags, sprint_output* output)
 {
-    if (stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(23);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    sprint_error error = sprint_pcb_flags_string(flags, builder);
-    if (error == SPRINT_ERROR_NONE)
-        return sprint_stringbuilder_flush(builder, stream);
-
-    sprint_stringbuilder_destroy(builder);
-    return error;
-}
-
-sprint_error sprint_pcb_flags_string(sprint_pcb_flags flags, sprint_stringbuilder* builder)
-{
-    if (builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
     bool first = true, found = false;
-    int initial_count = builder->count;
     sprint_error error = SPRINT_ERROR_NONE;
     for (int bit = 0; bit < sizeof(SPRINT_PCB_FLAG_NAMES) / sizeof(const char*); bit++) {
         if (!((flags >> bit) & 1)) continue;
         if (!first)
-            sprint_chain(error, sprint_stringbuilder_put_chr(builder, '|'));
+            sprint_chain(error, sprint_output_put_chr(output, '|'));
         else
             first = false;
 
-        if (!sprint_chain(error, sprint_stringbuilder_put_str(builder, SPRINT_PCB_FLAG_NAMES[bit]))) {
-            builder->count = initial_count;
+        if (!sprint_chain(error, sprint_output_put_str(output, SPRINT_PCB_FLAG_NAMES[bit])))
             break;
-        } else
+        else
             found |= true;
     }
 
     if (!found)
-        sprint_chain(error, sprint_stringbuilder_put_str(builder, flags == 0 ? "none" : "invalid"));
+        sprint_chain(error, sprint_output_put_str(output, flags == 0 ? "none" : "invalid"));
 
-    return error;
+    return sprint_rethrow(error);
 }
 
-sprint_error sprint_pcb_print(sprint_pcb* pcb, FILE* stream)
+sprint_error sprint_pcb_output(sprint_pcb* pcb, sprint_output* output)
 {
-    if (pcb == NULL || stream == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
+    if (pcb == NULL || output == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
 
-    sprint_stringbuilder* builder = sprint_stringbuilder_create(31);
-    if (builder == NULL)
-        return SPRINT_ERROR_MEMORY;
-
-    sprint_error error = sprint_pcb_string(pcb, builder);
-    if (error == SPRINT_ERROR_NONE)
-        return sprint_stringbuilder_flush(builder, stream);
-
-    sprint_stringbuilder_destroy(builder);
-    return error;
-}
-
-sprint_error sprint_pcb_string(sprint_pcb* pcb, sprint_stringbuilder* builder)
-{
-    if (pcb == NULL || builder == NULL) return SPRINT_ERROR_ARGUMENT_NULL;
-
-    int initial_count = builder->count;
     sprint_error error = SPRINT_ERROR_NONE;
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, "sprint_pcb{width="));
-    sprint_chain(error, sprint_dist_string(pcb->width, builder, SPRINT_PRIM_FORMAT_COOKED));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", height="));
-    sprint_chain(error, sprint_dist_string(pcb->height, builder, SPRINT_PRIM_FORMAT_COOKED));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", grid="));
-    sprint_chain(error, sprint_grid_string(&pcb->grid, builder));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", flags="));
-    sprint_chain(error, sprint_pcb_flags_string(pcb->flags, builder));
-    sprint_chain(error, sprint_stringbuilder_put_str(builder, ", elements="));
+    sprint_chain(error, sprint_output_put_str(output, "sprint_pcb{width="));
+    sprint_chain(error, sprint_dist_output(pcb->width, output, SPRINT_PRIM_FORMAT_COOKED));
+    sprint_chain(error, sprint_output_put_str(output, ", height="));
+    sprint_chain(error, sprint_dist_output(pcb->height, output, SPRINT_PRIM_FORMAT_COOKED));
+    sprint_chain(error, sprint_output_put_str(output, ", grid="));
+    sprint_chain(error, sprint_grid_output(&pcb->grid, output));
+    sprint_chain(error, sprint_output_put_str(output, ", flags="));
+    sprint_chain(error, sprint_pcb_flags_output(pcb->flags, output));
+    sprint_chain(error, sprint_output_put_str(output, ", elements="));
+    sprint_chain(error, sprint_output_put_chr(output, '}'));
 
-    if (!sprint_chain(error, sprint_stringbuilder_put_chr(builder, '}')))
-        builder->count = initial_count;
-
-    return error;
+    return sprint_rethrow(error);
 }
