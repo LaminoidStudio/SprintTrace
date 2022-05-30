@@ -1,5 +1,5 @@
 //
-// Created by Benedikt on 27.04.2022.
+// libsprintpcb: dynamic string builder
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //

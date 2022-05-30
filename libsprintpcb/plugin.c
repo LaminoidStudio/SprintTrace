@@ -1,5 +1,5 @@
 //
-// Created by Benedikt on 04.05.2022.
+// libsprintpcb: plugin representation and life-cycle management
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
@@ -31,6 +31,11 @@ const char* SPRINT_LANGUAGE_NAMES[] = {
         [SPRINT_LANGUAGE_FRENCH] = "French"
 };
 
+bool sprint_language_valid(sprint_language language)
+{
+    return language >= SPRINT_LANGUAGE_ENGLISH && language <= SPRINT_LANGUAGE_FRENCH;
+}
+
 static struct sprint_plugin {
     sprint_plugin_state state;
     sprint_language language;
@@ -40,7 +45,7 @@ static struct sprint_plugin {
     bool selection;
     const char* input;
     const char* output;
-} sprint_plugin = {0};
+} sprint_plugin = {.state = SPRINT_PLUGIN_STATE_UNINITIALIZED};
 
 const char* SPRINT_OPERATION_NAMES[] = {
         [SPRINT_OPERATION_NONE] = "no operation",
@@ -339,6 +344,33 @@ static sprint_error sprint_plugin_parse_flags_internal(int argc, const char* arg
             return SPRINT_ERROR_ASSERTION;
     }
 
+    // Make sure the values are valid
+    bool all_valid = true;
+    if (!sprint_language_valid(language)) {
+        all_valid = false;
+        sprint_throw(false, "language invalid");
+    }
+    if (!sprint_size_valid(pcb_width)) {
+        all_valid = false;
+        sprint_throw(false, "width invalid");
+    }
+    if (!sprint_size_valid(pcb_height)) {
+        all_valid = false;
+        sprint_throw(false, "height invalid");
+    }
+    if (!sprint_dist_valid(pcb_origin_x)) {
+        all_valid = false;
+        sprint_throw(false, "origin x invalid");
+    }
+    if (!sprint_dist_valid(pcb_origin_y)) {
+        all_valid = false;
+        sprint_throw(false, "origin y invalid");
+    }
+    if (!all_valid) {
+        sprint_check(sprint_stringbuilder_destroy(builder));
+        return SPRINT_ERROR_PLUGIN_FLAGS_SYNTAX;
+    }
+
     // Determine the last index of a slash or dot in the input path
     const char *input_ptr, *input_tail = NULL;
     bool input_tail_slash = false;
@@ -524,32 +556,34 @@ sprint_error sprint_plugin_end(sprint_operation operation)
     // Update the state
     sprint_plugin.state = SPRINT_PLUGIN_STATE_WRITING_OUTPUT;
 
-    // Open the output file
-    FILE* file = fopen(sprint_plugin.output, "w");
-    if (file == NULL) {
-        sprint_throw_format(false, "error opening file for writing: %s", strerror(errno));
-        return SPRINT_ERROR_IO;
-    }
+    // Handle operations that output data
+    if (operation != SPRINT_OPERATION_NONE) {
+        // Open the output file
+        FILE* file = fopen(sprint_plugin.output, "w");
+        if (file == NULL) {
+            sprint_throw_format(false, "error opening file for writing: %s", strerror(errno));
+            return SPRINT_ERROR_IO;
+        }
 
-    // Create the output
-    sprint_output* output = sprint_output_create_file(file, true);
-    sprint_assert(true, output != NULL);
+        // Create the output
+        sprint_output* output = sprint_output_create_file(file, true);
+        sprint_assert(true, output != NULL);
 
-    // Try to output all elements
-    sprint_error error = SPRINT_ERROR_NONE;
-    if (operation != SPRINT_OPERATION_NONE)
+        // Output all elements
+        sprint_error error = SPRINT_ERROR_NONE;
         for (int index = 0; index < sprint_plugin.pcb.num_elements; index++)
             if (!sprint_chain(error, sprint_element_output(&sprint_plugin.pcb.elements[index], output, SPRINT_PRIM_FORMAT_RAW)))
                 break;
 
-    // Destroy the output (and thus close the file)
-    sprint_require(sprint_output_destroy(output, NULL));
+        // Destroy the output (and thus close the file)
+        sprint_require(sprint_output_destroy(output, NULL));
 
-    // Check, if writing succeeded
-    if (error == SPRINT_ERROR_SYNTAX)
-        error = SPRINT_ERROR_PLUGIN_INPUT_SYNTAX;
-    if (error != SPRINT_ERROR_NONE)
-        return sprint_rethrow(error);
+        // Check, if writing succeeded
+        if (error == SPRINT_ERROR_SYNTAX)
+            error = SPRINT_ERROR_PLUGIN_INPUT_SYNTAX;
+        if (error != SPRINT_ERROR_NONE)
+            return sprint_rethrow(error);
+    }
 
     // Update the state
     sprint_plugin.state = SPRINT_PLUGIN_STATE_COMPLETED;
