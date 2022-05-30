@@ -40,7 +40,7 @@ static struct sprint_plugin {
     bool selection;
     const char* input;
     const char* output;
-} sprint_plugin = {0};
+} sprint_plugin = {.state = SPRINT_PLUGIN_STATE_UNINITIALIZED};
 
 const char* SPRINT_OPERATION_NAMES[] = {
         [SPRINT_OPERATION_NONE] = "no operation",
@@ -524,32 +524,34 @@ sprint_error sprint_plugin_end(sprint_operation operation)
     // Update the state
     sprint_plugin.state = SPRINT_PLUGIN_STATE_WRITING_OUTPUT;
 
-    // Open the output file
-    FILE* file = fopen(sprint_plugin.output, "w");
-    if (file == NULL) {
-        sprint_throw_format(false, "error opening file for writing: %s", strerror(errno));
-        return SPRINT_ERROR_IO;
-    }
+    // Handle operations that output data
+    if (operation != SPRINT_OPERATION_NONE) {
+        // Open the output file
+        FILE* file = fopen(sprint_plugin.output, "w");
+        if (file == NULL) {
+            sprint_throw_format(false, "error opening file for writing: %s", strerror(errno));
+            return SPRINT_ERROR_IO;
+        }
 
-    // Create the output
-    sprint_output* output = sprint_output_create_file(file, true);
-    sprint_assert(true, output != NULL);
+        // Create the output
+        sprint_output* output = sprint_output_create_file(file, true);
+        sprint_assert(true, output != NULL);
 
-    // Try to output all elements
-    sprint_error error = SPRINT_ERROR_NONE;
-    if (operation != SPRINT_OPERATION_NONE)
+        // Output all elements
+        sprint_error error = SPRINT_ERROR_NONE;
         for (int index = 0; index < sprint_plugin.pcb.num_elements; index++)
             if (!sprint_chain(error, sprint_element_output(&sprint_plugin.pcb.elements[index], output, SPRINT_PRIM_FORMAT_RAW)))
                 break;
 
-    // Destroy the output (and thus close the file)
-    sprint_require(sprint_output_destroy(output, NULL));
+        // Destroy the output (and thus close the file)
+        sprint_require(sprint_output_destroy(output, NULL));
 
-    // Check, if writing succeeded
-    if (error == SPRINT_ERROR_SYNTAX)
-        error = SPRINT_ERROR_PLUGIN_INPUT_SYNTAX;
-    if (error != SPRINT_ERROR_NONE)
-        return sprint_rethrow(error);
+        // Check, if writing succeeded
+        if (error == SPRINT_ERROR_SYNTAX)
+            error = SPRINT_ERROR_PLUGIN_INPUT_SYNTAX;
+        if (error != SPRINT_ERROR_NONE)
+            return sprint_rethrow(error);
+    }
 
     // Update the state
     sprint_plugin.state = SPRINT_PLUGIN_STATE_COMPLETED;
