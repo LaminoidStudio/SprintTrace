@@ -966,7 +966,7 @@ static sprint_error sprint_parser_next_zone_internal(sprint_parser* parser, spri
     }
 
     // Make sure that there are at least two points and all properties
-    if (!found_layer | !found_width | sprint_list_count(list) < 2 | !element->zone.hatch_auto & !found_hatch_width) {
+    if (!found_layer | !found_width | sprint_list_count(list) < 2 | element->zone.hatch & !element->zone.hatch_auto & !found_hatch_width) {
         sprint_throw_format(false, "incomplete element: %s", sprint_element_type_to_keyword(SPRINT_ELEMENT_ZONE, false));
         error = SPRINT_ERROR_SYNTAX;
     }
