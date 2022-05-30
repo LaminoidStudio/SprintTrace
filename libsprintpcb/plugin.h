@@ -22,6 +22,7 @@ typedef enum sprint_language {
     SPRINT_LANGUAGE_FRENCH
 } sprint_language;
 extern const char* SPRINT_LANGUAGE_NAMES[];
+bool sprint_language_valid(sprint_language language);
 
 typedef enum sprint_operation {
     // Perform no operation. No output should be written.

@@ -31,6 +31,11 @@ const char* SPRINT_LANGUAGE_NAMES[] = {
         [SPRINT_LANGUAGE_FRENCH] = "French"
 };
 
+bool sprint_language_valid(sprint_language language)
+{
+    return language >= SPRINT_LANGUAGE_ENGLISH && language <= SPRINT_LANGUAGE_FRENCH;
+}
+
 static struct sprint_plugin {
     sprint_plugin_state state;
     sprint_language language;
@@ -337,6 +342,33 @@ static sprint_error sprint_plugin_parse_flags_internal(int argc, const char* arg
         builder = sprint_stringbuilder_create(32);
         if (!sprint_assert(false, builder != NULL))
             return SPRINT_ERROR_ASSERTION;
+    }
+
+    // Make sure the values are valid
+    bool all_valid = true;
+    if (!sprint_language_valid(language)) {
+        all_valid = false;
+        sprint_throw(false, "language invalid");
+    }
+    if (!sprint_size_valid(pcb_width)) {
+        all_valid = false;
+        sprint_throw(false, "width invalid");
+    }
+    if (!sprint_size_valid(pcb_height)) {
+        all_valid = false;
+        sprint_throw(false, "height invalid");
+    }
+    if (!sprint_dist_valid(pcb_origin_x)) {
+        all_valid = false;
+        sprint_throw(false, "origin x invalid");
+    }
+    if (!sprint_dist_valid(pcb_origin_y)) {
+        all_valid = false;
+        sprint_throw(false, "origin y invalid");
+    }
+    if (!all_valid) {
+        sprint_check(sprint_stringbuilder_destroy(builder));
+        return SPRINT_ERROR_PLUGIN_FLAGS_SYNTAX;
     }
 
     // Determine the last index of a slash or dot in the input path
