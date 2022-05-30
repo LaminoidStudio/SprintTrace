@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <dirent.h>
 
 #include "libsprintpcb/list.h"
 #include "libsprintpcb/primitives.h"
@@ -26,6 +27,16 @@ int main(int argc, const char* argv[])
 #ifdef NDEBUG
     atexit(sprint_pause);
 #endif
+
+    // Print files in dir
+    DIR *dir;
+    struct dirent *entry;
+    dir = opendir(".");
+    if (dir) {
+        while ((entry = readdir(dir)) != NULL)
+            printf("%s\n", entry->d_name);
+        closedir(dir);
+    }
 
     /*for (int i = 1; i < argc; i++)
         printf("%s\n", argv[i]);
