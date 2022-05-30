@@ -978,10 +978,8 @@ static sprint_error sprint_zone_output_internal(sprint_zone* zone, sprint_output
     if (zone->hatch != SPRINT_ZONE_DEFAULT.hatch) {
         sprint_chain(error, sprint_param_output_internal(output, cooked, "HATCH", "hatch"));
         sprint_chain(error, sprint_bool_output(zone->hatch, output));
-        if (zone->hatch_auto != SPRINT_ZONE_DEFAULT.hatch_auto) {
-            sprint_chain(error, sprint_param_output_internal(output, cooked, "HATCH_AUTO", "hatch auto"));
-            sprint_chain(error, sprint_bool_output(zone->hatch_auto, output));
-        }
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "HATCH_AUTO", "hatch auto"));
+        sprint_chain(error, sprint_bool_output(zone->hatch_auto, output));
         if (!zone->hatch_auto) {
             sprint_chain(error, sprint_param_output_internal(output, cooked, "HATCH_WIDTH", "hatch width"));
             sprint_chain(error, sprint_dist_output(zone->hatch_width, output, format));
