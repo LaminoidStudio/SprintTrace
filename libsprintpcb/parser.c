@@ -1393,6 +1393,7 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
     *salvaged = false;
 
     // Allocate the element
+    bool cleared = false;
     *element = malloc(sizeof(**element));
     if (*element == NULL)
         return SPRINT_ERROR_MEMORY;
@@ -1425,6 +1426,7 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
 
         // Clear the element
         memset(*element, 0, sizeof(**element));
+        cleared = true;
 
         // If the depth is at least one and the parent a component, try to match the other text types first
         bool element_salvaged = false;
@@ -1502,6 +1504,14 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
         // Update the salvaged flag
         *salvaged |= element_salvaged;
 
+        // Debug-log the element
+        if (error == SPRINT_ERROR_NONE) {
+            const char* element_name = sprint_element_type_valid(type) ? SPRINT_ELEMENT_TYPE_NAMES[type] : NULL;
+            if (element_name == NULL)
+                element_name = "unknown";
+            sprint_debug_format("read element: %s", element_name);
+        }
+
         // For any status other than a syntax error, stop the loop
         if (error != SPRINT_ERROR_SYNTAX)
             break;
@@ -1512,8 +1522,14 @@ static sprint_error sprint_parser_next_element_internal(sprint_parser* parser, s
     }
 
     // Destroy the element, if there was an error
-    if (error != SPRINT_ERROR_NONE)
+    if (!cleared)
+        free(*element);
+    else if (error != SPRINT_ERROR_NONE)
         sprint_check(sprint_element_destroy(*element));
+
+    // Make sure that there a cleared element, when there is no error
+    if (!sprint_assert(false, cleared || error != SPRINT_ERROR_NONE))
+        error = SPRINT_ERROR_ASSERTION;
 
     // And just return
     return sprint_rethrow(error);
