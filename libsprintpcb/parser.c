@@ -519,9 +519,12 @@ static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, spr
         if (strcasecmp(statement.name, "P") == 0) {
             sprint_tuple tuple;
             if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX) &&
-                    sprint_parser_statement_index(&statement) == sprint_list_count(list) &&
-                    sprint_chain(error, sprint_parser_next_tuple(parser, &tuple)))
-                    sprint_chain(error, sprint_list_add(list, &tuple));
+                sprint_parser_statement_index(&statement) == sprint_list_count(list) &&
+                sprint_chain(error, sprint_parser_next_tuple(parser, &tuple)))
+                sprint_chain(error, sprint_list_add(list, &tuple));
+        } else if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX)) {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format(false, "unexpected property index: %s%d", statement.name, statement.index);
         } else if (strcasecmp(statement.name, "LAYER") == 0) {
             if (found_layer)
                 already_found = true;
@@ -631,6 +634,9 @@ static sprint_error sprint_parser_next_pad_tht_internal(sprint_parser* parser, s
                 sprint_parser_statement_index(&statement) == sprint_list_count(list) &&
                 sprint_chain(error, sprint_parser_next_uint(parser, &id)))
                 sprint_chain(error, sprint_list_add(list, &id));
+        } else if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX)) {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format(false, "unexpected property index: %s%d", statement.name, statement.index);
         } else if (strcasecmp(statement.name, "LAYER") == 0) {
             if (found_layer)
                 already_found = true;
@@ -770,6 +776,9 @@ static sprint_error sprint_parser_next_pad_smt_internal(sprint_parser* parser, s
                 sprint_parser_statement_index(&statement) == sprint_list_count(list) &&
                 sprint_chain(error, sprint_parser_next_uint(parser, &id)))
                 sprint_chain(error, sprint_list_add(list, &id));
+        } else if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX)) {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format(false, "unexpected property index: %s%d", statement.name, statement.index);
         } else if (strcasecmp(statement.name, "LAYER") == 0) {
             if (found_layer)
                 already_found = true;
@@ -895,6 +904,9 @@ static sprint_error sprint_parser_next_zone_internal(sprint_parser* parser, spri
                 sprint_parser_statement_index(&statement) == sprint_list_count(list) &&
                 sprint_chain(error, sprint_parser_next_tuple(parser, &tuple)))
                 sprint_chain(error, sprint_list_add(list, &tuple));
+        } else if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX)) {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format(false, "unexpected property index: %s%d", statement.name, statement.index);
         } else if (strcasecmp(statement.name, "LAYER") == 0) {
             if (found_layer)
                 already_found = true;
@@ -994,7 +1006,10 @@ static sprint_error sprint_parser_next_text_internal(sprint_parser* parser, spri
 
         // Determine the statement name
         bool already_found = false;
-        if (strcasecmp(statement.name, "LAYER") == 0) {
+        if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX)) {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format(false, "unexpected property index: %s%d", statement.name, statement.index);
+        } else if (strcasecmp(statement.name, "LAYER") == 0) {
             if (found_layer)
                 already_found = true;
             found_layer |= sprint_chain(error, sprint_parser_next_layer(parser, &element->text.layer));
@@ -1109,7 +1124,10 @@ static sprint_error sprint_parser_next_circle_internal(sprint_parser* parser, sp
 
         // Determine the statement name
         bool already_found = false;
-        if (strcasecmp(statement.name, "LAYER") == 0) {
+        if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX)) {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format(false, "unexpected property index: %s%d", statement.name, statement.index);
+        } else if (strcasecmp(statement.name, "LAYER") == 0) {
             if (found_layer)
                 already_found = true;
             found_layer |= sprint_chain(error, sprint_parser_next_layer(parser, &element->circle.layer));
@@ -1217,7 +1235,10 @@ static sprint_error sprint_parser_next_component_internal(sprint_parser* parser,
 
         // Determine the statement name
         bool already_found = false;
-        if (strcasecmp(statement.name, "COMMENT") == 0) {
+        if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX)) {
+            error = SPRINT_ERROR_SYNTAX;
+            sprint_throw_format(false, "unexpected property index: %s%d", statement.name, statement.index);
+        } else if (strcasecmp(statement.name, "COMMENT") == 0) {
             if (found_comment)
                 already_found = true;
             found_comment |= sprint_chain(error, sprint_parser_next_str(parser, &element->component.comment));
@@ -1343,7 +1364,10 @@ static sprint_error sprint_parser_next_group_internal(sprint_parser* parser, spr
         }
         if (sprint_check(error)) {
             error = SPRINT_ERROR_SYNTAX;
-            sprint_throw_format(false, "unknown property: %s", statement.name);
+            if (sprint_parser_statement_flags(&statement, true, SPRINT_STATEMENT_FLAG_INDEX))
+                sprint_throw_format(false, "unexpected property index: %s%d", statement.name, statement.index);
+            else
+                sprint_throw_format(false, "unknown property: %s", statement.name);
         }
 
         // Destroy the statement
