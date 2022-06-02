@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/libsprintpcb.iml" filepath="$PROJECT_DIR$/.idea/libsprintpcb.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/sprintpcb.iml" filepath="$PROJECT_DIR$/.idea/sprintpcb.iml" />
     </modules>
   </component>
