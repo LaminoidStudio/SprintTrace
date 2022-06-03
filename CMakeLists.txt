@@ -11,4 +11,3 @@ set(CMAKE_C_STANDARD 99)
 
 add_library(SprintPCB errors.c errors.h token.c token.h elements.c elements.h primitives.c primitives.h list.c list.h stringbuilder.c stringbuilder.h parser.c parser.h pcb.c pcb.h plugin.c plugin.h grid.c grid.h output.c output.h)
 set_target_properties(SprintPCB PROPERTIES OUTPUT_NAME "sprintpcb")
-target_include_directories(SprintPCB PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
