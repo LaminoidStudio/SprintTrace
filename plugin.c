@@ -634,6 +634,26 @@ sprint_plugin_state sprint_plugin_get_state(void)
     return sprint_plugin.state;
 }
 
+sprint_language sprint_plugin_get_language(void)
+{
+    return sprint_plugin.language;
+}
+
+sprint_process_id sprint_plugin_get_process(void)
+{
+    return sprint_plugin.process;
+}
+
+const char* sprint_plugin_get_input(void)
+{
+    return sprint_plugin.input;
+}
+
+const char* sprint_plugin_get_output(void)
+{
+    return sprint_plugin.output;
+}
+
 int sprint_plugin_get_exit_code(void)
 {
     return (int) (SPRINT_OPERATION_FAILED_LIBRARY + sprint_plugin_get_state());

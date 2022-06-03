@@ -85,6 +85,10 @@ sprint_error sprint_plugin_end(sprint_operation operation);
 sprint_pcb* sprint_plugin_get_pcb(void);
 bool sprint_plugin_is_selection(void);
 sprint_plugin_state sprint_plugin_get_state(void);
+sprint_language sprint_plugin_get_language(void);
+sprint_process_id sprint_plugin_get_process(void);
+const char* sprint_plugin_get_input(void);
+const char* sprint_plugin_get_output(void);
 int sprint_plugin_get_exit_code(void);
 
 #endif //SPRINTPCB_PLUGIN_H
