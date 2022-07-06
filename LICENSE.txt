@@ -1,7 +1,7 @@
 License for SprintPCB
 
-Laminoid Studio (Müssig & Müssig) GbR grants you the non-transferrable usage of SprintPCB
-for non-commercial purposes limited by the terms of the GNU GPL v3 license below.
+Laminoid Studio (Müssig & Müssig) GbR grants you the non-transferrable right to use SprintPCB
+for and in non-commercial purposes limited by the terms of the GNU GPL v3 license below.
 Non-commercial use is defined as the usage of this software outside of a corporate environment
 and without any direct or indirect monetary gain from or any other compensation for your work (including salary).
 
