@@ -143,7 +143,8 @@ static const sprint_track SPRINT_TRACK_DEFAULT = {
         .cutout = false,
         .soldermask = false,
         .flat_start = false,
-        .flat_end = false
+        .flat_end = false,
+        .name = NULL
 };
 
 sprint_error sprint_track_default(sprint_element* element, bool clear)
@@ -163,6 +164,7 @@ sprint_error sprint_track_default(sprint_element* element, bool clear)
     element->track.soldermask = SPRINT_TRACK_DEFAULT.soldermask;
     element->track.flat_start = SPRINT_TRACK_DEFAULT.flat_start;
     element->track.flat_end = SPRINT_TRACK_DEFAULT.flat_end;
+    element->track.name = SPRINT_TRACK_DEFAULT.name;
 
     return SPRINT_ERROR_NONE;
 }
@@ -229,7 +231,8 @@ static const sprint_pad_tht SPRINT_PAD_THT_DEFAULT = {
         .thermal = false,
         .thermal_tracks = 0x55555555,
         .thermal_tracks_width = 100,
-        .thermal_tracks_individual = false
+        .thermal_tracks_individual = false,
+        .name = NULL
 };
 
 bool sprint_pad_tht_valid(sprint_pad_tht* pad)
@@ -262,6 +265,7 @@ sprint_error sprint_pad_tht_default(sprint_element* element, bool clear)
     element->pad_tht.thermal_tracks = SPRINT_PAD_THT_DEFAULT.thermal_tracks;
     element->pad_tht.thermal_tracks_width = SPRINT_PAD_THT_DEFAULT.thermal_tracks_width;
     element->pad_tht.thermal_tracks_individual = SPRINT_PAD_THT_DEFAULT.thermal_tracks_individual;
+    element->pad_tht.name = SPRINT_PAD_THT_DEFAULT.name;
 
     return SPRINT_ERROR_NONE;
 }
@@ -303,7 +307,8 @@ static const sprint_pad_smt SPRINT_PAD_SMT_DEFAULT = {
         .rotation = 0,
         .thermal = false,
         .thermal_tracks = 0x55,
-        .thermal_tracks_width = 100
+        .thermal_tracks_width = 100,
+        .name = NULL
 };
 
 sprint_error sprint_pad_smt_default(sprint_element* element, bool clear)
@@ -325,6 +330,7 @@ sprint_error sprint_pad_smt_default(sprint_element* element, bool clear)
     element->pad_smt.thermal = SPRINT_PAD_SMT_DEFAULT.thermal;
     element->pad_smt.thermal_tracks = SPRINT_PAD_SMT_DEFAULT.thermal_tracks;
     element->pad_smt.thermal_tracks_width = SPRINT_PAD_SMT_DEFAULT.thermal_tracks_width;
+    element->pad_smt.name = SPRINT_PAD_SMT_DEFAULT.name;
 
     return SPRINT_ERROR_NONE;
 }
@@ -359,7 +365,8 @@ static const sprint_zone SPRINT_ZONE_DEFAULT = {
         .cutout = false,
         .soldermask = false,
         .hatch = false,
-        .hatch_auto = true
+        .hatch_auto = true,
+        .name = NULL
 };
 
 sprint_error sprint_zone_default(sprint_element* element, bool clear)
@@ -379,6 +386,7 @@ sprint_error sprint_zone_default(sprint_element* element, bool clear)
     element->zone.soldermask = SPRINT_ZONE_DEFAULT.soldermask;
     element->zone.hatch = SPRINT_ZONE_DEFAULT.hatch;
     element->zone.hatch_auto = SPRINT_ZONE_DEFAULT.hatch_auto;
+    element->zone.name = SPRINT_ZONE_DEFAULT.name;
 
     return SPRINT_ERROR_NONE;
 }
@@ -538,6 +546,7 @@ static const sprint_text SPRINT_TEXT_DEFAULT = {
         .rotation = 0,
         .mirror_horizontal = false,
         .mirror_vertical = false,
+        .name = NULL,
         .visible = true
 };
 
@@ -562,6 +571,7 @@ sprint_error sprint_text_default(sprint_element* element, bool clear)
     element->text.rotation = SPRINT_TEXT_DEFAULT.rotation;
     element->text.mirror_horizontal = SPRINT_TEXT_DEFAULT.mirror_horizontal;
     element->text.mirror_vertical = SPRINT_TEXT_DEFAULT.mirror_vertical;
+    element->text.name = SPRINT_TEXT_DEFAULT.name;
     element->text.visible = SPRINT_TEXT_DEFAULT.visible;
 
     return SPRINT_ERROR_NONE;
@@ -602,7 +612,8 @@ static const sprint_circle SPRINT_CIRCLE_DEFAULT = {
         .soldermask = false,
         .start = 0,
         .stop = 0,
-        .fill = false
+        .fill = false,
+        .name = NULL
 };
 
 sprint_error sprint_circle_default(sprint_element* element, bool clear)
@@ -623,6 +634,7 @@ sprint_error sprint_circle_default(sprint_element* element, bool clear)
     element->circle.start = SPRINT_CIRCLE_DEFAULT.start;
     element->circle.stop = SPRINT_CIRCLE_DEFAULT.stop;
     element->circle.fill = SPRINT_CIRCLE_DEFAULT.fill;
+    element->circle.name = SPRINT_CIRCLE_DEFAULT.name;
 
     return SPRINT_ERROR_NONE;
 }
@@ -836,6 +848,10 @@ static sprint_error sprint_track_output_internal(sprint_track* track, sprint_out
         sprint_chain(error, sprint_param_output_internal(output, cooked, "FLATEND", "flat end"));
         sprint_chain(error, sprint_bool_output(track->flat_end, output));
     }
+    if (track->name != NULL) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "NAME", "name"));
+        sprint_chain(error, sprint_str_output(track->name, output, format));
+    }
     for (int index = 0; index < track->num_points; index++) {
         sprint_chain(error, sprint_array_output_internal(output, cooked, index, "P", "p"));
         sprint_chain(error, sprint_tuple_output(track->points[index], output, format));
@@ -891,6 +907,10 @@ static sprint_error sprint_pad_tht_output_internal(sprint_pad_tht* pad, sprint_o
             sprint_chain(error, sprint_bool_output(pad->thermal_tracks_individual, output));
         }
     }
+    if (pad->name != NULL) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "NAME", "name"));
+        sprint_chain(error, sprint_str_output(pad->name, output, format));
+    }
     if (pad->link.has_id) {
         sprint_chain(error, sprint_param_output_internal(output, cooked, "PAD_ID", "pad ID"));
         sprint_chain(error, sprint_int_output(pad->link.id, output));
@@ -940,6 +960,10 @@ static sprint_error sprint_pad_smt_output_internal(sprint_pad_smt* pad, sprint_o
             sprint_chain(error, sprint_int_output(pad->thermal_tracks_width, output));
         }
     }
+    if (pad->name != NULL) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "NAME", "name"));
+        sprint_chain(error, sprint_str_output(pad->name, output, format));
+    }
     if (pad->link.has_id) {
         sprint_chain(error, sprint_param_output_internal(output, cooked, "PAD_ID", "pad ID"));
         sprint_chain(error, sprint_int_output(pad->link.id, output));
@@ -984,6 +1008,10 @@ static sprint_error sprint_zone_output_internal(sprint_zone* zone, sprint_output
             sprint_chain(error, sprint_param_output_internal(output, cooked, "HATCH_WIDTH", "hatch width"));
             sprint_chain(error, sprint_dist_output(zone->hatch_width, output, format));
         }
+    }
+    if (zone->name != NULL) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "NAME", "name"));
+        sprint_chain(error, sprint_str_output(zone->name, output, format));
     }
     for (int index = 0; index < zone->num_points; index++) {
         sprint_chain(error, sprint_array_output_internal(output, cooked, index, "P", "p"));
@@ -1040,6 +1068,10 @@ static sprint_error sprint_text_output_internal(sprint_text* text, sprint_output
         sprint_chain(error, sprint_param_output_internal(output, cooked, "MIRROR_VERT", "mirror vt"));
         sprint_chain(error, sprint_bool_output(text->mirror_vertical, output));
     }
+    if (text->name != NULL) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "NAME", "name"));
+        sprint_chain(error, sprint_str_output(text->name, output, format));
+    }
     if ((text->subtype == SPRINT_TEXT_ID || text->subtype == SPRINT_TEXT_VALUE)
         && text->visible != SPRINT_TEXT_DEFAULT.visible) {
         sprint_chain(error, sprint_param_output_internal(output, cooked, "VISIBLE", "visible"));
@@ -1087,6 +1119,10 @@ static sprint_error sprint_circle_output_internal(sprint_circle* circle, sprint_
     if (circle->fill != SPRINT_CIRCLE_DEFAULT.fill) {
         sprint_chain(error, sprint_param_output_internal(output, cooked, "FILL", "fill"));
         sprint_chain(error, sprint_bool_output(circle->fill, output));
+    }
+    if (circle->name != NULL) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "NAME", "name"));
+        sprint_chain(error, sprint_str_output(circle->name, output, format));
     }
     sprint_chain(error, sprint_element_suffix_output_internal(output, cooked));
     return sprint_rethrow(error);
@@ -1281,6 +1317,11 @@ static sprint_error sprint_element_destroy_internal(sprint_element* element, int
                 free(element->track.points);
                 element->track.points = NULL;
             }
+            // Free the name
+            if (element->track.name != NULL) {
+                free(element->track.name);
+                element->track.name = NULL;
+            }
             break;
 
         case SPRINT_ELEMENT_PAD_THT:
@@ -1289,6 +1330,11 @@ static sprint_error sprint_element_destroy_internal(sprint_element* element, int
             if (element->pad_tht.link.connections != NULL) {
                 free(element->pad_tht.link.connections);
                 element->pad_tht.link.connections = NULL;
+            }
+            // Free the name
+            if (element->pad_tht.name != NULL) {
+                free(element->pad_tht.name);
+                element->pad_tht.name = NULL;
             }
             break;
 
@@ -1299,6 +1345,11 @@ static sprint_error sprint_element_destroy_internal(sprint_element* element, int
                 free(element->pad_smt.link.connections);
                 element->pad_smt.link.connections = NULL;
             }
+            // Free the name
+            if (element->pad_smt.name != NULL) {
+                free(element->pad_smt.name);
+                element->pad_smt.name = NULL;
+            }
             break;
 
         case SPRINT_ELEMENT_ZONE:
@@ -1308,6 +1359,11 @@ static sprint_error sprint_element_destroy_internal(sprint_element* element, int
                 free(element->zone.points);
                 element->zone.points = NULL;
             }
+            // Free the name
+            if (element->zone.name != NULL) {
+                free(element->zone.name);
+                element->zone.name = NULL;
+            }
             break;
 
         case SPRINT_ELEMENT_TEXT:
@@ -1316,10 +1372,19 @@ static sprint_error sprint_element_destroy_internal(sprint_element* element, int
                 free(element->text.text);
                 element->text.text = NULL;
             }
+            // Free the name
+            if (element->text.name != NULL) {
+                free(element->text.name);
+                element->text.name = NULL;
+            }
             break;
 
         case SPRINT_ELEMENT_CIRCLE:
-            // Do nothing
+            // Free the name
+            if (element->circle.name != NULL) {
+                free(element->circle.name);
+                element->circle.name = NULL;
+            }
             break;
 
         case SPRINT_ELEMENT_COMPONENT:

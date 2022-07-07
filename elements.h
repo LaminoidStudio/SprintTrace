@@ -43,6 +43,7 @@ typedef struct sprint_track {
     bool soldermask;
     bool flat_start;
     bool flat_end;
+    char* name;
 } sprint_track;
 bool sprint_track_valid(sprint_track* track);
 
@@ -98,6 +99,7 @@ typedef struct sprint_pad_tht {
     int thermal_tracks;
     int thermal_tracks_width;
     bool thermal_tracks_individual;
+    char* name;
 } sprint_pad_tht;
 bool sprint_pad_tht_valid(sprint_pad_tht* pad);
 
@@ -114,6 +116,7 @@ typedef struct sprint_pad_smt {
     bool thermal;
     int thermal_tracks;
     int thermal_tracks_width;
+    char* name;
 } sprint_pad_smt;
 bool sprint_pad_smt_valid(sprint_pad_smt* pad);
 
@@ -129,6 +132,7 @@ typedef struct sprint_zone {
     bool hatch;
     bool hatch_auto;
     sprint_dist hatch_width;
+    char* name;
 } sprint_zone;
 bool sprint_zone_valid(sprint_zone* zone);
 
@@ -188,6 +192,7 @@ typedef struct sprint_text {
     sprint_angle rotation;
     bool mirror_horizontal;
     bool mirror_vertical;
+    char* name;
 
     bool visible;
 } sprint_text;
@@ -205,6 +210,7 @@ typedef struct sprint_circle {
     sprint_angle start;
     sprint_angle stop;
     bool fill;
+    char* name;
 } sprint_circle;
 bool sprint_circle_valid(sprint_circle* circle);
 

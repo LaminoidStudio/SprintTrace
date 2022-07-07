@@ -493,7 +493,7 @@ static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, spr
 
     // Keep track of found properties
     bool found_layer = false, found_width = false, found_clear = false, found_cutout = false, found_soldermask = false,
-            found_flat_start = false, found_flat_end = false;
+            found_flat_start = false, found_flat_end = false, found_name = false;
 
     // Keep a list of points
     sprint_list* list = sprint_list_create(sizeof(*element->track.points), 16);
@@ -553,6 +553,10 @@ static sprint_error sprint_parser_next_track_internal(sprint_parser* parser, spr
             if (found_flat_end)
                 already_found = true;
             found_flat_end |= sprint_chain(error, sprint_parser_next_bool(parser, &element->track.flat_end));
+        } else if (strcasecmp(statement.name, "NAME") == 0) {
+            if (found_name)
+                already_found = true;
+            found_name |= sprint_chain(error, sprint_parser_next_str(parser, &element->track.name));
         } else {
             error = SPRINT_ERROR_SYNTAX;
             sprint_throw_format(false, "unknown property: %s", statement.name);
@@ -605,7 +609,7 @@ static sprint_error sprint_parser_next_pad_tht_internal(sprint_parser* parser, s
     bool found_layer = false, found_position = false, found_size = false, found_drill = false, found_form = false,
             found_id = false, found_clear = false, found_soldermask = false, found_rotation = false, found_via = false,
             found_thermal = false, found_thermal_tracks = false, found_thermal_tracks_width = false,
-            found_thermal_tracks_individual = false;
+            found_thermal_tracks_individual = false, found_name = false;
 
     // Keep a list of connections
     sprint_list* list = sprint_list_create(sizeof(*element->pad_tht.link.connections), 8);
@@ -694,6 +698,10 @@ static sprint_error sprint_parser_next_pad_tht_internal(sprint_parser* parser, s
             if (found_thermal_tracks_individual)
                 already_found = true;
             found_thermal_tracks_individual |= sprint_chain(error, sprint_parser_next_bool(parser, &element->pad_tht.thermal_tracks_individual));
+        } else if (strcasecmp(statement.name, "NAME") == 0) {
+            if (found_name)
+                already_found = true;
+            found_name |= sprint_chain(error, sprint_parser_next_str(parser, &element->pad_tht.name));
         } else {
             error = SPRINT_ERROR_SYNTAX;
             sprint_throw_format(false, "unknown property: %s", statement.name);
@@ -747,7 +755,7 @@ static sprint_error sprint_parser_next_pad_smt_internal(sprint_parser* parser, s
     // Keep track of found properties
     bool found_layer = false, found_position = false, found_width = false, found_height = false, found_id = false,
             found_clear = false, found_soldermask = false, found_rotation = false, found_thermal = false,
-            found_thermal_tracks = false, found_thermal_tracks_width = false;
+            found_thermal_tracks = false, found_thermal_tracks_width = false, found_name = false;
 
     // Keep a list of connections
     sprint_list* list = sprint_list_create(sizeof(*element->pad_smt.link.connections), 8);
@@ -824,6 +832,10 @@ static sprint_error sprint_parser_next_pad_smt_internal(sprint_parser* parser, s
             if (found_thermal_tracks_width)
                 already_found = true;
             found_thermal_tracks_width |= sprint_chain(error, sprint_parser_next_uint(parser, &element->pad_smt.thermal_tracks_width));
+        } else if (strcasecmp(statement.name, "NAME") == 0) {
+            if (found_name)
+                already_found = true;
+            found_name |= sprint_chain(error, sprint_parser_next_str(parser, &element->pad_smt.name));
         } else {
             error = SPRINT_ERROR_SYNTAX;
             sprint_throw_format(false, "unknown property: %s", statement.name);
@@ -875,7 +887,7 @@ static sprint_error sprint_parser_next_zone_internal(sprint_parser* parser, spri
 
     // Keep track of found properties
     bool found_layer = false, found_width = false, found_clear = false, found_cutout = false, found_soldermask = false,
-            found_hatch = false, found_hatch_auto = false, found_hatch_width = false;
+            found_hatch = false, found_hatch_auto = false, found_hatch_width = false, found_name = false;
 
     // Keep a list of points
     sprint_list* list = sprint_list_create(sizeof(*element->zone.points), 16);
@@ -939,6 +951,10 @@ static sprint_error sprint_parser_next_zone_internal(sprint_parser* parser, spri
             if (found_hatch_width)
                 already_found = true;
             found_hatch_width |= sprint_chain(error, sprint_parser_next_size(parser, &element->zone.hatch_width));
+        } else if (strcasecmp(statement.name, "NAME") == 0) {
+            if (found_name)
+                already_found = true;
+            found_name |= sprint_chain(error, sprint_parser_next_str(parser, &element->zone.name));
         } else {
             error = SPRINT_ERROR_SYNTAX;
             sprint_throw_format(false, "unknown property: %s", statement.name);
@@ -990,7 +1006,8 @@ static sprint_error sprint_parser_next_text_internal(sprint_parser* parser, spri
     // Keep track of found properties
     bool found_layer = false, found_position = false, found_height = false, found_text = false, found_clear = false,
             found_cutout = false, found_soldermask = false, found_style = false, found_thickness = false,
-            found_rotation = false, found_mirror_horizontal = false, found_mirror_vertical = false, found_visible = false;
+            found_rotation = false, found_mirror_horizontal = false, found_mirror_vertical = false,
+            found_name = false, found_visible = false;
 
     // Read all element properties
     sprint_statement statement;
@@ -1057,6 +1074,10 @@ static sprint_error sprint_parser_next_text_internal(sprint_parser* parser, spri
             if (found_mirror_vertical)
                 already_found = true;
             found_mirror_vertical |= sprint_chain(error, sprint_parser_next_bool(parser, &element->text.mirror_vertical));
+        } else if (strcasecmp(statement.name, "NAME") == 0) {
+            if (found_name)
+                already_found = true;
+            found_name |= sprint_chain(error, sprint_parser_next_str(parser, &element->text.name));
         } else if (strcasecmp(statement.name, "VISIBLE") == 0) {
             if (found_visible)
                 already_found = true;
@@ -1108,7 +1129,8 @@ static sprint_error sprint_parser_next_circle_internal(sprint_parser* parser, sp
 
     // Keep track of found properties
     bool found_layer = false, found_width = false, found_center = false, found_radius = false, found_clear = false,
-            found_cutout = false, found_soldermask = false, found_start = false, found_stop = false, found_fill = false;
+            found_cutout = false, found_soldermask = false, found_start = false, found_stop = false,
+            found_name = false, found_fill = false;
 
     // Read all element properties
     sprint_statement statement;
@@ -1167,6 +1189,10 @@ static sprint_error sprint_parser_next_circle_internal(sprint_parser* parser, sp
             if (found_fill)
                 already_found = true;
             found_fill |= sprint_chain(error, sprint_parser_next_bool(parser, &element->circle.fill));
+        } else if (strcasecmp(statement.name, "NAME") == 0) {
+            if (found_name)
+                already_found = true;
+            found_name |= sprint_chain(error, sprint_parser_next_str(parser, &element->circle.name));
         } else {
             error = SPRINT_ERROR_SYNTAX;
             sprint_throw_format(false, "unknown property: %s", statement.name);
