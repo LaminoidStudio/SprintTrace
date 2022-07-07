@@ -14,18 +14,18 @@
 #include <errno.h>
 
 const char* SPRINT_TOKENIZER_STATE_NAMES[] = {
-        [SPRINT_SLICER_STATE_SCANNING] = "scanning",
-        [SPRINT_SLICER_STATE_INVALID] = "invalid",
-        [SPRINT_SLICER_STATE_COMMENT] = "comment",
-        [SPRINT_SLICER_STATE_WORD] = "word",
-        [SPRINT_SLICER_STATE_NUMBER] = "number",
-        [SPRINT_SLICER_STATE_STRING_START] = "string start",
-        [SPRINT_SLICER_STATE_STRING] = "string",
-        [SPRINT_SLICER_STATE_STRING_END] = "string end",
-        [SPRINT_SLICER_STATE_VALUE_SEPARATOR] = "value separator",
-        [SPRINT_SLICER_STATE_TUPLE_SEPARATOR] = "tuple separator",
-        [SPRINT_SLICER_STATE_STATEMENT_SEPARATOR] = "statement separator",
-        [SPRINT_SLICER_STATE_STATEMENT_TERMINATOR] = "statement terminator"
+        [SPRINT_TOKENIZER_STATE_SCANNING] = "scanning",
+        [SPRINT_TOKENIZER_STATE_INVALID] = "invalid",
+        [SPRINT_TOKENIZER_STATE_COMMENT] = "comment",
+        [SPRINT_TOKENIZER_STATE_WORD] = "word",
+        [SPRINT_TOKENIZER_STATE_NUMBER] = "number",
+        [SPRINT_TOKENIZER_STATE_STRING_START] = "string start",
+        [SPRINT_TOKENIZER_STATE_STRING] = "string",
+        [SPRINT_TOKENIZER_STATE_STRING_END] = "string end",
+        [SPRINT_TOKENIZER_STATE_VALUE_SEPARATOR] = "value separator",
+        [SPRINT_TOKENIZER_STATE_TUPLE_SEPARATOR] = "tuple separator",
+        [SPRINT_TOKENIZER_STATE_STATEMENT_SEPARATOR] = "statement separator",
+        [SPRINT_TOKENIZER_STATE_STATEMENT_TERMINATOR] = "statement terminator"
 };
 
 const char* SPRINT_TOKEN_TYPE_NAMES[] = {
@@ -57,61 +57,61 @@ static bool sprint_tokenizer_close_file_internal(sprint_tokenizer* tokenizer);
 
 bool sprint_tokenizer_state_valid(sprint_tokenizer_state state)
 {
-    return state >= SPRINT_SLICER_STATE_SCANNING && state <= SPRINT_SLICER_STATE_STATEMENT_TERMINATOR;
+    return state >= SPRINT_TOKENIZER_STATE_SCANNING && state <= SPRINT_TOKENIZER_STATE_STATEMENT_TERMINATOR;
 }
 
 sprint_tokenizer_state sprint_tokenizer_state_first(char first_chr)
 {
-    return sprint_tokenizer_state_next(SPRINT_SLICER_STATE_SCANNING, first_chr);
+    return sprint_tokenizer_state_next(SPRINT_TOKENIZER_STATE_SCANNING, first_chr);
 }
 
 sprint_tokenizer_state sprint_tokenizer_state_next(sprint_tokenizer_state current_state, char next_chr)
 {
     if (!sprint_assert(false, sprint_tokenizer_state_valid(current_state)))
-        return SPRINT_SLICER_STATE_INVALID;
+        return SPRINT_TOKENIZER_STATE_INVALID;
 
     // Handle enclosed strings
-    if (current_state == SPRINT_SLICER_STATE_STRING_START || current_state == SPRINT_SLICER_STATE_STRING)
+    if (current_state == SPRINT_TOKENIZER_STATE_STRING_START || current_state == SPRINT_TOKENIZER_STATE_STRING)
         return next_chr == SPRINT_STRING_DELIMITER || next_chr == '\n' || next_chr == '\r' ?
-            SPRINT_SLICER_STATE_STRING_END : SPRINT_SLICER_STATE_STRING;
+               SPRINT_TOKENIZER_STATE_STRING_END : SPRINT_TOKENIZER_STATE_STRING;
 
     // Handle comments that end at the end of the line
-    if (current_state == SPRINT_SLICER_STATE_COMMENT && next_chr != '\n' && next_chr != '\r' ||
+    if (current_state == SPRINT_TOKENIZER_STATE_COMMENT && next_chr != '\n' && next_chr != '\r' ||
         next_chr == SPRINT_COMMENT_PREFIX)
-        return SPRINT_SLICER_STATE_COMMENT;
+        return SPRINT_TOKENIZER_STATE_COMMENT;
 
     // Handle scanning through white-space
     if (next_chr == ' ' || next_chr == '\t' || next_chr == '\n' || next_chr == '\r')
-        return SPRINT_SLICER_STATE_SCANNING;
+        return SPRINT_TOKENIZER_STATE_SCANNING;
 
     // Handle words
     if (next_chr >= 'A' && next_chr <= 'Z' || next_chr >= 'a' && next_chr <= 'z' || next_chr == '_')
-        return SPRINT_SLICER_STATE_WORD;
+        return SPRINT_TOKENIZER_STATE_WORD;
 
     // Handle numbers
-    if (next_chr >= '0' && next_chr <= '9' || next_chr == '-' &&
-        current_state != SPRINT_SLICER_STATE_NUMBER && current_state != SPRINT_SLICER_STATE_WORD)
-        return SPRINT_SLICER_STATE_NUMBER;
+    if (next_chr >= '0' && next_chr <= '9' || next_chr == '-' && current_state != SPRINT_TOKENIZER_STATE_NUMBER &&
+        current_state != SPRINT_TOKENIZER_STATE_WORD)
+        return SPRINT_TOKENIZER_STATE_NUMBER;
 
     // Handle the single digit separators, terminators and the string delimiter
     if (next_chr == SPRINT_VALUE_SEPARATOR)
-        return SPRINT_SLICER_STATE_VALUE_SEPARATOR;
+        return SPRINT_TOKENIZER_STATE_VALUE_SEPARATOR;
     if (next_chr == SPRINT_TUPLE_SEPARATOR)
-        return SPRINT_SLICER_STATE_TUPLE_SEPARATOR;
+        return SPRINT_TOKENIZER_STATE_TUPLE_SEPARATOR;
     if (next_chr == SPRINT_STATEMENT_SEPARATOR)
-        return SPRINT_SLICER_STATE_STATEMENT_SEPARATOR;
+        return SPRINT_TOKENIZER_STATE_STATEMENT_SEPARATOR;
     if (next_chr == SPRINT_STATEMENT_TERMINATOR)
-        return SPRINT_SLICER_STATE_STATEMENT_TERMINATOR;
+        return SPRINT_TOKENIZER_STATE_STATEMENT_TERMINATOR;
     if (next_chr == SPRINT_STRING_DELIMITER)
-        return SPRINT_SLICER_STATE_STRING_START;
+        return SPRINT_TOKENIZER_STATE_STRING_START;
 
     // All other characters are invalid
-    return SPRINT_SLICER_STATE_INVALID;
+    return SPRINT_TOKENIZER_STATE_INVALID;
 }
 
 bool sprint_tokenizer_state_idle(sprint_tokenizer_state state)
 {
-    return state == SPRINT_SLICER_STATE_SCANNING;
+    return state == SPRINT_TOKENIZER_STATE_SCANNING;
 }
 
 bool sprint_tokenizer_state_recorded(sprint_tokenizer_state state)
@@ -120,20 +120,20 @@ bool sprint_tokenizer_state_recorded(sprint_tokenizer_state state)
         return false;
 
     switch (state) {
-        case SPRINT_SLICER_STATE_INVALID:
-        case SPRINT_SLICER_STATE_WORD:
-        case SPRINT_SLICER_STATE_NUMBER:
-        case SPRINT_SLICER_STATE_STRING:
-        case SPRINT_SLICER_STATE_VALUE_SEPARATOR:
-        case SPRINT_SLICER_STATE_TUPLE_SEPARATOR:
-        case SPRINT_SLICER_STATE_STATEMENT_SEPARATOR:
-        case SPRINT_SLICER_STATE_STATEMENT_TERMINATOR:
+        case SPRINT_TOKENIZER_STATE_INVALID:
+        case SPRINT_TOKENIZER_STATE_WORD:
+        case SPRINT_TOKENIZER_STATE_NUMBER:
+        case SPRINT_TOKENIZER_STATE_STRING:
+        case SPRINT_TOKENIZER_STATE_VALUE_SEPARATOR:
+        case SPRINT_TOKENIZER_STATE_TUPLE_SEPARATOR:
+        case SPRINT_TOKENIZER_STATE_STATEMENT_SEPARATOR:
+        case SPRINT_TOKENIZER_STATE_STATEMENT_TERMINATOR:
             return true;
 
-        case SPRINT_SLICER_STATE_SCANNING:
-        case SPRINT_SLICER_STATE_COMMENT:
-        case SPRINT_SLICER_STATE_STRING_START:
-        case SPRINT_SLICER_STATE_STRING_END:
+        case SPRINT_TOKENIZER_STATE_SCANNING:
+        case SPRINT_TOKENIZER_STATE_COMMENT:
+        case SPRINT_TOKENIZER_STATE_STRING_START:
+        case SPRINT_TOKENIZER_STATE_STRING_END:
             return false;
 
         default:
@@ -149,22 +149,22 @@ bool sprint_tokenizer_state_complete(sprint_tokenizer_state current_state, sprin
         return true;
 
     switch (current_state) {
-        case SPRINT_SLICER_STATE_SCANNING:
-        case SPRINT_SLICER_STATE_COMMENT:
-        case SPRINT_SLICER_STATE_STRING_START:
-        case SPRINT_SLICER_STATE_STRING:
+        case SPRINT_TOKENIZER_STATE_SCANNING:
+        case SPRINT_TOKENIZER_STATE_COMMENT:
+        case SPRINT_TOKENIZER_STATE_STRING_START:
+        case SPRINT_TOKENIZER_STATE_STRING:
             return false;
 
-        case SPRINT_SLICER_STATE_WORD:
-        case SPRINT_SLICER_STATE_NUMBER:
-        case SPRINT_SLICER_STATE_STRING_END:
+        case SPRINT_TOKENIZER_STATE_WORD:
+        case SPRINT_TOKENIZER_STATE_NUMBER:
+        case SPRINT_TOKENIZER_STATE_STRING_END:
             return current_state != next_state;
 
-        case SPRINT_SLICER_STATE_INVALID:
-        case SPRINT_SLICER_STATE_VALUE_SEPARATOR:
-        case SPRINT_SLICER_STATE_TUPLE_SEPARATOR:
-        case SPRINT_SLICER_STATE_STATEMENT_SEPARATOR:
-        case SPRINT_SLICER_STATE_STATEMENT_TERMINATOR:
+        case SPRINT_TOKENIZER_STATE_INVALID:
+        case SPRINT_TOKENIZER_STATE_VALUE_SEPARATOR:
+        case SPRINT_TOKENIZER_STATE_TUPLE_SEPARATOR:
+        case SPRINT_TOKENIZER_STATE_STATEMENT_SEPARATOR:
+        case SPRINT_TOKENIZER_STATE_STATEMENT_TERMINATOR:
             return true;
 
         default:
@@ -179,26 +179,26 @@ sprint_token_type sprint_tokenizer_state_type(sprint_tokenizer_state state)
         return SPRINT_TOKEN_TYPE_NONE;
 
     switch (state) {
-        case SPRINT_SLICER_STATE_SCANNING:
-        case SPRINT_SLICER_STATE_COMMENT:
+        case SPRINT_TOKENIZER_STATE_SCANNING:
+        case SPRINT_TOKENIZER_STATE_COMMENT:
             return SPRINT_TOKEN_TYPE_NONE;
-        case SPRINT_SLICER_STATE_INVALID:
+        case SPRINT_TOKENIZER_STATE_INVALID:
             return SPRINT_TOKEN_TYPE_INVALID;
-        case SPRINT_SLICER_STATE_WORD:
+        case SPRINT_TOKENIZER_STATE_WORD:
             return SPRINT_TOKEN_TYPE_WORD;
-        case SPRINT_SLICER_STATE_NUMBER:
+        case SPRINT_TOKENIZER_STATE_NUMBER:
             return SPRINT_TOKEN_TYPE_NUMBER;
-        case SPRINT_SLICER_STATE_STRING_START:
-        case SPRINT_SLICER_STATE_STRING:
-        case SPRINT_SLICER_STATE_STRING_END:
+        case SPRINT_TOKENIZER_STATE_STRING_START:
+        case SPRINT_TOKENIZER_STATE_STRING:
+        case SPRINT_TOKENIZER_STATE_STRING_END:
             return SPRINT_TOKEN_TYPE_STRING;
-        case SPRINT_SLICER_STATE_VALUE_SEPARATOR:
+        case SPRINT_TOKENIZER_STATE_VALUE_SEPARATOR:
             return SPRINT_TOKEN_TYPE_VALUE_SEPARATOR;
-        case SPRINT_SLICER_STATE_TUPLE_SEPARATOR:
+        case SPRINT_TOKENIZER_STATE_TUPLE_SEPARATOR:
             return SPRINT_TOKEN_TYPE_TUPLE_SEPARATOR;
-        case SPRINT_SLICER_STATE_STATEMENT_SEPARATOR:
+        case SPRINT_TOKENIZER_STATE_STATEMENT_SEPARATOR:
             return SPRINT_TOKEN_TYPE_STATEMENT_SEPARATOR;
-        case SPRINT_SLICER_STATE_STATEMENT_TERMINATOR:
+        case SPRINT_TOKENIZER_STATE_STATEMENT_TERMINATOR:
             return SPRINT_TOKEN_TYPE_STATEMENT_TERMINATOR;
         default:
             sprint_throw_format(false, "unimplemented state: %d", state);
