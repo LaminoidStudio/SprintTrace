@@ -1,11 +1,11 @@
 //
-// libsprintpcb: streaming input tokenizer
+// SprintTrace: streaming input tokenizer
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#ifndef SPRINTPCB_TOKEN_H
-#define SPRINTPCB_TOKEN_H
+#ifndef SPRINTTRACE_TOKEN_H
+#define SPRINTTRACE_TOKEN_H
 
 #include "stringbuilder.h"
 #include "errors.h"
@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-// true, false, 123, 123/456, TEXT, |string|
 typedef enum sprint_tokenizer_state {
     SPRINT_TOKENIZER_STATE_SCANNING,
     SPRINT_TOKENIZER_STATE_INVALID,
@@ -107,4 +106,4 @@ sprint_tokenizer* sprint_tokenizer_from_file(FILE* stream, const char* path, boo
 sprint_error sprint_tokenizer_next(sprint_tokenizer* tokenizer, sprint_token* token, sprint_stringbuilder* builder);
 sprint_error sprint_tokenizer_destroy(sprint_tokenizer* tokenizer);
 
-#endif //SPRINTPCB_TOKEN_H
+#endif //SPRINTTRACE_TOKEN_H

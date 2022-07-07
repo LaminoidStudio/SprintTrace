@@ -1,11 +1,11 @@
 //
-// libsprintpcb: element, property and statement parser
+// SprintTrace: element, property and statement parser
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#ifndef SPRINTPCB_PARSER_H
-#define SPRINTPCB_PARSER_H
+#ifndef SPRINTTRACE_PARSER_H
+#define SPRINTTRACE_PARSER_H
 
 #include "primitives.h"
 #include "elements.h"
@@ -67,4 +67,4 @@ sprint_error sprint_parser_next_element(sprint_parser* parser, sprint_element** 
  */
 sprint_error sprint_parser_destroy(sprint_parser* parser, bool tokenizer, char** contents);
 
-#endif //SPRINTPCB_PARSER_H
+#endif //SPRINTTRACE_PARSER_H

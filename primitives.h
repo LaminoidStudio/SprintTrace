@@ -1,11 +1,11 @@
 //
-// libsprintpcb: primitive data types
+// SprintTrace: primitive data types
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#ifndef SPRINTPCB_PRIMITIVES_H
-#define SPRINTPCB_PRIMITIVES_H
+#ifndef SPRINTTRACE_PRIMITIVES_H
+#define SPRINTTRACE_PRIMITIVES_H
 
 #include "errors.h"
 #include "output.h"
@@ -99,4 +99,4 @@ sprint_tuple sprint_tuple_of(sprint_dist x, sprint_dist y);
 bool sprint_tuple_valid(sprint_tuple tuple);
 sprint_error sprint_tuple_output(sprint_tuple tuple, sprint_output* output, sprint_prim_format format);
 
-#endif //SPRINTPCB_PRIMITIVES_H
+#endif //SPRINTTRACE_PRIMITIVES_H

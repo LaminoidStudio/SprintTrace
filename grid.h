@@ -1,11 +1,11 @@
 //
-// libsprintpcb: grid layouting
+// SprintTrace: grid layouting
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#ifndef SPRINTPCB_GRID_H
-#define SPRINTPCB_GRID_H
+#ifndef SPRINTTRACE_GRID_H
+#define SPRINTTRACE_GRID_H
 
 #include "output.h"
 #include "primitives.h"
@@ -21,4 +21,4 @@ sprint_grid sprint_grid_of(sprint_tuple origin, sprint_dist width, sprint_dist h
 bool sprint_grid_valid(sprint_grid* grid);
 sprint_error sprint_grid_output(sprint_grid* grid, sprint_output* output);
 
-#endif //SPRINTPCB_GRID_H
+#endif //SPRINTTRACE_GRID_H

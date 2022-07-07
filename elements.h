@@ -1,11 +1,11 @@
 //
-// libsprintpcb: element creation and output
+// SprintTrace: element creation and output
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#ifndef SPRINTPCB_ELEMENTS_H
-#define SPRINTPCB_ELEMENTS_H
+#ifndef SPRINTTRACE_ELEMENTS_H
+#define SPRINTTRACE_ELEMENTS_H
 
 #include "primitives.h"
 #include "output.h"
@@ -302,4 +302,4 @@ sprint_error sprint_element_output(sprint_element* element, sprint_output* outpu
 bool sprint_element_valid(sprint_element* element);
 sprint_error sprint_element_destroy(sprint_element* element);
 
-#endif //SPRINTPCB_ELEMENTS_H
+#endif //SPRINTTRACE_ELEMENTS_H

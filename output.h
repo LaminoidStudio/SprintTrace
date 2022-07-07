@@ -1,11 +1,11 @@
 //
-// libsprintpcb: dynamic text output routing
+// SprintTrace: dynamic text output routing
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#ifndef SPRINTPCB_OUTPUT_H
-#define SPRINTPCB_OUTPUT_H
+#ifndef SPRINTTRACE_OUTPUT_H
+#define SPRINTTRACE_OUTPUT_H
 
 #include "stringbuilder.h"
 #include "errors.h"
@@ -36,4 +36,4 @@ sprint_error sprint_output_put_str(sprint_output* output, const char* str);
 sprint_error sprint_output_format(sprint_output* output, const char* format, ...);
 sprint_error sprint_output_destroy(sprint_output* output, char** contents);
 
-#endif //SPRINTPCB_OUTPUT_H
+#endif //SPRINTTRACE_OUTPUT_H

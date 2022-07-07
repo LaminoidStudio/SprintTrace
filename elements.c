@@ -1,5 +1,5 @@
 //
-// libsprintpcb: element creation and output
+// SprintTrace: element creation and output
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //

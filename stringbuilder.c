@@ -1,5 +1,5 @@
 //
-// libsprintpcb: dynamic string builder
+// SprintTrace: dynamic string builder
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //

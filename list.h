@@ -1,11 +1,11 @@
 //
-// libsprintpcb: dynamic array list
+// SprintTrace: dynamic array list
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#ifndef SPRINTPCB_LIST_H
-#define SPRINTPCB_LIST_H
+#ifndef SPRINTTRACE_LIST_H
+#define SPRINTTRACE_LIST_H
 
 #include "errors.h"
 
@@ -38,4 +38,4 @@ sprint_error sprint_list_clear(sprint_list* list);
 sprint_error sprint_list_grow(sprint_list* list, int capacity);
 sprint_error sprint_list_trim(sprint_list* list);
 
-#endif //SPRINTPCB_LIST_H
+#endif //SPRINTTRACE_LIST_H

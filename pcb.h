@@ -1,11 +1,11 @@
 //
-// libsprintpcb: PCB representation
+// SprintTrace: PCB representation
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#ifndef SPRINTPCB_PCB_H
-#define SPRINTPCB_PCB_H
+#ifndef SPRINTTRACE_PCB_H
+#define SPRINTTRACE_PCB_H
 
 #include "primitives.h"
 #include "elements.h"
@@ -46,4 +46,4 @@ typedef struct sprint_pcb {
 sprint_error sprint_pcb_flags_output(sprint_pcb_flags flags, sprint_output* output);
 sprint_error sprint_pcb_output(sprint_pcb* pcb, sprint_output* output);
 
-#endif //SPRINTPCB_PCB_H
+#endif //SPRINTTRACE_PCB_H

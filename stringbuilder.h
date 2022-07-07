@@ -1,11 +1,11 @@
 //
-// libsprintpcb: dynamic string builder
+// SprintTrace: dynamic string builder
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#ifndef SPRINTPCB_STRINGBUILDER_H
-#define SPRINTPCB_STRINGBUILDER_H
+#ifndef SPRINTTRACE_STRINGBUILDER_H
+#define SPRINTTRACE_STRINGBUILDER_H
 
 #include "errors.h"
 
@@ -51,4 +51,4 @@ sprint_error sprint_stringbuilder_clear(sprint_stringbuilder* builder);
 sprint_error sprint_stringbuilder_grow(sprint_stringbuilder* builder, int capacity);
 sprint_error sprint_stringbuilder_trim(sprint_stringbuilder* builder);
 
-#endif //SPRINTPCB_STRINGBUILDER_H
+#endif //SPRINTTRACE_STRINGBUILDER_H

@@ -1,5 +1,5 @@
 //
-// libsprintpcb: element, property and statement parser
+// SprintTrace: element, property and statement parser
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //

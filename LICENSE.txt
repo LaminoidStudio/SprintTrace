@@ -1,6 +1,6 @@
-License for SprintPCB
+License for SprintTrace
 
-Laminoid Studio (Müssig & Müssig GbR) grants you the non-transferrable right to use SprintPCB
+Laminoid Studio (Müssig & Müssig GbR) grants you the non-transferrable right to use SprintTrace
 for any non-commercial purpose to the extend limited by the terms of the GNU GPL v3 license below.
 Non-commercial use is defined as the usage of this software outside a corporate environment
 and without any direct or indirect, monetary or other compensation for your work (including salary).

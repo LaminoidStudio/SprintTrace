@@ -1,5 +1,5 @@
 //
-// libsprintpcb: primitive data types
+// SprintTrace: primitive data types
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //

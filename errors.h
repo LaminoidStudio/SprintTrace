@@ -1,11 +1,11 @@
 //
-// libsprintpcb: error handling and tracing
+// SprintTrace: error handling and tracing
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#ifndef LIBSPRINTPCB_ERRORS_H
-#define LIBSPRINTPCB_ERRORS_H
+#ifndef SPRINTTRACE_ERRORS_H
+#define SPRINTTRACE_ERRORS_H
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -72,4 +72,4 @@ bool sprint_log_format(const char* format, ...);
                                                                 (critical), SPRINT_SOURCE, __LINE__, #success)
 #define sprint_chain(result, error) (((result) != SPRINT_ERROR_NONE) ? false : \
                             sprint_error_internal(((result) = (error)), false, SPRINT_SOURCE, __LINE__, #error))
-#endif //LIBSPRINTPCB_ERRORS_H
+#endif //SPRINTTRACE_ERRORS_H

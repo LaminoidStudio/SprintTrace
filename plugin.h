@@ -1,11 +1,11 @@
 //
-// libsprintpcb: plugin representation and life-cycle management
+// SprintTrace: plugin representation and life-cycle management
 // Copyright 2022, Laminoid.com (Muessig & Muessig GbR).
 // Licensed under the terms and conditions of the GPLv3.
 //
 
-#ifndef SPRINTPCB_PLUGIN_H
-#define SPRINTPCB_PLUGIN_H
+#ifndef SPRINTTRACE_PLUGIN_H
+#define SPRINTTRACE_PLUGIN_H
 
 #include "pcb.h"
 #include "stringbuilder.h"
@@ -91,4 +91,4 @@ const char* sprint_plugin_get_input(void);
 const char* sprint_plugin_get_output(void);
 int sprint_plugin_get_exit_code(void);
 
-#endif //SPRINTPCB_PLUGIN_H
+#endif //SPRINTTRACE_PLUGIN_H
