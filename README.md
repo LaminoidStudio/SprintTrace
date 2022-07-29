@@ -5,6 +5,10 @@ C99-library to interact with the plugin interface of ABACOM SprintLayout 6.0.
 SprintTrace is an application library that allows developers to easily build plugins for SprintLayout that can act on whole PCBs or selections.
 These plugins can export/import to and from other formats, procedurally generate PCBs, autoroute, vectorize, scale, transform and do much more.
 
+## Supported OSes
+Plugins using SprintTrace can either run standalone or be run by a SprintLayout host instance.
+If run standalone, SprintTrace plugins run on Windows 7+, Linux and macOS. In hosted mode, plugins will only run on Windows.
+
 ## Usage
 ### As a user
 As a user you can place the plugins in any folder and define the 
