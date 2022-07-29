@@ -61,3 +61,4 @@ Basically GPLv3 with an additional non-commercial use clause. Please consult LIC
 - Sample Projects
 - GUI Integration
 - Configuration
+- Standalone mode
