@@ -129,6 +129,7 @@ typedef struct sprint_zone {
     sprint_dist clear;
     bool cutout;
     bool soldermask;
+    bool soldermask_cutout;
     bool hatch;
     bool hatch_auto;
     sprint_dist hatch_width;

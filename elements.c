@@ -357,13 +357,15 @@ sprint_error sprint_pad_smt_create(sprint_element* element, sprint_layer layer, 
 bool sprint_zone_valid(sprint_zone* zone)
 {
     return zone != NULL && sprint_layer_valid(zone->layer) && sprint_size_valid(zone->width) &&
-           zone->num_points >= 2 && zone->points != NULL && sprint_size_valid(zone->clear);
+           zone->num_points >= 2 && zone->points != NULL && sprint_size_valid(zone->clear) &&
+            !(zone->cutout && zone->soldermask_cutout);
 }
 
 static const sprint_zone SPRINT_ZONE_DEFAULT = {
         .clear = 4000,
         .cutout = false,
         .soldermask = false,
+        .soldermask_cutout = false,
         .hatch = false,
         .hatch_auto = true,
         .name = NULL
@@ -998,6 +1000,10 @@ static sprint_error sprint_zone_output_internal(sprint_zone* zone, sprint_output
     if (zone->soldermask != SPRINT_ZONE_DEFAULT.soldermask) {
         sprint_chain(error, sprint_param_output_internal(output, cooked, "SOLDERMASK", "soldermask"));
         sprint_chain(error, sprint_bool_output(zone->soldermask, output));
+    }
+    if (zone->soldermask_cutout != SPRINT_ZONE_DEFAULT.soldermask_cutout) {
+        sprint_chain(error, sprint_param_output_internal(output, cooked, "SOLDERMASK_CUTOUT", "soldermask cutout"));
+        sprint_chain(error, sprint_bool_output(zone->soldermask_cutout, output));
     }
     if (zone->hatch != SPRINT_ZONE_DEFAULT.hatch) {
         sprint_chain(error, sprint_param_output_internal(output, cooked, "HATCH", "hatch"));

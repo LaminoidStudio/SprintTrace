@@ -887,7 +887,7 @@ static sprint_error sprint_parser_next_zone_internal(sprint_parser* parser, spri
 
     // Keep track of found properties
     bool found_layer = false, found_width = false, found_clear = false, found_cutout = false, found_soldermask = false,
-            found_hatch = false, found_hatch_auto = false, found_hatch_width = false, found_name = false;
+            found_soldermask_cutout = false, found_hatch = false, found_hatch_auto = false, found_hatch_width = false, found_name = false;
 
     // Keep a list of points
     sprint_list* list = sprint_list_create(sizeof(*element->zone.points), 16);
@@ -939,6 +939,10 @@ static sprint_error sprint_parser_next_zone_internal(sprint_parser* parser, spri
             if (found_soldermask)
                 already_found = true;
             found_soldermask |= sprint_chain(error, sprint_parser_next_bool(parser, &element->zone.soldermask));
+        } else if (strcasecmp(statement.name, "SOLDERMASK_CUTOUT") == 0) {
+            if (found_soldermask_cutout)
+                already_found = true;
+            found_soldermask_cutout |= sprint_chain(error, sprint_parser_next_bool(parser, &element->zone.soldermask_cutout));
         } else if (strcasecmp(statement.name, "HATCH") == 0) {
             if (found_hatch)
                 already_found = true;
